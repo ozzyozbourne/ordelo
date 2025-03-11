@@ -18,7 +18,7 @@ function SearchBar({ onSearch, suggestions = [] }) {
     onSearch(suggestion);
     setIsDropdownOpen(false);
   };
-
+  
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
