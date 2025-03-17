@@ -1,85 +1,35 @@
-##############################
-## Common
-##############################
-**/bin/
-**/build/
-**/out/
-**/tmp/
-**/doc/
-**/log
-**/logs
-**/target/
-**/debug/
-
-*.log
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-
-##############################
-## Visual Studio Code
-##############################
-*.vscode/
-.code-workspace
-
-##############################
-## OS X
-##############################
-.DS_Store
-
-##############################
-## Intellij
-##############################
-*.idea/
-
-##############################
-## Golang
-##############################
-go.work
-go.work.sum
-
-##############################
-## Java
-##############################
-local.properties
-gradle-app.setting
-!gradle-wrapper.jar
-
-*.idea_modules/
-*.settings/
-*.mtj.tmp/
-.metadata
-.classpath
-.project
-.loadpath
-.factorypath
-.gradle
-.gradletasknamecache
-
-
-hs_err_pid*
-replay_pid*
-
-*.iml
-*.ipr
-*.iws
-*.tmp
-*.bak
-*.swp
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*~.nib
-
-
-##############################
-## Miscellaneous
-##############################
-
+# Node modules and build artifacts
 node_modules/
+dist/
+.vite/
+.vitepress/
+.cache/
+.output/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git-related
+.git/
+.gitignore
+
+# Backup files
+*.backup

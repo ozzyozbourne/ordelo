@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRecipes } from "../context/RecipeContext";
 import { Link } from "react-router-dom";
 
@@ -6,6 +6,20 @@ function ShoppingList() {
   const { shoppingList, removeFromShoppingList, clearShoppingList } = useRecipes();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
+
+  // Add this useEffect for the page transition
+  useEffect(() => {
+    const container = document.querySelector('.shopping-list-page');
+    if (container) {
+      container.classList.add('page-transition');
+      
+      const timeout = setTimeout(() => {
+        container.classList.remove('page-transition');
+      }, 500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, []);
 
   const filteredItems = shoppingList.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
