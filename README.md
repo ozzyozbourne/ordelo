@@ -23,22 +23,9 @@ This will start the app on `http://localhost:5173/` (or another available port).
 
 Project Structure
 
-ordelo-f/
-├── public/               # Static assets (icons, images)
-├── src/                  # Application source code
-│   ├── components/       # Reusable UI components
-│   ├── pages/            # Individual app pages
-│   ├── services/         # API and caching logic
-│   ├── context/          # Global state management
-│   ├── utils/            # Helper functions
-│   ├── styles/           # Global styles
-│   ├── App.jsx           # Main app entry point
-│   ├── main.jsx          # Renders the app
-│   ├── index.css         # Global styles
-├── .gitignore            # Ignored files for Git
-├── package.json          # Project dependencies and scripts
-├── vite.config.js        # Vite configuration
-└── README.md             # Project documentation
+## Project Structure
+
+ordelo-f/ ├── public/ # Static assets (icons, images) ├── src/ # Application source code │ ├── components/ # Reusable UI components │ ├── pages/ # Individual app pages │ ├── services/ # API and caching logic │ ├── context/ # Global state management │ ├── utils/ # Helper functions │ ├── styles/ # Global styles │ ├── App.jsx # Main app entry point │ ├── main.jsx # Renders the app │ ├── index.css # Global styles ├── .gitignore # Ignored files for Git ├── package.json # Project dependencies and scripts ├── vite.config.js # Vite configuration └── README.md # Project documentation
 
 
 Additional Setup
