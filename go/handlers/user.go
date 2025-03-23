@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"ordelo/db"
 	"ordelo/models"
 	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -19,13 +22,17 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if user.Email == "" || user.PasswordHash == "" || user.UserName == "" {
 		sendResponse(w, http.StatusBadRequest, "Email, password and username are required ", nil)
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var existingUser User
-	err := 
+	var existingUser models.User
+	if err := db.UsersCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser); err == nil {
+		sendResponse(w, http.StatusConflict, "Email already in use", nil)
+		return
+	}
 
 }
 
