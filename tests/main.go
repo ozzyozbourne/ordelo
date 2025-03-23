@@ -1,4 +1,4 @@
-package db
+package main
 
 import (
 	"context"
@@ -9,10 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-const (
-	C  = "mongodb+srv://mordersechssechssechs:ahoomisterazozin123@sandbox.tujsg.mongodb.net/?retryWrites=true&w=majority&appName=sandbox"
-	DB = "test"
-)
+func main() {
+	log.Printf("This the ordelo api Test Suite\n")
+}
 
 var (
 	Client            *mongo.Client

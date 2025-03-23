@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +34,31 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		sendResponse(w, http.StatusConflict, "Email already in use", nil)
 		return
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
+	if err != nil {
+		sendResponse(w, http.StatusInternalServerError, "Error processing request", nil)
+		return
+	}
+
+	user.ID = bson.NewObjectID()
+	user.PasswordHash = string(hashedPassword)
+	user.CreatedAt = time.Now()
+	user.SavedRecipes = []bson.ObjectID{}
+
+	if user.Role == "" {
+		user.Role = "user"
+	}
+
+	res, err := db.UsersCollection.InsertOne(ctx, user)
+	if err != nil {
+		log.Fatalf("Error %s in inserting user %+v\n", err, user)
+	}
+	log.Printf("Insert? -> %t ID -> %+v\n", res.Acknowledged, res.InsertedID)
+
+	user.PasswordHash = ""
+
+	sendResponse(w, http.StatusCreated, "User created successfully", nil)
 
 }
 

@@ -3,12 +3,14 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"ordelo/db"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"testing"
-	"time"
 )
 
 func TestUser(t *testing.T) {
@@ -98,7 +100,7 @@ func TestIDGeneration(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 
-	client, err := mongo.Connect(options.Client().ApplyURI(c))
+	client, err := mongo.Connect(options.Client().ApplyURI(db.C))
 	if err != nil {
 		panic(err)
 	}
