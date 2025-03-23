@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -64,4 +66,13 @@ func CloseMongoDB() {
 		log.Fatalf("Error in closing MongoDB connection %s\n", err)
 	}
 	log.Printf("Closed")
+}
+
+func generateRandowEmails() string {
+	b := make([]byte, 5)
+	for i := range b {
+		b[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[rand.Intn(36)]
+	}
+
+	return fmt.Sprintf("%s@test.com", string(b))
 }

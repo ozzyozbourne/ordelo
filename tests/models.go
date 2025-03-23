@@ -16,3 +16,10 @@ type User struct {
 	Role         string          `bson:"role" json:"role"`
 	CreatedAt    time.Time       `bson:"created_at" json:"created_at"`
 }
+
+// response
+type APIReponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omnitempty"`
+}

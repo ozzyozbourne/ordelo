@@ -14,11 +14,12 @@ import (
 
 func TestUserCreation(t *testing.T) {
 	InitMongoDB()
+	defer CloseMongoDB()
 
 	user := User{
 		UserName:     "TestUser",
 		UserAddress:  "123 Test St",
-		Email:        "test@example.com",
+		Email:        generateRandowEmails(),
 		PasswordHash: "hashedpassword",
 		SavedRecipes: []bson.ObjectID{},
 		Role:         "user",
@@ -54,12 +55,12 @@ func TestUserCreation(t *testing.T) {
 
 	}
 
-	var userResponse User
-	if err := json.NewDecoder(res.Body).Decode(&userResponse); err != nil {
+	var response APIReponse
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		t.Fatalf("Failed to parse response body: %v", err)
 	}
 
-	t.Logf("Created user -> %+v", userResponse)
+	t.Logf("Created user -> %+v", response)
 	t.Logf("Checking if created user is present in the DB\n")
 
 	var savedInDBUser User
