@@ -77,7 +77,8 @@ func TestUserCreation(t *testing.T) {
 
 func TestGetUser(t *testing.T) {
 
-	hexString := "67d7300f1694565b549415c4"
+	// confirm first that this id is actually present in the database first
+	hexString := "67e06353ae0848df2af50784"
 	url := fmt.Sprintf("%s/%s", P, hexString)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

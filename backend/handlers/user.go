@@ -77,6 +77,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	log.Printf("The user id to search is -> %s\n", id.String())
+
 	var userResponse models.User
 	if err := db.UsersCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&userResponse); err != nil {
 		sendResponse(w, http.StatusNotFound, "User not found", nil)
@@ -90,6 +92,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(&userResponse); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("User with id %s is present in db\n", id.String())
 }
 
 // func UpdateUser(w http.ResponseWriter, r *http.Request) {
