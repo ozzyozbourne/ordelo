@@ -27,7 +27,7 @@ var (
 )
 
 func InitMongoDB() {
-	log.Printf("Connect to the DB")
+	log.Printf("Connecting to the DB")
 	options := options.Client().ApplyURI(C).SetMaxConnecting(10)
 
 	client, err := mongo.Connect(options)
