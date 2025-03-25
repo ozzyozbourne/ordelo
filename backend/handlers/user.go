@@ -64,31 +64,36 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-
 	pathParts := strings.Split(r.URL.Path, "/")
-	log.Printf("%v\n", pathParts)
-	// var user models.User
-	//
-	// if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-	// 	sendResponse(w, http.StatusBadRequest, "Invalid request body", nil)
-	// 	log.Fatal(err)
-	// }
-	//
-	// if user.Role != "admin" {
-	// 	sendResponse(w, http.StatusForbidden, "Access denied", nil)
-	// 	return
-	// }
-	//
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// defer cancel()
-	//
-	// if err := db.UsersCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&user); err != nil {
-	// 	sendResponse(w, http.StatusNotFound, "User not found", nil)
-	// 	return
-	// }
-	//
-	// user.PasswordHash = ""
-	// sendResponse(w, http.StatusOK, "User found", user)
+	userHex := pathParts[len(pathParts)-1]
+
+	log.Printf("Fetched userID in hex -> %s\n", userHex)
+
+	id, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		log.Fatalf("Unable to get the object hex from string -> %s error -> %v\n", userHex, err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	log.Printf("The user id to search is -> %s\n", id.String())
+
+	var userResponse models.User
+	if err := db.UsersCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&userResponse); err != nil {
+		sendResponse(w, http.StatusNotFound, "User not found", nil)
+		return
+	}
+	userResponse.PasswordHash = ""
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(&userResponse); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("User with id %s is present in db\n", id.String())
 }
 
 // func UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +155,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 //
 // 	sendResponse(w, http.StatusOK, "User updated successfully", updatedUser)
 // }
-//
+
 // func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // 	// Extract user ID from URL path
 // 	pathParts := strings.Split(r.URL.Path, "/")
