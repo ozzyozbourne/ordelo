@@ -37,17 +37,20 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error in decoding the response body %v\n", err)
 		return
 	}
-
 	//Fields verification
 	switch {
 	case createUser.Email == "":
 		sendResponse(http.StatusBadRequest, "Email is empty", "")
+		return
 	case createUser.PasswordHash == "":
 		sendResponse(http.StatusBadRequest, "Password is empty", "")
+		return
 	case createUser.UserName == "":
 		sendResponse(http.StatusBadRequest, "Username is empty", "")
+		return
 	case createUser.Role == "":
 		sendResponse(http.StatusBadRequest, "role is empty", "")
+		return
 	default:
 	}
 
