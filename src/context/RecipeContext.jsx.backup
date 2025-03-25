@@ -1,21 +1,9 @@
-// src/context/RecipeContext.jsx
-//Why Use RecipeContext.jsx?
-//Removes prop drilling – No need to pass props down multiple components.
-//Reusability – All recipe-related logic is centralized in one file.
-//Improves Performance – Only updates necessary components when data changes.
-// Offline Support – Uses localStorage to persist data when offline.
-
 import { createContext, useState, useEffect, useContext } from "react";
-import { 
-  fetchRandomRecipes, 
-  searchRecipes, 
-  fetchRecipeById, 
-  filterRecipesByCuisine,
-  getApiUsageInfo
-} from "../services/spoonacularApi";
-import { createNetworkDetector } from "../utils/apiUtils";
+import axios from "axios";
 
 const RecipeContext = createContext();
+
+const SPOONACULAR_API_KEY = "5337e71f5d9743ffad0ad4307681f80c";
 
 export const RecipeProvider = ({ children }) => {
   const [recipes, setRecipes] = useState([]);
@@ -24,9 +12,8 @@ export const RecipeProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
+  // Add this new state for selected recipes
   const [selectedRecipes, setSelectedRecipes] = useState([]);
-  const [networkStatus, setNetworkStatus] = useState({ isOnline: true });
-  const [apiStatus, setApiStatus] = useState({ isLimited: false, count: 0 });
 
   // Load saved recipes and shopping list from localStorage
   useEffect(() => {
@@ -46,38 +33,8 @@ export const RecipeProvider = ({ children }) => {
       setSelectedRecipes(JSON.parse(selectedRecipesData));
     }
     
-    // Initialize network status detector
-    const networkDetector = createNetworkDetector();
-    setNetworkStatus({ isOnline: networkDetector.isOnline() });
-    
-    const removeNetworkListener = networkDetector.onNetworkChange((online) => {
-      setNetworkStatus({ isOnline: online });
-      if (!online) {
-        showToast('You are offline. Using cached recipes.', 'warning');
-      } else {
-        showToast('You are back online!', 'success');
-      }
-    });
-    
-    // Update API status initially and periodically
-    const updateApiStatus = () => {
-      const status = getApiUsageInfo();
-      setApiStatus(status);
-      
-      if (status.isLimited && !apiStatus.isLimited) {
-        showToast('Daily API limit reached. Using cached recipes only until tomorrow.', 'error');
-      }
-    };
-    updateApiStatus();
-    const apiStatusInterval = setInterval(updateApiStatus, 5 * 60 * 1000); // Check every 5 minutes
-    
     // Fetch initial recipes
-    fetchInitialRecipes();
-    
-    return () => {
-      removeNetworkListener();
-      clearInterval(apiStatusInterval);
-    };
+    fetchRandomRecipes();
   }, []);
 
   // Update localStorage when saved recipes change
@@ -106,98 +63,96 @@ export const RecipeProvider = ({ children }) => {
     }
   }, [toast]);
 
-  // Fetch initial recipes with error handling and network awareness
-  const fetchInitialRecipes = async () => {
+  const fetchRandomRecipes = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const newRecipes = await fetchRandomRecipes();
-      setRecipes(newRecipes);
-    } catch (error) {
-      console.error("Error fetching initial recipes:", error);
+      const response = await axios.get("https://api.spoonacular.com/recipes/random", {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          number: 8
+        }
+      });
       
-      // Only show error message if we're online
-      if (networkStatus.isOnline) {
-        setError("Failed to fetch recipes. Please try again later.");
-      } else {
-        setError("You're offline. Please connect to the internet and try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Modified version using our optimized API service
-  const fetchRandomRecipesHandler = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const newRecipes = await fetchRandomRecipes();
-      setRecipes(newRecipes);
+      setRecipes(response.data.recipes);
     } catch (error) {
       console.error("Error fetching random recipes:", error);
-      setError(error.message || "Failed to fetch recipes. Please try again.");
+      setError("Failed to fetch recipes. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Modified search using our optimized API service
-  const searchRecipesHandler = async (query) => {
-    if (!query || query.trim() === '') return;
-    
+  const searchRecipes = async (query) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const searchResults = await searchRecipes(query);
-      setRecipes(searchResults);
+      const response = await axios.get("https://api.spoonacular.com/recipes/complexSearch", {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          query,
+          number: 12,
+          addRecipeInformation: true,
+          fillIngredients: true
+        }
+      });
+      
+      setRecipes(response.data.results);
     } catch (error) {
       console.error("Error searching recipes:", error);
-      setError(error.message || "Failed to search recipes. Please try again.");
+      setError("Failed to search recipes. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Modified recipe details using our optimized API service
-  const fetchRecipeByIdHandler = async (id) => {
-    if (!id) return null;
-    
+  const fetchRecipeById = async (id) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const recipe = await fetchRecipeById(id);
-      return recipe;
+      const response = await axios.get(`https://api.spoonacular.com/recipes/${id}/information`, {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          includeNutrition: true
+        }
+      });
+      
+      return response.data;
     } catch (error) {
       console.error("Error fetching recipe details:", error);
-      setError(error.message || "Failed to fetch recipe details. Please try again.");
+      setError("Failed to fetch recipe details. Please try again.");
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Modified cuisine filter using our optimized API service
-  const filterRecipesByCuisineHandler = async (cuisine) => {
-    if (!cuisine) return;
-    
+  const filterRecipesByCuisine = async (cuisine) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const filteredRecipes = await filterRecipesByCuisine(cuisine);
-      setRecipes(filteredRecipes);
+      const response = await axios.get("https://api.spoonacular.com/recipes/complexSearch", {
+        params: {
+          apiKey: SPOONACULAR_API_KEY,
+          cuisine,
+          number: 8,
+          addRecipeInformation: true
+        }
+      });
+      
+      setRecipes(response.data.results);
     } catch (error) {
       console.error(`Error fetching ${cuisine} recipes:`, error);
-      setError(error.message || `Failed to fetch ${cuisine} recipes. Please try again.`);
+      setError(`Failed to fetch ${cuisine} recipes. Please try again.`);
     } finally {
       setIsLoading(false);
     }
   };
+
   const toggleSaveRecipe = (recipe) => {
     const isAlreadySaved = savedRecipes.some(savedRecipe => savedRecipe.id === recipe.id);
     
@@ -211,6 +166,7 @@ export const RecipeProvider = ({ children }) => {
       showToast("Recipe saved successfully", "success");
     }
   };
+
   // Add these new methods for selected recipes
   const addToSelectedRecipes = (recipe) => {
     // Check if recipe is already selected
@@ -269,12 +225,10 @@ export const RecipeProvider = ({ children }) => {
         error,
         toast,
         selectedRecipes,
-        networkStatus,
-        apiStatus,
-        fetchRandomRecipes: fetchRandomRecipesHandler,
-        searchRecipes: searchRecipesHandler,
-        fetchRecipeById: fetchRecipeByIdHandler,
-        filterRecipesByCuisine: filterRecipesByCuisineHandler,
+        fetchRandomRecipes,
+        searchRecipes,
+        fetchRecipeById,
+        filterRecipesByCuisine,
         toggleSaveRecipe,
         addToShoppingList,
         removeFromShoppingList,
@@ -291,8 +245,6 @@ export const RecipeProvider = ({ children }) => {
           <span className="toast-icon">
             {toast.type === "success" ? (
               <i className="fas fa-check-circle"></i>
-            ) : toast.type === "warning" ? (
-              <i className="fas fa-exclamation-triangle"></i>
             ) : (
               <i className="fas fa-exclamation-circle"></i>
             )}

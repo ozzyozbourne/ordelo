@@ -10,7 +10,13 @@ import AddRecipe from "./pages/AddRecipe";
 import Footer from "./components/Footer";
 import { RecipeProvider } from "./context/RecipeContext";
 import ScrollToTop from "./components/ScrollToTop";
+import SelectedRecipesModal from "./components/SelectedRecipesModal";
 import "./App.css";
+import Login from "./pages/Login";
+import AddUser from "./pages/Admin";
+import UserDashboard from "./pages/UserDashboard";
+import VendorDashboard from "./pages/VendorDashboard"
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -20,6 +26,32 @@ function App() {
     setTimeout(() => {
       setLoading(false);
     }, 1500);
+    
+    // Attempt to initialize IndexedDB when the app loads
+    const checkIndexedDB = async () => {
+      try {
+        // Feature detection for IndexedDB
+        if (!window.indexedDB) {
+          console.warn('Your browser doesn\'t support IndexedDB. Some features may not work properly.');
+          return;
+        }
+        
+        // Try to open a connection (this will initialize the DB)
+        const dbOpenRequest = indexedDB.open('ordelo-recipe-cache', 1);
+        
+        dbOpenRequest.onerror = (event) => {
+          console.error('IndexedDB initialization error:', event.target.error);
+        };
+        
+        dbOpenRequest.onsuccess = () => {
+          console.log('IndexedDB initialized successfully');
+        };
+      } catch (error) {
+        console.error('Error checking IndexedDB support:', error);
+      }
+    };
+    
+    checkIndexedDB();
   }, []);
 
   if (loading) {
@@ -39,14 +71,23 @@ function App() {
         <Header />
         <main>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home />} />\
+            <Route path="/login" element={<Login />}/>
+            <Route path="/admin" element={<AddUser/>}/>
+            <Route element={<PrivateRoute />}>
+            <Route path="/userdashboard" element={<UserDashboard/>}/>
+            <Route path="/vendordashboard" element={<VendorDashboard/>}/>
+            </Route>
+            <Route path="/saved-recipes" element={<PrivateRoute><SavedRecipes /></PrivateRoute>} />
+              <Route path="/add-recipe" element={<PrivateRoute><AddRecipe /></PrivateRoute>} />
             <Route path="/recipe/:id" element={<RecipeDetails />} />
-            <Route path="/saved-recipes" element={<SavedRecipes />} />
+           
             <Route path="/shopping-list" element={<ShoppingList />} />
             <Route path="/orders" element={<Orders />} />
-            <Route path="/add-recipe" element={<AddRecipe />} />
+         
           </Routes>
         </main>
+        <SelectedRecipesModal />
         <Footer />
       </Router>
     </RecipeProvider>

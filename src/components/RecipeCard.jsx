@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useRecipes } from "../context/RecipeContext";
 
 function RecipeCard({ recipe, onSave, isSaved }) {
   const [isHovered, setIsHovered] = useState(false);
+  const { addToSelectedRecipes, selectedRecipes } = useRecipes();
+  
+  const isSelected = selectedRecipes.some(r => r.id === recipe.id);
   
   return (
     <div 
@@ -47,8 +51,13 @@ function RecipeCard({ recipe, onSave, isSaved }) {
             {isSaved ? ' Saved' : ' Save'}
           </button>
           
-          <button className="btn btn-secondary" aria-label="Add to shopping list">
-            <i className="fas fa-shopping-basket"></i>
+          <button 
+            className={`btn ${isSelected ? 'btn-accent' : 'btn-secondary'}`}
+            onClick={() => addToSelectedRecipes(recipe)}
+            aria-label={isSelected ? "Selected" : "Select recipe"}
+          >
+            <i className={`fas fa-shopping-basket`}></i>
+            {isSelected ? ' Selected' : ' Select'}
           </button>
         </div>
       </div>
