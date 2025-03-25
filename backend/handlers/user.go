@@ -15,51 +15,74 @@ import (
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user models.User
+	sendResponse := func(status int, message, userId string) {
+		createdUser := &models.UserCreated{
+			Message: message,
+			UserId:  userId,
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		sendResponse(w, http.StatusBadRequest, "Invalid request body", nil)
-		log.Fatal(err)
+		w.WriteHeader(status)
+		w.Header().Set("Content-Type", "application/json")
+
+		if err := json.NewEncoder(w).Encode(createdUser); err != nil {
+			log.Printf("Error in encode created user response %v\n", err)
+			return
+		}
 	}
 
-	if user.Email == "" || user.PasswordHash == "" || user.UserName == "" {
-		sendResponse(w, http.StatusBadRequest, "Email, password and username are required ", nil)
+	var createUser models.CreateUser
+	var checkIfPersisted models.CreateUser
+
+	if err := json.NewDecoder(r.Body).Decode(&createUser); err != nil {
+		sendResponse(http.StatusBadRequest, "Invalid request body", "")
+		log.Printf("Error in decoding the response body %v\n", err)
 		return
 	}
 
+	//Fields verification
+	switch {
+	case createUser.Email == "":
+		sendResponse(http.StatusBadRequest, "Email is empty", "")
+	case createUser.PasswordHash == "":
+		sendResponse(http.StatusBadRequest, "Password is empty", "")
+	case createUser.UserName == "":
+		sendResponse(http.StatusBadRequest, "Username is empty", "")
+	case createUser.Role == "":
+		sendResponse(http.StatusBadRequest, "role is empty", "")
+	default:
+	}
+
+	log.Printf("Checking if user already present\n")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var existingUser models.User
-	if err := db.UsersCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser); err == nil {
-		sendResponse(w, http.StatusConflict, "Email already in use", nil)
+	if err := db.UsersCollection.FindOne(ctx, bson.M{"email": createUser.Email}).Decode(&checkIfPersisted); err == nil {
+		sendResponse(http.StatusConflict, "Email already in use", "")
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
+	log.Printf("Fresh user persisting in DB\n")
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(createUser.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
-		sendResponse(w, http.StatusInternalServerError, "Error processing request", nil)
+		sendResponse(http.StatusInternalServerError, "Error in encrypting password", "")
 		return
 	}
 
-	user.ID = bson.NewObjectID()
-	user.PasswordHash = string(hashedPassword)
-	user.CreatedAt = time.Now()
-	user.SavedRecipes = []bson.ObjectID{}
+	//adding messing feilds
+	createUser.ID = bson.NewObjectID()
+	createUser.PasswordHash = string(hashedPassword)
+	createUser.CreatedAt = time.Now()
+	createUser.SavedRecipes = []bson.ObjectID{}
 
-	if user.Role == "" {
-		user.Role = "user"
-	}
-
-	res, err := db.UsersCollection.InsertOne(ctx, user)
+	log.Printf("Persisting to DB user %+v\n", createUser)
+	res, err := db.UsersCollection.InsertOne(ctx, createUser)
 	if err != nil {
-		log.Fatalf("Error %s in inserting user %+v\n", err, user)
+		log.Fatalf("Error %s in persisting user %+v\n", err, createUser)
 	}
-	log.Printf("Insert? -> %t ID -> %+v\n", res.Acknowledged, res.InsertedID)
+	log.Printf("Is Persisted? -> %t ID -> %+v\n", res.Acknowledged, res.InsertedID)
 
-	user.PasswordHash = ""
-
-	sendResponse(w, http.StatusCreated, "User created successfully", nil)
+	createUser.PasswordHash = ""
+	sendResponse(http.StatusCreated, "User created successfully", "")
 
 }
 

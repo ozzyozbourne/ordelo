@@ -43,6 +43,7 @@ func InitMongoDB() {
 		log.Fatalf("Unable to ping MongoDB after connection to check for liveness %s", err)
 	}
 
+	Client = client
 	d := client.Database(DB)
 	UsersCollection = d.Collection("users")
 	RecipesCollection = d.Collection("recipes")

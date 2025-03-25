@@ -7,7 +7,7 @@ import (
 	"ordelo/models"
 )
 
-func sendResponse(w http.ResponseWriter, statusCode int, message string, data any) {
+func sendResponse(w http.ResponseWriter, statusCode int, message string, data string) {
 	reponse := &models.APIReponse{
 		Status:  statusCode,
 		Message: message,
