@@ -155,7 +155,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 //
 // 	sendResponse(w, http.StatusOK, "User updated successfully", updatedUser)
 // }
-//
+
 // func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // 	// Extract user ID from URL path
 // 	pathParts := strings.Split(r.URL.Path, "/")
