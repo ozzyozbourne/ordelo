@@ -53,7 +53,6 @@ func InitMongoDB() {
 	itemsCollection = d.Collection("items")
 
 	log.Printf("Connected to MongoDB")
-
 }
 
 func CloseMongoDB() {

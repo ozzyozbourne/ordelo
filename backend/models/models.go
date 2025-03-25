@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// Common Response
+type APIReponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omnitempty"`
+}
+
 // User represents the Users collection
 type User struct {
 	ID           bson.ObjectID   `bson:"_id,omitempty" json:"user_id"`
