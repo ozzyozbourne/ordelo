@@ -6,7 +6,7 @@ import (
 )
 
 // User represents the Users collection
-type CreateUser struct {
+type User struct {
 	ID           bson.ObjectID   `bson:"_id,omitempty" json:"user_id"`
 	UserName     string          `bson:"user_name" json:"user_name"`
 	UserAddress  string          `bson:"user_address" json:"user_address"`

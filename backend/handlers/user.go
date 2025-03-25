@@ -16,7 +16,7 @@ import (
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	sendResponse := func(status int, message, userId string) {
-		createdUser := &models.UserCreated{
+		createdUser := &models.UserRes{
 			Message: message,
 			UserId:  userId,
 		}
@@ -26,12 +26,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 		if err := json.NewEncoder(w).Encode(createdUser); err != nil {
 			log.Printf("Error in encode created user response %v\n", err)
-			return
 		}
 	}
 
-	var createUser models.CreateUser
-	var checkIfPersisted models.CreateUser
+	var createUser models.User
+	var checkIfPersisted models.User
 
 	if err := json.NewDecoder(r.Body).Decode(&createUser); err != nil {
 		sendResponse(http.StatusBadRequest, "Invalid request body", "")
@@ -83,7 +82,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	createUser.PasswordHash = ""
 	sendResponse(http.StatusCreated, "User created successfully", "")
-
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +102,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	var userResponse models.User
 	if err := db.UsersCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&userResponse); err != nil {
-		sendResponse(w, http.StatusNotFound, "User not found", nil)
+		sendResponse(w, http.StatusNotFound, "User not found", "")
 		return
 	}
 	userResponse.PasswordHash = ""
