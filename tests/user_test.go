@@ -18,7 +18,11 @@ func TestUserCreation(t *testing.T) {
 	defer CloseMongoDB()
 
 	user := User{
+<<<<<<< HEAD
 		UserName:     "TestUserqwe",
+=======
+		UserName:     "TestUser",
+>>>>>>> 4960214237d5b29e7eebf48a546a9df85f103a2a
 		UserAddress:  "123 Test St",
 		Email:        generateRandowEmails(),
 		PasswordHash: "hashedpassword",
@@ -78,7 +82,11 @@ func TestUserCreation(t *testing.T) {
 func TestGetUser(t *testing.T) {
 
 	// confirm first that this id is actually present in the database first
+<<<<<<< HEAD
 	hexString := "67e20979e056108df771a3d6"
+=======
+	hexString := "67e06353ae0848df2af50784"
+>>>>>>> 4960214237d5b29e7eebf48a546a9df85f103a2a
 	url := fmt.Sprintf("%s/%s", P, hexString)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
