@@ -3,18 +3,17 @@ package db
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-const (
-	C  = ""
-	DB = "test"
-)
-
 var (
+	C  = os.Getenv("DB_URI")
+	DB = "test"
+
 	Client            *mongo.Client
 	UsersCollection   *mongo.Collection
 	RecipesCollection *mongo.Collection
