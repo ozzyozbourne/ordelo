@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/honeycombio/otel-config-go/otelconfig"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -10,8 +11,8 @@ import (
 	"ordelo/handlers"
 )
 
-const (
-	p = ":8080"
+var (
+	p = os.Getenv("PORT")
 )
 
 func main() {
