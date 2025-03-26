@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 # Front end 
 export SPOONACULAR_API_KEY="<enter key>"
 
@@ -13,4 +15,6 @@ export HONEYCOMB_API_ENDPOINT="https://api.honeycomb.io:443"
 export OTEL_SERVICE_NAME="ordelo"
 export HONEYCOMB_API_KEY="<enter key>"
 
+# DONT PUSH UDATES TO THIS FILE 
+git update-index --assume-unchanged env.sh
 
