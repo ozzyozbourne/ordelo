@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	C  = "mongodb+srv://mordersechssechssechs:ahoomisterazozin123@sandbox.tujsg.mongodb.net/?retryWrites=true&w=majority&appName=sandbox"
+	C  = ""
 	DB = "test"
 )
 
