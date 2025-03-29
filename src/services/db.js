@@ -1,12 +1,18 @@
 // src/services/db.js
 // IndexedDB database setup and operations
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/zoha
 const DB_NAME = 'ordelo-recipe-cache';
 const DB_VERSION = 1;
 const RECIPES_STORE = 'recipes';
 const SEARCH_STORE = 'searches';
 const CUISINE_STORE = 'cuisines';
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/zoha
 // Open database connection
 export const openDB = () => {
   return new Promise((resolve, reject) => {
@@ -142,10 +148,18 @@ export const deleteOldItems = async (storeName, maxAgeMs) => {
     };
   });
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/zoha
 // Export store names for easy access
 export const STORES = {
   RECIPES: RECIPES_STORE,
   SEARCHES: SEARCH_STORE,
   CUISINES: CUISINE_STORE
 };
+<<<<<<< HEAD
+=======
+
+// 
+>>>>>>> origin/zoha

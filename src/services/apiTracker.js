@@ -33,7 +33,10 @@ export const initApiTracker = () => {
       cacheOnlyMode: false
     };
   }
+<<<<<<< HEAD
   
+=======
+>>>>>>> origin/zoha
   return usage;
 };
 
@@ -61,17 +64,26 @@ export const getApiUsage = () => {
     };
   }
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/zoha
 // Set API usage
 export const setApiUsage = (usage) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/zoha
 // Increment API usage counter
 export const incrementApiUsage = (count = 1) => {
   const usage = getApiUsage();
   const today = getCurrentDate();
+<<<<<<< HEAD
   
+=======
+>>>>>>> origin/zoha
   // If date has changed, reset the counter
   if (usage.date !== today) {
     const newUsage = {
@@ -83,11 +95,17 @@ export const incrementApiUsage = (count = 1) => {
     setApiUsage(newUsage);
     return newUsage;
   }
+<<<<<<< HEAD
   
   // Update counter
   const newCount = usage.count + count;
   const cacheOnlyMode = newCount >= CACHE_ONLY_THRESHOLD;
   
+=======
+  // Update counter
+  const newCount = usage.count + count;
+  const cacheOnlyMode = newCount >= CACHE_ONLY_THRESHOLD;
+>>>>>>> origin/zoha
   // If we've moved into cache-only mode, log it
   if (cacheOnlyMode && !usage.cacheOnlyMode) {
     console.warn(`API daily limit approaching (${newCount}/${DAILY_LIMIT}). Switching to cache-only mode.`);

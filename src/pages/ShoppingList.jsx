@@ -51,7 +51,7 @@ function ShoppingList() {
     });
     setSelectedItems([]);
   };
-
+  
   // Group items by aisle
   const groupedItems = filteredItems.reduce((acc, item) => {
     const aisle = item.aisle || "Other";
