@@ -17,12 +17,12 @@ var (
 	Client            *mongo.Client
 	UsersCollection   *mongo.Collection
 	RecipesCollection *mongo.Collection
-	listsCollection   *mongo.Collection
-	storesCollection  *mongo.Collection
-	cartsCollection   *mongo.Collection
-	ordersCollection  *mongo.Collection
-	vendorsCollection *mongo.Collection
-	itemsCollection   *mongo.Collection
+	ListsCollection   *mongo.Collection
+	StoresCollection  *mongo.Collection
+	CartsCollection   *mongo.Collection
+	OrdersCollection  *mongo.Collection
+	VendorsCollection *mongo.Collection
+	ItemsCollection   *mongo.Collection
 )
 
 func InitMongoDB() {
@@ -44,12 +44,12 @@ func InitMongoDB() {
 	d := client.Database(DB)
 	UsersCollection = d.Collection("users")
 	RecipesCollection = d.Collection("recipes")
-	listsCollection = d.Collection("lists")
-	storesCollection = d.Collection("stores")
-	cartsCollection = d.Collection("carts")
-	ordersCollection = d.Collection("orders")
-	vendorsCollection = d.Collection("vendors")
-	itemsCollection = d.Collection("items")
+	ListsCollection = d.Collection("lists")
+	StoresCollection = d.Collection("stores")
+	CartsCollection = d.Collection("carts")
+	OrdersCollection = d.Collection("orders")
+	VendorsCollection = d.Collection("vendors")
+	ItemsCollection = d.Collection("items")
 
 	log.Printf("Connected to MongoDB")
 }

@@ -120,103 +120,247 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("User with id %s is present in db\n", id.String())
 }
 
-// func UpdateUser(w http.ResponseWriter, r *http.Request) {
-// 	var user models.User
-//
-// 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-// 		sendResponse(w, http.StatusBadRequest, "Invalid request body", nil)
-// 		log.Fatal(err)
-// 	}
-//
-// 	// Parse request body
-// 	var updates map[string]interface{}
-// 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-// 		sendResponse(w, http.StatusBadRequest, "Invalid request body", nil)
-// 		return
-// 	}
-//
-// 	// Remove fields that shouldn't be updated directly
-// 	delete(updates, "_id")
-// 	delete(updates, "password_hash")
-// 	delete(updates, "created_at")
-//
-// 	// If there are no valid updates, return
-// 	if len(updates) == 0 {
-// 		sendResponse(w, http.StatusBadRequest, "No valid fields to update", nil)
-// 		return
-// 	}
-//
-// 	// Update user
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-//
-// 	result, err := db.UsersCollection.UpdateOne(
-// 		ctx,
-// 		bson.M{"_id": id},
-// 		bson.M{"$set": updates},
-// 	)
-//
-// 	if err != nil {
-// 		sendResponse(w, http.StatusInternalServerError, "Error updating user", nil)
-// 		return
-// 	}
-//
-// 	if result.MatchedCount == 0 {
-// 		sendResponse(w, http.StatusNotFound, "User not found", nil)
-// 		return
-// 	}
-//
-// 	// Get updated user
-// 	var updatedUser models.User
-// 	err = db.UsersCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&updatedUser)
-// 	if err != nil {
-// 		sendResponse(w, http.StatusInternalServerError, "User updated but could not retrieve updated data", nil)
-// 		return
-// 	}
-//
-// 	// Remove password hash from response
-// 	updatedUser.PasswordHash = ""
-//
-// 	sendResponse(w, http.StatusOK, "User updated successfully", updatedUser)
-// }
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
-// func DeleteUser(w http.ResponseWriter, r *http.Request) {
-// 	// Extract user ID from URL path
-// 	pathParts := strings.Split(r.URL.Path, "/")
-// 	if len(pathParts) < 3 {
-// 		sendResponse(w, http.StatusBadRequest, "Invalid user ID", nil)
-// 		return
-// 	}
-// 	idStr := pathParts[len(pathParts)-1]
-//
-// 	// Convert string ID to ObjectID
-// 	id, err := bson.ObjectIDFromHex(idStr)
-// 	if err != nil {
-// 		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", nil)
-// 		return
-// 	}
-//
-// 	// Check authorization (only the user themselves or an admin can delete user account)
-// 	requestUserID, err := GetUserIDFromContext(r.Context())
-// 	if err != nil || (requestUserID != id && r.Context().Value(RoleKey) != "admin") {
-// 		sendResponse(w, http.StatusForbidden, "Access denied", nil)
-// 		return
-// 	}
-//
-// 	// Delete user
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-//
-// 	result, err := db.UsersCollection.DeleteOne(ctx, bson.M{"_id": id})
-// 	if err != nil {
-// 		sendResponse(w, http.StatusInternalServerError, "Error deleting user", nil)
-// 		return
-// 	}
-//
-// 	if result.DeletedCount == 0 {
-// 		sendResponse(w, http.StatusNotFound, "User not found", nil)
-// 		return
-// 	}
-//
-// 	sendResponse(w, http.StatusOK, "User deleted successfully", nil)
-// }
+	pathParts := strings.Split(r.URL.Path, "/")
+	userHex := pathParts[len(pathParts)-1]
+	log.Printf("User id in hex -> %s\n", userHex)
+
+	id, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		log.Printf("User to transform to bsom object id error -> %v\n", err)
+		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
+		return
+	}
+
+	var updateData models.User
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		log.Printf("Unable to decode the respony body to user struct error -> %v\n", err)
+		sendResponse(w, http.StatusBadRequest, "Invalid request body", "")
+		return
+	}
+
+	updateDoc := bson.M{}
+
+	if updateData.UserName != "" {
+		updateDoc["user_name"] = updateData.UserName
+	}
+
+	if updateData.UserAddress != "" {
+		updateDoc["user_address"] = updateData.UserAddress
+	}
+
+	if updateData.Email != "" {
+		updateDoc["email"] = updateData.Email
+	}
+
+	if updateData.Role != "" {
+		updateDoc["role"] = updateData.Role
+	}
+
+	if len(updateDoc) == 0 {
+		log.Printf("No fields to update the updatedata struct is empty check the response body\n")
+		sendResponse(w, http.StatusBadRequest, "No valid fields to update", "")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := db.UsersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{"$set": updateDoc},
+	)
+
+	if err != nil {
+		log.Printf("Error updating user: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error updating user", "")
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		sendResponse(w, http.StatusNotFound, "User not found", "")
+		return
+	}
+
+	sendResponse(w, http.StatusOK, "User updated successfully", "")
+}
+
+// DeleteUser deletes a user
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL
+	pathParts := strings.Split(r.URL.Path, "/")
+	userHex := pathParts[len(pathParts)-1]
+
+	id, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
+		return
+	}
+
+	// Delete from database
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := db.UsersCollection.DeleteOne(ctx, bson.M{"_id": id})
+
+	if err != nil {
+		log.Printf("Error deleting user: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error deleting user", "")
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		sendResponse(w, http.StatusNotFound, "User not found", "")
+		return
+	}
+
+	sendResponse(w, http.StatusOK, "User deleted successfully", "")
+}
+
+// SaveRecipe adds a recipe to a user's saved recipes
+func SaveRecipe(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID and recipe ID from URL
+	pathParts := strings.Split(r.URL.Path, "/")
+	recipeHex := pathParts[len(pathParts)-1]
+	userHex := pathParts[len(pathParts)-3]
+
+	userId, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
+		return
+	}
+
+	recipeId, err := bson.ObjectIDFromHex(recipeHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid recipe ID format", "")
+		return
+	}
+
+	// Verify recipe exists
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var recipe models.Recipe
+	err = db.RecipesCollection.FindOne(ctx, bson.M{"_id": recipeId}).Decode(&recipe)
+	if err != nil {
+		sendResponse(w, http.StatusNotFound, "Recipe not found", "")
+		return
+	}
+
+	// Add recipe to user's saved recipes
+	result, err := db.UsersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": userId},
+		bson.M{"$addToSet": bson.M{"saved_recipes": recipeId}},
+	)
+
+	if err != nil {
+		log.Printf("Error saving recipe: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error saving recipe", "")
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		sendResponse(w, http.StatusNotFound, "User not found", "")
+		return
+	}
+
+	sendResponse(w, http.StatusOK, "Recipe saved successfully", "")
+}
+
+// UnsaveRecipe removes a recipe from a user's saved recipes
+func UnsaveRecipe(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID and recipe ID from URL
+	pathParts := strings.Split(r.URL.Path, "/")
+	recipeHex := pathParts[len(pathParts)-1]
+	userHex := pathParts[len(pathParts)-3]
+
+	userId, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
+		return
+	}
+
+	recipeId, err := bson.ObjectIDFromHex(recipeHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid recipe ID format", "")
+		return
+	}
+
+	// Remove recipe from user's saved recipes
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := db.UsersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": userId},
+		bson.M{"$pull": bson.M{"saved_recipes": recipeId}},
+	)
+
+	if err != nil {
+		log.Printf("Error removing saved recipe: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error removing saved recipe", "")
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		sendResponse(w, http.StatusNotFound, "User not found", "")
+		return
+	}
+
+	sendResponse(w, http.StatusOK, "Recipe removed from saved recipes", "")
+}
+
+// GetUserRecipes retrieves all saved recipes for a user
+func GetUserRecipes(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL
+	pathParts := strings.Split(r.URL.Path, "/")
+	userHex := pathParts[len(pathParts)-2]
+
+	userId, err := bson.ObjectIDFromHex(userHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
+		return
+	}
+
+	// Get user to retrieve saved recipe IDs
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user models.User
+	err = db.UsersCollection.FindOne(ctx, bson.M{"_id": userId}).Decode(&user)
+	if err != nil {
+		sendResponse(w, http.StatusNotFound, "User not found", "")
+		return
+	}
+
+	// Return empty array if no saved recipes
+	if len(user.SavedRecipes) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode([]models.Recipe{})
+		return
+	}
+
+	// Retrieve all recipes by IDs
+	cursor, err := db.RecipesCollection.Find(ctx, bson.M{"_id": bson.M{"$in": user.SavedRecipes}})
+	if err != nil {
+		log.Printf("Error retrieving saved recipes: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error retrieving saved recipes", "")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var recipes []models.Recipe
+	if err = cursor.All(ctx, &recipes); err != nil {
+		log.Printf("Error decoding saved recipes: %v\n", err)
+		sendResponse(w, http.StatusInternalServerError, "Error decoding saved recipes", "")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(recipes)
+}
