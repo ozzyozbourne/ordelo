@@ -1229,8 +1229,6 @@
   justify-content: center;
   z-index: 100;
   padding: 1rem;
-<<<<<<< HEAD
-=======
 }
 .Login {
   display: flex;
@@ -1331,5 +1329,4 @@
   .login-box button {
     font-size: 14px;
   }
->>>>>>> origin/zoha
 }

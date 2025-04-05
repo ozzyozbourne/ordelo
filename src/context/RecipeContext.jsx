@@ -1,13 +1,10 @@
 // src/context/RecipeContext.jsx
-<<<<<<< HEAD
-=======
 //Why Use RecipeContext.jsx?
 //Removes prop drilling – No need to pass props down multiple components.
 //Reusability – All recipe-related logic is centralized in one file.
 //Improves Performance – Only updates necessary components when data changes.
 // Offline Support – Uses localStorage to persist data when offline.
 
->>>>>>> origin/zoha
 import { createContext, useState, useEffect, useContext } from "react";
 import { 
   fetchRandomRecipes, 
@@ -71,10 +68,6 @@ export const RecipeProvider = ({ children }) => {
         showToast('Daily API limit reached. Using cached recipes only until tomorrow.', 'error');
       }
     };
-<<<<<<< HEAD
-    
-=======
->>>>>>> origin/zoha
     updateApiStatus();
     const apiStatusInterval = setInterval(updateApiStatus, 5 * 60 * 1000); // Check every 5 minutes
     
@@ -217,26 +210,6 @@ export const RecipeProvider = ({ children }) => {
       setSavedRecipes([...savedRecipes, recipe]);
       showToast("Recipe saved successfully", "success");
     }
-  };
-  // Add these new methods for selected recipes
-  const addToSelectedRecipes = (recipe) => {
-    // Check if recipe is already selected
-    if (!selectedRecipes.some(r => r.id === recipe.id)) {
-      setSelectedRecipes([...selectedRecipes, recipe]);
-      showToast(`${recipe.title} added to selected recipes`, "success");
-    } else {
-      showToast(`${recipe.title} is already selected`, "info");
-    }
-  };
-
-  const removeFromSelected = (recipeId) => {
-    setSelectedRecipes(selectedRecipes.filter(recipe => recipe.id !== recipeId));
-    showToast("Recipe removed from selected recipes", "error");
-  };
-
-  const clearSelectedRecipes = () => {
-    setSelectedRecipes([]);
-    showToast("Selected recipes cleared", "error");
   };
 
   // Add these new methods for selected recipes

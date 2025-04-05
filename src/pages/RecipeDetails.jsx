@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecipes } from "../context/RecipeContext";
+import "../styles/RecipeDetails.css"; // Create this CSS file
 
 function RecipeDetails() {
   const { id } = useParams();
@@ -11,86 +12,60 @@ function RecipeDetails() {
     error, 
     savedRecipes,
     toggleSaveRecipe,
-    addToShoppingList 
+    addToShoppingList,
+    addToSelectedRecipes
   } = useRecipes();
   
   const [recipe, setRecipe] = useState(null);
   const [activeTab, setActiveTab] = useState("ingredients");
 
-  useEffect(() => {
-    const loadRecipeDetails = async () => {
+  // Use useCallback to prevent unnecessary function recreations
+  const loadRecipeDetails = useCallback(async () => {
+    try {
       const data = await fetchRecipeById(id);
       if (data) {
         setRecipe(data);
       }
-    };
-
-    loadRecipeDetails();
+    } catch (err) {
+      console.error("Error loading recipe:", err);
+    }
   }, [id, fetchRecipeById]);
 
-  const isRecipeSaved = () => {
-    return savedRecipes.some(savedRecipe => savedRecipe.id === parseInt(id));
-  };
+  useEffect(() => {
+    loadRecipeDetails();
+  }, [loadRecipeDetails]);
 
-  const handleAddToShoppingList = () => {
+  const isRecipeSaved = useCallback(() => {
+    return savedRecipes.some(savedRecipe => savedRecipe.id === parseInt(id));
+  }, [savedRecipes, id]);
+
+  const handleAddToShoppingList = useCallback(() => {
     if (recipe && recipe.extendedIngredients) {
       addToShoppingList(recipe.extendedIngredients);
     }
-  };
+  }, [recipe, addToShoppingList]);
 
-  const renderNutrients = () => {
-    if (!recipe.nutrition || !recipe.nutrition.nutrients) return null;
-    
-    const keyNutrients = [
-      { name: "Calories", unit: "kcal" },
-      { name: "Fat", unit: "g" },
-      { name: "Carbohydrates", unit: "g" },
-      { name: "Protein", unit: "g" },
-      { name: "Fiber", unit: "g" },
-      { name: "Sugar", unit: "g" },
-    ];
-    
-    return keyNutrients.map(item => {
-      const nutrient = recipe.nutrition.nutrients.find(
-        n => n.name.toLowerCase() === item.name.toLowerCase()
-      );
-      
-      if (!nutrient) return null;
-      
-      return (
-        <div key={item.name} className="nutrient-item">
-          <span className="nutrient-name">{item.name}</span>
-          <div className="nutrient-bar-container">
-            <div 
-              className="nutrient-bar" 
-              style={{ width: `${Math.min(100, (nutrient.amount / nutrient.percentOfDailyNeeds) * 100)}%` }}
-            ></div>
-          </div>
-          <span className="nutrient-value">
-            {Math.round(nutrient.amount)} {nutrient.unit}
-          </span>
-        </div>
-      );
-    });
-  };
+  const handleAddToMealPlan = useCallback(() => {
+    if (recipe) {
+      addToSelectedRecipes(recipe);
+    }
+  }, [recipe, addToSelectedRecipes]);
 
   if (isLoading) {
     return (
-      <div className="container loading-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading recipe details...</p>
-        </div>
+      <div className="recipe-details-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading recipe details...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container error-container">
+      <div className="recipe-details-error">
         <div className="error-message">
           <i className="fas fa-exclamation-circle"></i> {error}
-          <button className="btn btn-primary" onClick={() => navigate(-1)}>
+          <button className="btn-primary" onClick={() => navigate(-1)}>
             Go Back
           </button>
         </div>
@@ -111,7 +86,7 @@ function RecipeDetails() {
           </button>
           <h1>{recipe.title}</h1>
           
-          <div className="recipe-meta-details">
+          <div className="recipe-meta">
             <div className="recipe-meta-item">
               <i className="far fa-clock"></i>
               <span>{recipe.readyInMinutes} min</span>
@@ -149,11 +124,18 @@ function RecipeDetails() {
             >
               <i className="fas fa-shopping-basket"></i> Add to Shopping List
             </button>
+            
+            <button 
+              className="btn btn-secondary"
+              onClick={handleAddToMealPlan}
+            >
+              <i className="fas fa-list"></i> Add to Meal Plan
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="container recipe-details-content">
+      <div className="container recipe-content">
         <div className="recipe-tabs">
           <button 
             className={`tab-button ${activeTab === 'ingredients' ? 'active' : ''}`}
@@ -181,34 +163,33 @@ function RecipeDetails() {
               <h2>Ingredients</h2>
               <p className="servings-text">For {recipe.servings} servings</p>
               
-              <ul className="ingredients-list">
+              <div className="ingredients-grid">
                 {recipe.extendedIngredients?.map((ingredient, index) => (
-                  <li key={index} className="ingredient-item">
-                    <div className="ingredient-image-container">
+                  <div key={index} className="ingredient-card">
+                    <div className="ingredient-image">
                       <img 
                         src={`https://spoonacular.com/cdn/ingredients_100x100/${ingredient.image}`} 
                         alt={ingredient.name}
-                        className="ingredient-image"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = '/src/assets/ingredient-placeholder.jpg';
+                          e.target.src = '/placeholder.jpg';
                         }}
                       />
                     </div>
-                    <div className="ingredient-details">
-                      <span className="ingredient-name">{ingredient.originalName}</span>
-                      <span className="ingredient-amount">{ingredient.amount} {ingredient.unit}</span>
+                    <div className="ingredient-info">
+                      <p className="ingredient-name">{ingredient.originalName}</p>
+                      <p className="ingredient-amount">{ingredient.amount} {ingredient.unit}</p>
                     </div>
                     <button 
-                      className="btn-icon add-to-list-btn"
+                      className="add-ingredient-btn"
                       onClick={() => addToShoppingList([ingredient])}
                       title="Add to shopping list"
                     >
                       <i className="fas fa-plus"></i>
                     </button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
 
@@ -217,10 +198,10 @@ function RecipeDetails() {
               <h2>Instructions</h2>
               
               {recipe.analyzedInstructions && recipe.analyzedInstructions.length > 0 ? (
-                <ol className="instructions-list">
+                <div className="instructions-list">
                   {recipe.analyzedInstructions[0].steps.map(step => (
-                    <li key={step.number} className="instruction-step">
-                      <span className="step-number">{step.number}</span>
+                    <div key={step.number} className="instruction-step">
+                      <div className="step-number">{step.number}</div>
                       <div className="step-content">
                         <p>{step.step}</p>
                         {step.ingredients && step.ingredients.length > 0 && (
@@ -236,9 +217,9 @@ function RecipeDetails() {
                           </div>
                         )}
                       </div>
-                    </li>
+                    </div>
                   ))}
-                </ol>
+                </div>
               ) : (
                 <div className="instructions-text">
                   {recipe.instructions ? (
@@ -264,14 +245,28 @@ function RecipeDetails() {
               <h2>Nutrition Information</h2>
               <p className="nutrition-per-serving">Per serving</p>
               
-              <div className="nutrition-chart">
-                {renderNutrients()}
-              </div>
-              
-              <div className="nutrition-summary">
-                <h3>Summary</h3>
-                <p dangerouslySetInnerHTML={{ __html: recipe.summary }}></p>
-              </div>
+              {recipe.nutrition && recipe.nutrition.nutrients && (
+                <div className="nutrition-grid">
+                  {recipe.nutrition.nutrients
+                    .filter(nutrient => 
+                      ['Calories', 'Fat', 'Carbohydrates', 'Protein', 'Fiber', 'Sugar'].includes(nutrient.name))
+                    .map(nutrient => (
+                      <div key={nutrient.name} className="nutrition-item">
+                        <div className="nutrient-name">{nutrient.name}</div>
+                        <div className="nutrient-bar-container">
+                          <div 
+                            className="nutrient-bar" 
+                            style={{ width: `${Math.min(100, nutrient.percentOfDailyNeeds)}%` }}
+                          ></div>
+                        </div>
+                        <div className="nutrient-value">
+                          {Math.round(nutrient.amount)} {nutrient.unit}
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
               
               {recipe.diets && recipe.diets.length > 0 && (
                 <div className="diet-tags">
