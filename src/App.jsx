@@ -1,3 +1,5 @@
+// Update your App.jsx to include the new route
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
@@ -5,10 +7,12 @@ import Home from "./pages/Home";
 import RecipeDetails from "./pages/RecipeDetails";
 import SavedRecipes from "./pages/SavedRecipes";
 import ShoppingList from "./pages/ShoppingList";
+import ShoppingPage from "./pages/ShoppingPage"; // Add this import
 import Orders from "./pages/Orders";
 import AddRecipe from "./pages/AddRecipe";
 import Footer from "./components/Footer";
 import { RecipeProvider } from "./context/RecipeContext";
+import { ShoppingProvider } from "./context/ShoppingContext"; // Add this import
 import ScrollToTop from "./components/ScrollToTop";
 import SelectedRecipesModal from "./components/SelectedRecipesModal";
 import "./App.css";
@@ -66,30 +70,31 @@ function App() {
 
   return (
     <RecipeProvider>
-      <Router>
-        <ScrollToTop />
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />\
-            <Route path="/login" element={<Login />}/>
-            <Route path="/admin" element={<AddUser/>}/>
-            <Route element={<PrivateRoute />}>
-            <Route path="/userdashboard" element={<UserDashboard/>}/>
-            <Route path="/vendordashboard" element={<VendorDashboard/>}/>
-            </Route>
-            <Route path="/saved-recipes" element={<PrivateRoute><SavedRecipes /></PrivateRoute>} />
+      <ShoppingProvider> {/* Wrap with ShoppingProvider */}
+        <Router>
+          <ScrollToTop />
+          <Header />
+          <main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />}/>
+              <Route path="/admin" element={<AddUser/>}/>
+              <Route element={<PrivateRoute />}>
+                <Route path="/userdashboard" element={<UserDashboard/>}/>
+                <Route path="/vendordashboard" element={<VendorDashboard/>}/>
+              </Route>
+              <Route path="/saved-recipes" element={<PrivateRoute><SavedRecipes /></PrivateRoute>} />
               <Route path="/add-recipe" element={<PrivateRoute><AddRecipe /></PrivateRoute>} />
-            <Route path="/recipe/:id" element={<RecipeDetails />} />
-           
-            <Route path="/shopping-list" element={<ShoppingList />} />
-            <Route path="/orders" element={<Orders />} />
-         
-          </Routes>
-        </main>
-        <SelectedRecipesModal />
-        <Footer />
-      </Router>
+              <Route path="/recipe/:id" element={<RecipeDetails />} />
+              <Route path="/shopping-list" element={<ShoppingList />} />
+              <Route path="/shopping" element={<ShoppingPage />} /> {/* Add this line */}
+              <Route path="/orders" element={<Orders />} />
+            </Routes>
+          </main>
+          <SelectedRecipesModal />
+          <Footer />
+        </Router>
+      </ShoppingProvider>
     </RecipeProvider>
   );
 }

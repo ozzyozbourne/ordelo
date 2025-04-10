@@ -1,3 +1,5 @@
+// Update your Header.jsx to add the Shopping link
+
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -37,17 +39,23 @@ function Header() {
           <Link to="/" className={location.pathname === "/" ? "active" : ""}>
             <i className="fas fa-home"></i> Recipes
           </Link>
-          <Link 
+          {/* <Link 
             to="/saved-recipes" 
             className={location.pathname === "/saved-recipes" ? "active" : ""}
           >
             <i className="fas fa-heart"></i> Saved
-          </Link>
+          </Link> */}
           <Link 
             to="/shopping-list" 
             className={location.pathname === "/shopping-list" ? "active" : ""}
           >
             <i className="fas fa-shopping-basket"></i> Shopping List
+          </Link>
+          <Link 
+            to="/shopping" 
+            className={location.pathname === "/shopping" ? "active" : ""}
+          >
+            <i className="fas fa-store"></i> Shopping
           </Link>
           <Link 
             to="/orders" 
@@ -77,11 +85,14 @@ function Header() {
           <Link to="/">
             <i className="fas fa-home"></i> Recipes
           </Link>
-          <Link to="/saved-recipes">
+          {/* <Link to="/saved-recipes">
             <i className="fas fa-heart"></i> Saved Recipes
-          </Link>
+          </Link> */}
           <Link to="/shopping-list">
             <i className="fas fa-shopping-basket"></i> Shopping List
+          </Link>
+          <Link to="/shopping">
+            <i className="fas fa-store"></i> Shopping
           </Link>
           <Link to="/orders">
             <i className="fas fa-box"></i> Orders

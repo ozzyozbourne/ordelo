@@ -1,3 +1,5 @@
+// src/pages/ShoppingList.jsx
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
 import { Link } from "react-router-dom";
@@ -376,6 +378,16 @@ function ShoppingList() {
               </tbody>
             ))}
           </table>
+        </div>
+      )}
+      
+      {/* Shop Now section - new addition */}
+      {shoppingList.length > 0 && (
+        <div className="shop-now-container">
+          <p>Ready to purchase these ingredients? Find the best stores near you!</p>
+          <Link to="/shopping" className="btn btn-primary shop-now-btn">
+            <i className="fas fa-store"></i> Shop Now
+          </Link>
         </div>
       )}
     </div>

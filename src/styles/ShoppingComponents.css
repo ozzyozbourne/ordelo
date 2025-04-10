@@ -1,0 +1,445 @@
+/* src/styles/ShoppingComponents.css */
+
+/* Ingredients Panel */
+.selected-ingredients-panel {
+    height: 100%;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+  
+  .panel-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .panel-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+  
+  .ingredient-count, .cart-count {
+    background-color: white;
+    color: #5ECC62;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  
+  .cart-panel .cart-count {
+    color: #FF6B6B;
+  }
+  
+  .ingredients-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  
+  .ingredient-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .ingredient-item:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .ingredient-item.selected {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .ingredient-checkbox {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+  }
+  
+  .ingredient-checkbox input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .ingredient-item.selected .checkmark {
+    background-color: white;
+  }
+  
+  .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid #5ECC62;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  
+  .ingredient-item.selected .checkmark:after {
+    display: block;
+  }
+  
+  .ingredient-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ingredient-name {
+    font-weight: 500;
+  }
+  
+  .ingredient-amount {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+  
+  /* Vendor Discovery */
+  .vendor-discovery {
+    width: 100%;
+  }
+  
+  .page-title {
+    margin-bottom: 1.5rem;
+    color: #333333;
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+  
+  .page-title i {
+    margin-right: 0.5rem;
+    color: #5ECC62;
+  }
+  
+  .search-location-container {
+    margin-bottom: 2rem;
+  }
+  
+  .search-container {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #E0E0E0;
+    font-size: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .search-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #5ECC62;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  
+  .location-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .location-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .location-info i {
+    color: #5ECC62;
+  }
+  
+  .radius-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .radius-selector select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #E0E0E0;
+  }
+  
+  /* Vendor Cards as Storefronts */
+  .vendors-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+  }
+  
+  .vendor-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .vendor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .vendor-header {
+    background: linear-gradient(135deg, #f8f8f8, #e8e8e8);
+    padding: 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .vendor-name {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.4rem;
+    color: #333333;
+  }
+  
+  .vendor-meta {
+    display: flex;
+    gap: 1rem;
+    color: #666666;
+    font-size: 0.9rem;
+  }
+  
+  .vendor-meta i {
+    color: #5ECC62;
+  }
+  
+  .vendor-inventory {
+    padding: 1.5rem;
+    flex: 1;
+  }
+  
+  .inventory-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .match-percentage {
+    margin-bottom: 0.5rem;
+  }
+  
+  .progress-bar {
+    height: 6px;
+    background-color: #E0E0E0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background-color: #5ECC62;
+    border-radius: 3px;
+  }
+  
+  .match-text {
+    font-size: 0.9rem;
+    color: #666666;
+  }
+  
+  .price-info {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #333333;
+  }
+  
+  .vendor-inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  
+  .inventory-item {
+    background-color: #f8f8f8;
+    padding: 0.75rem;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+  
+  .vendor-actions {
+    padding: 1.5rem;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .add-to-cart-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: #5ECC62;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 8px rgba(94, 204, 98, 0.2);
+    transition: all 0.2s ease;
+  }
+  
+  .add-to-cart-btn:hover {
+    background-color: #4ba752;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(94, 204, 98, 0.3);
+  }
+  
+  /* Cart Panel */
+  .cart-panel {
+    height: 100%;
+    color: white;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .carts-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  
+  .cart-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .cart-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  
+  .remove-cart-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .remove-cart-btn:hover {
+    color: white;
+  }
+  
+  .cart-items-summary {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .cart-total {
+    font-weight: 600;
+  }
+  
+  .checkout-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: white;
+    color: #FF6B6B;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .checkout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+  }
+  
+  .empty-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    text-align: center;
+    padding: 2rem;
+  }
+  
+  .empty-cart i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  .empty-cart p {
+    margin: 0.25rem 0;
+    opacity: 0.8;
+  }
+  
+  .no-vendors {
+    text-align: center;
+    padding: 3rem 1rem;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .no-vendors i {
+    font-size: 3rem;
+    color: #CCCCCC;
+    margin-bottom: 1rem;
+  }
