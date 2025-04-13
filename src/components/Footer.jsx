@@ -33,6 +33,7 @@ function Footer() {
               <li><Link to="/saved-recipes">Saved Recipes</Link></li>
               <li><Link to="/shopping-list">Shopping List</Link></li>
               <li><Link to="/orders">Orders</Link></li>
+              <ThemeToggle /> 
             </ul>
           </div>
 
@@ -53,7 +54,6 @@ function Footer() {
           <div className="copyright">
             <p>&copy; {new Date().getFullYear()} Ordelo. All rights reserved.</p>
           </div>
-          <ThemeToggle /> 
         </div>
       </div>
     </footer>

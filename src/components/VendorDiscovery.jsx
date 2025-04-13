@@ -1,12 +1,26 @@
-// src/components/VendorDiscovery.jsx
+// src/components/VendorDiscovery.jsx (fixed version)
 
 import { useState } from "react";
 import { useShoppingContext } from "../context/ShoppingContext";
 import VendorCard from "./VendorCard";
 
 function VendorDiscovery() {
-  const { vendors, userLocation, setRadius } = useShoppingContext();
+  const { 
+    vendors, 
+    userLocation, 
+    setRadius,
+    showCartPanel, 
+    setShowCartPanel,
+    showIngredientsPanel,
+    setShowIngredientsPanel,
+    isMobile,
+    carts // Add this to access carts data
+  } = useShoppingContext();
+  
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Calculate this inside VendorDiscovery component
+  const hasActiveCarts = Object.keys(carts).length > 0;
   
   // Filter vendors based on search term
   const filteredVendors = vendors.filter(vendor => 
@@ -18,10 +32,76 @@ function VendorDiscovery() {
   
   return (
     <div className="vendor-discovery">
-      <h1 className="page-title">
+      {/* Desktop-only toggle controls - hidden on mobile */}
+      {!isMobile && (
+        <div className="vendor-panel-toggles" style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <button 
+            className="toggle-btn left-toggle"
+            onClick={() => setShowIngredientsPanel(!showIngredientsPanel)}
+            style={{ background: "transparent", border: "none", color: "var(--primary-color)", fontSize: "1rem", cursor: "pointer" }}
+          >
+            Ingredients: {showIngredientsPanel ? "Close" : "Open"}
+          </button>
+          <button 
+            className="toggle-btn right-toggle"
+            onClick={() => setShowCartPanel(!showCartPanel)}
+            style={{ background: "transparent", border: "none", color: "var(--primary-color)", fontSize: "1rem", cursor: "pointer" }}
+          >
+            Cart Panel: {showCartPanel ? "Close" : "Open"}
+          </button>
+        </div>
+      )}
+
+      {/* Mobile-only toggle buttons */}
+      {isMobile && (
+        <div className="mobile-panel-toggles" style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <button 
+            className="mobile-toggle-btn"
+            onClick={() => setShowIngredientsPanel(!showIngredientsPanel)}
+            style={{ 
+              background: "var(--primary-color)", 
+              border: "none", 
+              color: "white", 
+              padding: "8px 12px", 
+              borderRadius: "4px",
+              fontSize: "0.9rem", 
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px"
+            }}
+          >
+            <i className="fas fa-list"></i>
+            Ingredients
+          </button>
+          {hasActiveCarts && (
+            <button 
+              className="mobile-toggle-btn"
+              onClick={() => setShowCartPanel(!showCartPanel)}
+              style={{ 
+                background: "var(--accent-color)", 
+                border: "none", 
+                color: "white", 
+                padding: "8px 12px", 
+                borderRadius: "4px",
+                fontSize: "0.9rem", 
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "5px"
+              }}
+            >
+              <i className="fas fa-shopping-cart"></i>
+              Cart
+            </button>
+          )}
+        </div>
+      )}
+
+      <h1 className="shopping-page-title">
         <i className="fas fa-store"></i> Shop Ingredients
       </h1>
-      
+
       <div className="search-location-container">
         <div className="search-container">
           <input

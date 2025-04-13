@@ -180,7 +180,6 @@ a:hover {
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
-  margin-right: auto; /* Add this to push to the right in footer */
 }
 
 .theme-toggle:hover {
@@ -256,5 +255,38 @@ html:not(.dark-theme) .theme-toggle .sun-icon {
   
   .container {
     padding: 0 var(--space-sm);
+  }
+}
+
+/* Global responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    padding: 0 var(--space-sm);
+  }
+  
+  .btn {
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-0);
+  }
+  
+  .section {
+    padding: var(--space-md) 0;
+  }
+  
+  .section-title {
+    font-size: var(--font-size-3);
+    margin-bottom: var(--space-md);
+    padding-left: var(--space-xs);
+  }
+  
+  /* Maintain white space */
+  p {
+    margin-bottom: var(--space-sm);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-sm);
   }
 }

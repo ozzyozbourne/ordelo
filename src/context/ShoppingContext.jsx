@@ -1,6 +1,5 @@
-// src/context/ShoppingContext.jsx
-
-import { createContext, useContext, useState, useEffect } from "react";
+// Modified ShoppingContext.jsx with outside click handling
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useRecipes } from "./RecipeContext";
 
 // Create context
@@ -24,6 +23,10 @@ export const ShoppingProvider = ({ children }) => {
   // State for managing cart panel visibility
   const [showCartPanel, setShowCartPanel] = useState(true);
   
+  // References to the panels for outside click detection
+  const ingredientsPanelRef = useRef(null);
+  const cartPanelRef = useRef(null);
+  
   // State for tracking selected ingredients
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   
@@ -40,6 +43,56 @@ export const ShoppingProvider = ({ children }) => {
     address: "",
     radius: 10 // Default radius in miles
   });
+  
+  // State to track if we're on mobile
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Check for mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    // Add listener for window resize
+    window.addEventListener('resize', checkMobile);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Handle click outside panels (mobile only)
+  useEffect(() => {
+    if (!isMobile) return; // Only apply on mobile
+    
+    const handleClickOutside = (event) => {
+      // Check if click is outside ingredients panel
+      if (showIngredientsPanel && 
+          ingredientsPanelRef.current && 
+          !ingredientsPanelRef.current.contains(event.target)) {
+        setShowIngredientsPanel(false);
+      }
+      
+      // Check if click is outside cart panel
+      if (showCartPanel && 
+          cartPanelRef.current && 
+          !cartPanelRef.current.contains(event.target)) {
+        setShowCartPanel(false);
+      }
+    };
+    
+    // Add click listener to document
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showIngredientsPanel, showCartPanel, isMobile]);
   
   // Load selected ingredients from shopping list
   useEffect(() => {
@@ -242,7 +295,10 @@ export const ShoppingProvider = ({ children }) => {
     removeCart,
     userLocation,
     getUserLocation,
-    setRadius
+    setRadius,
+    isMobile,
+    ingredientsPanelRef,
+    cartPanelRef
   };
   
   return (

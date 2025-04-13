@@ -1,4 +1,4 @@
-// src/pages/ShoppingPage.jsx
+// src/pages/ShoppingPage.jsx (updated)
 
 import { useEffect } from "react";
 import { useShoppingContext } from "../context/ShoppingContext";
@@ -6,13 +6,15 @@ import SelectedIngredientsPanel from "../components/SelectedIngredientsPanel";
 import VendorDiscovery from "../components/VendorDiscovery";
 import CartPanel from "../components/CartPanel";
 
-
 function ShoppingPage() {
   const { 
     showIngredientsPanel,
     showCartPanel,
     getUserLocation,
-    carts
+    carts,
+    isMobile,
+    ingredientsPanelRef,
+    cartPanelRef
   } = useShoppingContext();
 
   // Initialize the page - get user location and fetch vendors
@@ -28,7 +30,10 @@ function ShoppingPage() {
     <div className="shopping-page">
       <div className={`shopping-layout ${showIngredientsPanel ? 'show-ingredients' : ''} ${hasActiveCarts && showCartPanel ? 'show-cart' : ''}`}>
         {/* Left Column - Ingredients */}
-        <div className={`ingredients-panel-container ${showIngredientsPanel ? 'expanded' : ''}`}>
+        <div 
+          ref={ingredientsPanelRef}
+          className={`ingredients-panel-container ${showIngredientsPanel ? 'expanded' : ''}`}
+        >
           <SelectedIngredientsPanel />
         </div>
 
@@ -39,7 +44,10 @@ function ShoppingPage() {
 
         {/* Right Column - Cart (only shown if there are carts) */}
         {hasActiveCarts && (
-          <div className={`cart-panel-container ${showCartPanel ? 'expanded' : ''}`}>
+          <div 
+            ref={cartPanelRef}
+            className={`cart-panel-container ${showCartPanel ? 'expanded' : ''}`}
+          >
             <CartPanel />
           </div>
         )}

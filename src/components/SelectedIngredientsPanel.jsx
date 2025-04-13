@@ -12,12 +12,8 @@ function SelectedIngredientsPanel() {
   return (
     <div className="selected-ingredients-panel">
       <div className="panel-header sticky-header">
-        <h2>Selected Ingredients</h2>
+        <h2>Ingredients</h2>
         <span className="ingredient-count">{selectedIngredients.filter(i => i.selected).length}</span>
-      </div>
-      
-      <div className="toggle-button" onClick={() => setShowIngredientsPanel(!showIngredientsPanel)}>
-        <i className={`fas fa-chevron-${showIngredientsPanel ? 'left' : 'right'}`}></i>
       </div>
       
       <div className="ingredients-list scrollable-content">

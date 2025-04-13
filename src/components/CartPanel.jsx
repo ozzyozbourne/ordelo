@@ -19,12 +19,6 @@ function CartPanel() {
         <h2>Your Carts</h2>
         <span className="cart-count">{cartCount}</span>
       </div>
-      <div className="toggle-button" onClick={() => setShowCartPanel(!showCartPanel)}>
-            <i className={`fas fa-chevron-${showCartPanel ? 'right' : 'left'}`}></i>
-     </div>
-      <div className="toggle-button" onClick={() => setShowCartPanel(!showCartPanel)}>
-        <i className={`fas fa-chevron-${showCartPanel ? 'right' : 'left'}`}></i>
-      </div>
       
       <div className="carts-container">
         {cartCount > 0 ? (

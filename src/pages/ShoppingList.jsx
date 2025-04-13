@@ -1,5 +1,3 @@
-// src/pages/ShoppingList.jsx
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
 import { Link } from "react-router-dom";
@@ -193,8 +191,6 @@ function ShoppingList() {
   }, [selectedItems.length, filteredItems]);
 
   const handleQuantityChange = useCallback((item, change) => {
-    // This is a simplified version since we don't have updateShoppingListItem yet
-    // We'll create a new item with updated amount and replace the old one
     const newAmount = Math.max(0, (item.amount || 1) + change);
     
     removeFromShoppingList(item.id);
@@ -286,101 +282,177 @@ function ShoppingList() {
           </button>
         </div>
       ) : (
-        <div className="shopping-list-table-container">
-          <table className="shopping-list-table">
-            <thead>
-              <tr>
-                <th className="item-select-col"></th>
-                <th className="item-image-col"></th>
-                <th className="item-name-col">Item</th>
-                <th className="item-quantity-col">Quantity</th>
-                <th className="item-actions-col"></th>
-              </tr>
-            </thead>
-            
-            {Object.entries(groupedItems).map(([category, items]) => (
-              <tbody key={`category-${category}`} className="category-group">
-                <tr className="category-header">
-                  <td colSpan="5">{category}</td>
-                </tr>
-                
-                {items.map((item, itemIndex) => (
-                  <tr 
-                    key={item.uniqueId} 
-                    className={`item-row ${itemIndex % 2 === 0 ? 'even' : 'odd'} ${selectedItems.includes(item.uniqueId) ? 'selected' : ''}`}
-                  >
-                    <td className="item-select-col">
-                      <div className="item-checkbox">
-                        <input 
-                          type="checkbox" 
-                          id={`item-${item.uniqueId}`}
-                          checked={selectedItems.includes(item.uniqueId)}
-                          onChange={() => handleCheckItem(item.uniqueId)}
-                        />
-                        <label htmlFor={`item-${item.uniqueId}`}></label>
-                      </div>
-                    </td>
+        <div className="shopping-list-container">
+          {/* Two-Column Layout */}
+          <div className="shopping-list-columns">
+            <div className="shopping-column left-column">
+              {/* Left Column Categories */}
+              {Object.entries(groupedItems)
+                .filter((_, index) => index % 2 === 0) // Even indices for left column
+                .map(([category, items]) => (
+                  <div className="category-group" key={`category-${category}`}>
+                    <div className="category-header">{category}</div>
                     
-                    <td className="item-image-col">
-                      <div className="item-image-container">
-                        <img 
-                          src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
-                          alt={item.name}
-                          className="item-image"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder.jpg';
-                          }}
-                        />
-                      </div>
-                    </td>
-                    
-                    <td className="item-name-col">
-                      <span className="item-name">{item.name}</span>
-                      {item.note && <span className="item-note">{item.note}</span>}
-                    </td>
-                    
-                    <td className="item-quantity-col">
-                      <div className="quantity-control">
-                        <button 
-                          className="quantity-btn decrease"
-                          onClick={() => handleQuantityChange(item, -1)}
-                          disabled={item.amount <= 1}
-                        >
-                          <i className="fas fa-minus"></i>
-                        </button>
-                        
-                        <span className="quantity-display">
-                          {item.amount ? item.amount.toFixed(item.amount % 1 === 0 ? 0 : 2) : 1} {item.unit || ''}
-                        </span>
-                        
-                        <button 
-                          className="quantity-btn increase"
-                          onClick={() => handleQuantityChange(item, 1)}
-                        >
-                          <i className="fas fa-plus"></i>
-                        </button>
-                      </div>
-                    </td>
-                    
-                    <td className="item-actions-col">
-                      <button 
-                        className="remove-item"
-                        onClick={() => handleRemoveItem(item.id)}
-                        aria-label={`Remove ${item.name}`}
+                    {items.map((item) => (
+                      <div 
+                        key={item.uniqueId} 
+                        className={`item-row ${selectedItems.includes(item.uniqueId) ? 'selected' : ''}`}
                       >
-                        <i className="fas fa-times"></i>
-                      </button>
-                    </td>
-                  </tr>
+                        <div className="item-select-col">
+                          <div className="item-checkbox">
+                            <input 
+                              type="checkbox" 
+                              id={`item-${item.uniqueId}`}
+                              checked={selectedItems.includes(item.uniqueId)}
+                              onChange={() => handleCheckItem(item.uniqueId)}
+                            />
+                            <label htmlFor={`item-${item.uniqueId}`}></label>
+                          </div>
+                        </div>
+                        
+                        <div className="item-image-col">
+                          <div className="item-image-container">
+                            <img 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              alt={item.name}
+                              className="item-image"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder.jpg';
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="item-name-col">
+                          <span className="item-name">{item.name}</span>
+                          {item.note && <span className="item-note">{item.note}</span>}
+                        </div>
+                        
+                        <div className="item-quantity-col">
+                          <div className="quantity-control">
+                            <button 
+                              className="quantity-btn decrease"
+                              onClick={() => handleQuantityChange(item, -1)}
+                              disabled={item.amount <= 1}
+                            >
+                              <i className="fas fa-minus"></i>
+                            </button>
+                            
+                            <span className="quantity-display">
+                              {item.amount ? item.amount.toFixed(item.amount % 1 === 0 ? 0 : 2) : 1} {item.unit || ''}
+                            </span>
+                            
+                            <button 
+                              className="quantity-btn increase"
+                              onClick={() => handleQuantityChange(item, 1)}
+                            >
+                              <i className="fas fa-plus"></i>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="item-actions-col">
+                          <button 
+                            className="remove-item"
+                            onClick={() => handleRemoveItem(item.id)}
+                            aria-label={`Remove ${item.name}`}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ))}
-              </tbody>
-            ))}
-          </table>
+            </div>
+            
+            <div className="shopping-column right-column">
+              {/* Right Column Categories */}
+              {Object.entries(groupedItems)
+                .filter((_, index) => index % 2 === 1) // Odd indices for right column
+                .map(([category, items]) => (
+                  <div className="category-group" key={`category-${category}`}>
+                    <div className="category-header">{category}</div>
+                    
+                    {items.map((item) => (
+                      <div 
+                        key={item.uniqueId} 
+                        className={`item-row ${selectedItems.includes(item.uniqueId) ? 'selected' : ''}`}
+                      >
+                        <div className="item-select-col">
+                          <div className="item-checkbox">
+                            <input 
+                              type="checkbox" 
+                              id={`item-${item.uniqueId}`}
+                              checked={selectedItems.includes(item.uniqueId)}
+                              onChange={() => handleCheckItem(item.uniqueId)}
+                            />
+                            <label htmlFor={`item-${item.uniqueId}`}></label>
+                          </div>
+                        </div>
+                        
+                        <div className="item-image-col">
+                          <div className="item-image-container">
+                            <img 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              alt={item.name}
+                              className="item-image"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder.jpg';
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="item-name-col">
+                          <span className="item-name">{item.name}</span>
+                          {item.note && <span className="item-note">{item.note}</span>}
+                        </div>
+                        
+                        <div className="item-quantity-col">
+                          <div className="quantity-control">
+                            <button 
+                              className="quantity-btn decrease"
+                              onClick={() => handleQuantityChange(item, -1)}
+                              disabled={item.amount <= 1}
+                            >
+                              <i className="fas fa-minus"></i>
+                            </button>
+                            
+                            <span className="quantity-display">
+                              {item.amount ? item.amount.toFixed(item.amount % 1 === 0 ? 0 : 2) : 1} {item.unit || ''}
+                            </span>
+                            
+                            <button 
+                              className="quantity-btn increase"
+                              onClick={() => handleQuantityChange(item, 1)}
+                            >
+                              <i className="fas fa-plus"></i>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="item-actions-col">
+                          <button 
+                            className="remove-item"
+                            onClick={() => handleRemoveItem(item.id)}
+                            aria-label={`Remove ${item.name}`}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+            </div>
+          </div>
         </div>
       )}
       
-      {/* Shop Now section - new addition */}
+      {/* Shop Now section */}
       {shoppingList.length > 0 && (
         <div className="shop-now-container">
           <p>Ready to purchase these ingredients? Find the best stores near you!</p>

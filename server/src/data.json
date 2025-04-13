@@ -1,0 +1,48 @@
+[
+  {
+    "user_name": "srk",
+    "user_address": "nj",
+    "email": "srk@gmail.com",
+    "password": "$2b$12$W1aNunA3oS2CRAnPJHTKPe29yAnm9o2r6nb2o0u10lJDe3CbUsljO",
+    "saved_recipe": "dhokla",
+    "role": "user",
+    "created_at": "2025-03-21T04:11"
+  },
+  {
+    "user_name": "javed",
+    "user_address": "nj",
+    "email": "javed@gmail.com",
+    "password": "$2b$12$TCmPpOj85ibJ5AV3SoSm5uYhN4Fech7M73kfvyAIGfGcVW9bxRSwG",
+    "saved_recipe": "dosa",
+    "role": "vendor",
+    "created_at": "2025-03-21T04:21"
+  },
+  {
+    "user_name": "osaid",
+    "user_address": "il",
+    "email": "osaid@gmail.com",
+    "password": "$2b$12$3PYh10Rt6KsVP8Ixj/9BqOeYPcKUMiDE9qMYMK87eMJZheaSRA4by",
+    "saved_recipe": "dosa",
+    "role": "vendor",
+    "created_at": "2025-03-21T04:21"
+  },
+  {
+    "user_name": "zoha",
+    "user_address": "ksa",
+    "email": "zoha@gmail.com",
+    "password": "$2b$12$TjhbGcvV3xK5/fBGS.ZQguxssYRTVEM8QHB54WIsoowBuP0X6.ujy",
+    "saved_recipe": "pizza",
+    "role": "user",
+    "created_at": "2025-03-21T04:23"
+  },
+  {
+    "user_id": "94503ba1-ab6c-4618-be29-0c4fdae2358bmR3u",
+    "user_name": "akif",
+    "user_address": "ny",
+    "email": "akif@gmail.com",
+    "password": "$2b$12$xBormzW5obbI2XHZIPkwYeVGhcTQFsHNsawEup.Dnh/x2EKzMAJj2",
+    "saved_recipe": [],
+    "role": "user",
+    "created_at": "2025-04-13T00:00:00Z"
+  }
+]
