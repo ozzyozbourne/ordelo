@@ -19,6 +19,7 @@
 *.dylib
 *.test
 *.out
+node_modules/
 
 ##############################
 ## Visual Studio Code
