@@ -1,0 +1,136 @@
+/* Page-specific styles */
+
+/* Recipe Details page */
+.recipe-details-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: var(--space-xl);
+  }
+  
+  .recipe-hero {
+    width: 100%;
+    height: auto;
+    min-height: 300px;
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: var(--space-2xl) var(--space-lg);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    margin-bottom: var(--space-lg);
+  }
+  
+  /* Shopping List page */
+  .shopping-list-page {
+    padding: var(--space-lg) var(--space-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .shopping-list-table-container {
+    overflow-x: auto;
+    background-color: var(--surface-1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    margin-top: var(--space-lg);
+  }
+  
+  /* Shopping page */
+  .shopping-page {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--surface-2);
+  }
+  
+  .shopping-layout {
+    display: grid;
+    grid-template-columns: 10px 1fr 10px;
+    min-height: 100vh;
+    transition: all var(--duration-fast) ease;
+  }
+  
+  /* Add Recipe page */
+  .add-recipe-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: var(--space-xl);
+  }
+  
+  .page-header {
+    background-color: var(--brand-primary);
+    color: white;
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-xl);
+  }
+  
+  .recipe-form {
+    background-color: var(--surface-1);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-2);
+  }
+  
+  /* Login page */
+  .Login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--surface-2);
+  }
+  
+  .login-box {
+    background-color: var(--surface-1);
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-3);
+    text-align: center;
+    width: 350px;
+    max-width: 100%;
+  }
+  
+  .login-box h1 {
+    color: var(--brand-primary);
+    font-size: var(--font-size-4);
+    margin-bottom: var(--space-lg);
+    font-weight: var(--font-weight-6);
+    background-image: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  
+  .login-box input {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    margin: var(--space-sm) 0;
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    font-size: var(--font-size-2);
+    transition: all var(--duration-fast) ease-in-out;
+  }
+  
+  .login-box input:focus {
+    border-color: var(--brand-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(94, 204, 98, 0.2);
+  }
+  
+  .login-box button {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    background-color: var(--brand-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-2);
+    cursor: pointer;
+    transition: all var(--duration-fast) ease-in-out;
+  }
+  
+  .login-box button:hover {
+    background-color: var(--brand-primary-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+  }

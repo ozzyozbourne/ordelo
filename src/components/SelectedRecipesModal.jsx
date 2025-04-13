@@ -68,16 +68,16 @@ function SelectedRecipesModal() {
       {isOpen && selectedRecipes.length > 0 && (
         <div className="modal-overlay selected-recipes-overlay">
           <div className="selected-recipes-modal">
-            <div className="modal-header">
-              <h3>Selected Recipes ({selectedRecipes.length})</h3>
-              <button 
-                className="close-btn"
-                onClick={() => setIsOpen(false)}
-                aria-label="Close"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
+          <div className="modal-header">
+            <h3 className="modal-header-text">Selected Recipes ({selectedRecipes.length})</h3>
+            <button 
+              className="close-btn"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
             
             <div className="selected-recipes-list">
               {selectedRecipes.map(recipe => (

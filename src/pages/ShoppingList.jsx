@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
 import { Link } from "react-router-dom";
-import "../styles/ShoppingList.css"; // Import the CSS only in this component
 
 // Define vague food categories for grouping
 const FOOD_CATEGORIES = {

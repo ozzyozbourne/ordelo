@@ -1,0 +1,108 @@
+/* Import Open Props */
+@import 'open-props/style';
+@import 'open-props/normalize';
+@import 'open-props/animations';
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap');
+
+/* Ordelo theme tokens */
+:root {
+  /* Color palette */
+  --primary-color: #5ECC62;
+  --primary-color-light: #7AD97E;
+  --primary-color-dark: #4AAC4E;
+  
+  --secondary-color: #00A896;
+  --secondary-color-light: #1FBFAD;
+  --secondary-color-dark: #008F83;
+  
+  --accent-color: #FF6B6B;
+  --accent-color-light: #FF8A8A;
+  --accent-color-dark: #E55C5C;
+  
+  /* Surface colors */
+  --surface-1: var(--gray-0);
+  --surface-2: var(--gray-1);
+  --surface-3: var(--gray-2);
+  --surface-4: var(--gray-3);
+  
+  /* Text colors */
+  --text-1: var(--gray-9);
+  --text-2: var(--gray-7);
+  --text-3: var(--gray-6);
+  
+  /* Shadows */
+  --shadow-color: var(--gray-8);
+  --shadow-strength: 2%;
+  
+  /* Radius */
+  --radius-sm: var(--radius-2);
+  --radius-md: var(--radius-3);
+  --radius-lg: var(--radius-4);
+  --radius-full: var(--radius-round);
+  
+  /* Typography */
+  --font-headings: 'Fraunces', serif;
+  :root {
+    --font-weight-5: 500;  /* Medium */
+    --font-weight-6: 600;  /* Semi-bold */
+    --font-weight-7: 700;  /* Bold */
+    --font-weight-8: 800;  /* Extra-bold */
+  }
+    
+  /* Custom spacing for the design */
+  --space-xxs: var(--size-1);
+  --space-xs: var(--size-2);
+  --space-sm: var(--size-3);
+  --space-md: var(--size-4);
+  --space-lg: var(--size-5);
+  --space-xl: var(--size-6);
+  --space-xxl: var(--size-8);
+  
+  /* Background gradient */
+  --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  
+  /* Component specific variables */
+  --header-height: 4rem;
+  --hero-padding: 6rem;
+  
+  /* Z-index levels */
+  --z-header: 50;
+  --z-modal: 1000;
+  --z-overlay: 200;
+  --z-toast: 400;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+
+
+/* Dark theme class for manual toggle */
+html.dark-theme {
+  --primary-color: #5ECC62;
+  --primary-color-light: #7AD97E;
+  --primary-color-dark: #4AAC4E;
+  
+  --surface-1: var(--gray-9);
+  --surface-2: var(--gray-8);
+  --surface-3: var(--gray-7);
+  --surface-4: var(--gray-6);
+  
+  --text-1: var(--gray-1);
+  --text-2: var(--gray-3);
+  --text-3: var(--gray-4);
+  
+  --shadow-color: var(--gray-12);
+  --shadow-strength: 10%;
+}
+
+/* Color-scheme aware */
+:root {
+  color-scheme: light dark;
+}
+/* Add light mode enforcement */
+html:not(.dark-theme) {
+    color-scheme: light; /* Add this */
+  }

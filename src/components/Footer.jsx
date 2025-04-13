@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from './ThemeToggle';
 
 function Footer() {
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-container">
+          {/* Your existing footer sections */}
           <div className="footer-section">
             <div className="footer-logo">Ordelo</div>
-            <p>Plan, Shop & Cook—All in One App. Explore endless recipes, build your shopping list instantly, and save on every order.</p>
             <div className="social-links">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <i className="fab fa-facebook-f"></i>
@@ -24,6 +25,7 @@ function Footer() {
             </div>
           </div>
 
+          {/* Your existing footer sections */}
           <div className="footer-section">
             <h3>Quick Links</h3>
             <ul className="footer-links">
@@ -34,16 +36,6 @@ function Footer() {
             </ul>
           </div>
 
-          <div className="footer-section">
-            <h3>Categories</h3>
-            <ul className="footer-links">
-              <li><a href="/#cuisine-italian">Italian</a></li>
-              <li><a href="/#cuisine-indian">Indian</a></li>
-              <li><a href="/#cuisine-mediterranean">Mediterranean</a></li>
-              <li><a href="/#cuisine-mexican">Mexican</a></li>
-              <li><a href="/#cuisine-asian">Asian</a></li>
-            </ul>
-          </div>
 
           <div className="footer-section">
             <h3>Help & Support</h3>
@@ -57,8 +49,11 @@ function Footer() {
           </div>
         </div>
 
-        <div className="copyright">
-          <p>&copy; {new Date().getFullYear()} Ordelo. All rights reserved.</p>
+        <div className="footer-bottom">
+          <div className="copyright">
+            <p>&copy; {new Date().getFullYear()} Ordelo. All rights reserved.</p>
+          </div>
+          <ThemeToggle /> 
         </div>
       </div>
     </footer>

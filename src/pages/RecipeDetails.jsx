@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecipes } from "../context/RecipeContext";
-import "../styles/RecipeDetails.css"; // Create this CSS file
+
 
 function RecipeDetails() {
   const { id } = useParams();

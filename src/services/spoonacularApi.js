@@ -47,7 +47,7 @@ initCacheCleanup();
 // Fetch random recipes with caching
 export const fetchRandomRecipes = async (options = {}) => {
   const params = {
-    number: options.number || 8,
+    number: options.number || 12,
     ...options
   };
   

@@ -232,50 +232,50 @@ function Home() {
             <div className="ingredients-grid">
               <div className="ingredient-card" onClick={() => handleSearch("chicken")}>
                 <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/chicken.jpg" alt="Chicken" className="ingredient-img" />
+                  <img src="/src/assets/ingredients/chicken.png" alt="Chicken" className="ingredient-img" />
                 </div>
                 <h3>Chicken</h3>
               </div>
               
-              <div className="ingredient-card" onClick={() => handleSearch("pasta")}>
+              {/* <div className="ingredient-card" onClick={() => handleSearch("pasta")}>
                 <div className="ingredient-img-container">
                   <img src="/src/assets/ingredients/pasta.jpg" alt="Pasta" className="ingredient-img" />
                 </div>
                 <h3>Pasta</h3>
-              </div>
+              </div> */}
               
               <div className="ingredient-card" onClick={() => handleSearch("vegetables")}>
                 <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/vegetables.jpg" alt="Vegetables" className="ingredient-img" />
+                  <img src="/src/assets/ingredients/vegetable.png" alt="Vegetables" className="ingredient-img" />
                 </div>
                 <h3>Vegetables</h3>
               </div>
               
               <div className="ingredient-card" onClick={() => handleSearch("seafood")}>
                 <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/seafood.jpg" alt="Seafood" className="ingredient-img" />
+                  <img src="/src/assets/ingredients/seafood.png" alt="Seafood" className="ingredient-img" />
                 </div>
                 <h3>Seafood</h3>
               </div>
               
               <div className="ingredient-card" onClick={() => handleSearch("beef")}>
                 <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/beef.jpg" alt="Beef" className="ingredient-img" />
+                  <img src="/src/assets/ingredients/beef.png" alt="Beef" className="ingredient-img" />
                 </div>
                 <h3>Beef</h3>
               </div>
               
-              <div className="ingredient-card" onClick={() => handleSearch("rice")}>
+              {/* <div className="ingredient-card" onClick={() => handleSearch("rice")}>
                 <div className="ingredient-img-container">
                   <img src="/src/assets/ingredients/rice.jpg" alt="Rice" className="ingredient-img" />
                 </div>
                 <h3>Rice</h3>
-              </div>
+              </div> */}
             </div>
           </div>
         </section>
 
-        {/* How It Works Section */}
+        {/* How It Works Section
         <section className="section how-it-works-section">
           <div className="container">
             <h2 className="section-title">How Ordelo Works</h2>
@@ -314,7 +314,7 @@ function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
       </div>
     </div>
   );

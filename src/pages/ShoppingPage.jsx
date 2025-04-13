@@ -5,8 +5,7 @@ import { useShoppingContext } from "../context/ShoppingContext";
 import SelectedIngredientsPanel from "../components/SelectedIngredientsPanel";
 import VendorDiscovery from "../components/VendorDiscovery";
 import CartPanel from "../components/CartPanel";
-import "../styles/ShoppingPage.css";
-import "../styles/ShoppingComponents.css";
+
 
 function ShoppingPage() {
   const { 
