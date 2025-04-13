@@ -1335,6 +1335,7 @@
   font-weight: var(--font-weight-5);
   min-width: 40px;
   text-align: center;
+  color: var(--text-3);
 }
 
 /* Remove button */
@@ -1535,6 +1536,26 @@
   border-radius: var(--radius-lg);
   padding: var(--space-md);
   box-shadow: var(--shadow-2);
+  gap: 20px;
+}
+/* Dark mode overrides */
+html.dark-theme .search-input::placeholder,
+html.dark-theme .quantity-display {
+  color: white; /* or var(--white) if you have a white variable */
+}
+/* Dark mode override for the container only */
+html.dark-theme .search-input-container {
+  background-color: var(--surface-2);; /* Dark gray background */
+}
+
+/* Keep the text white in dark mode */
+html.dark-theme .search-input {
+  color: white;
+  border: none;
+}
+
+html.dark-theme .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .search-filter {
@@ -1542,29 +1563,54 @@
   max-width: 500px;
 }
 
+/* Container for the entire search input */
 .search-input-container {
   position: relative;
   display: flex;
   align-items: center;
+  background-color: #f2f2f2; /* Light gray background color as shown in your screenshot */
+  border-radius: 50px; /* Fully rounded corners */
+  padding: 8px 16px;
+  box-shadow: none; /* Remove the shadow */
+  width: 100%;
 }
 
+/* The search icon styling */
 .search-icon {
   position: absolute;
-  left: var(--space-sm);
-  color: var(--text-3);
-  font-size: var(--font-size-2);
+  left: 16px; /* Fixed pixel value for precise positioning */
+  color: #888; /* Gray color as shown in your design */
+  font-size: 20px;
   pointer-events: none;
 }
 
+/* The search input field */
 .search-input {
   width: 100%;
-  padding: var(--space-sm) var(--space-sm) var(--space-sm) calc(var(--space-lg) + var(--space-sm));
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-1);
-  background-color: var(--surface-1);
-  color: var(--text-1);
+  border: none;
+  padding: 8px 8px 8px 60px; /* Extra left padding to accommodate the icon */
+  font-size: 16px;
+  outline: none;
+  color: #333;
 }
+
+/* Placeholder styling */
+.search-input::placeholder {
+  font-weight: 400;
+  padding: 8px 8px 8px 20px;
+}
+
+/* Container for the action buttons */
+.search-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+}
+.quantiy-display {
+  color: var(--text-3);
+
+}
+
 
 .clear-search {
   position: absolute;
@@ -1793,6 +1839,7 @@
   text-align: center;
   font-weight: var(--font-weight-5);
   padding: 0 var(--space-xs);
+  color: black;
 }
 
 /* Remove button */
