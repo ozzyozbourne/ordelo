@@ -9,6 +9,10 @@ const ML_PER_CUP = 236.588; // US Legal Cup
 const ML_PER_FL_OZ = 29.5735; // US Fluid Ounce
 const ML_PER_TBSP = 14.7868; // US Tablespoon
 const ML_PER_TSP = 4.92892; // US Teaspoon
+const ML_PER_GAL = 3785.41; // US Gallon
+const ML_PER_PINT = 473.176; // US Pint
+const ML_PER_QUART = 946.353; // US Quart
+const ML_PER_C = 237; // US Cup (for liquids)
 
 // --- UPDATED: Add common volume units for Solids ---
 export const unitsByType = {
@@ -28,6 +32,10 @@ export const unitsByType = {
         { value: 'fl oz', label: 'Fluid Ounces (fl oz)' },
         { value: 'tbsp', label: 'Tablespoons (tbsp)' },
         { value: 'tsp', label: 'Teaspoons (tsp)' },
+        { value: 'gal', label: 'Gallons (gal)' },
+        { value: 'pint', label: 'Pints (pint)' },
+        { value: 'quart', label: 'Quarts (quart)' },
+        { value: 'c', label: 'Cups (c)' }, // US Cup for liquids
     ],
 };
 
@@ -40,6 +48,10 @@ const convertVolumeToMl = (amount, unit) => {
         case 'fl oz': return amount * ML_PER_FL_OZ;
         case 'tbsp': return amount * ML_PER_TBSP;
         case 'tsp': return amount * ML_PER_TSP;
+        case 'gal': return amount * ML_PER_GAL;
+        case 'pint': return amount * ML_PER_PINT;
+        case 'quart': return amount * ML_PER_QUART;
+        case 'c': return amount * ML_PER_C; // US Cup for liquids
         default: return null; // Invalid volume unit
      }
 }
@@ -52,7 +64,6 @@ export const convertToStandard = (amount, unit, type, density = null) => {
 
     let standardAmount = 0;
     let standardUnit = '';
-    let isSolidVolume = false;
 
     try {
         if (type === 'solid') {
@@ -67,7 +78,6 @@ export const convertToStandard = (amount, unit, type, density = null) => {
                 case 'cup':
                 case 'tbsp':
                 case 'tsp':
-                    isSolidVolume = true;
                     if (density === null || isNaN(density) || density <= 0) {
                        return { error: `Density required to convert solid volume unit '${unit}' to grams. Ingredient density not found or invalid.` };
                     }
