@@ -33,6 +33,7 @@ function Footer() {
               <li><Link to="/admin/users">Users</Link></li>
               <li><Link to="/admin/vendors">Vendors</Link></li>
               <li><Link to="/admin/recipes">Recipes</Link></li>
+              <li><Link to="/admin/ingredients">Ingredients</Link></li>
               {/* Remove links irrelevant to admin */}
               {/* <li><Link to="/saved-recipes">Saved Recipes</Link></li> */}
               {/* <li><Link to="/shopping-list">Shopping List</Link></li> */}
