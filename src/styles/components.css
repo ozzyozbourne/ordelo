@@ -2611,7 +2611,8 @@ html.dark-theme .search-input::placeholder {
 
 .cart-header h3 {
   margin: 0;
-  font-size: var(--font-size-2);
+  font-size: var(--font-size-3);
+  color: var(--surface-1);
 }
 
 .remove-cart-btn {

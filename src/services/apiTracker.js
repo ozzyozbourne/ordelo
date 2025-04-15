@@ -3,8 +3,8 @@
 
 // Constants
 const STORAGE_KEY = 'spoonacular_api_usage';
-const DAILY_LIMIT = 145; // Set slightly below actual limit (150) for safety
-const CACHE_ONLY_THRESHOLD = 140; // Switch to cache-only mode at this threshold
+const DAILY_LIMIT = 500; // Set slightly below actual limit (150) for safety
+const CACHE_ONLY_THRESHOLD = 450; // Switch to cache-only mode at this threshold
 
 // Get the current date as a string (YYYY-MM-DD)
 const getCurrentDate = () => {

@@ -16,18 +16,45 @@ import {
 
 // Constants
 const API_BASE_URL = 'https://api.spoonacular.com';
-const SPOONACULAR_API_KEY = 'e5417c0a2e4c4fca8b644c983f8327ee';
+const API_KEYS = [
+  'e5417c0a2e4c4fca8b644c983f8327ee',
+  '5337e71f5d9743ffad0ad4307681f80c'
+];
 
-// Create a base axios instance for Spoonacular
-const spoonacularAxios = axios.create({
-  baseURL: API_BASE_URL,
-  params: {
-    apiKey: SPOONACULAR_API_KEY
+// Function to create an axios instance with a specific API key
+const createSpoonacularAxios = (apiKey) => {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    params: {
+      apiKey: apiKey
+    }
+  });
+};
+
+// Function to try API calls with fallback
+const tryApiCallWithFallback = async (apiCallFunction) => {
+  for (const apiKey of API_KEYS) {
+    try {
+      // Create a fresh axios instance for each attempt
+      const spoonacularAxios = createSpoonacularAxios(apiKey);
+      const optimizedAxios = createOptimizedAxios(spoonacularAxios);
+      
+      // Modify the existing API methods to use the new axios instance
+      const result = await apiCallFunction(optimizedAxios);
+      
+      // If successful, return the result
+      return result;
+    } catch (error) {
+      console.warn(`API call failed with key ${apiKey}:`, error.message);
+      
+      // Continue to next key if this one fails
+      continue;
+    }
   }
-});
-
-// Create an optimized version with deduplication
-const api = createOptimizedAxios(spoonacularAxios);
+  
+  // If all keys fail, throw an error
+  throw new Error('All Spoonacular API keys have failed');
+};
 
 // Initialize API tracker
 initApiTracker();
@@ -68,15 +95,16 @@ export const fetchRandomRecipes = async (options = {}) => {
   // If we can make an API call
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/random', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/random', { params }));
+        
+        // Increment API usage counter
+        incrementApiUsage();
+        
+        return response.data.recipes;
+      });
       
       // Cache the results
-      const recipes = response.data.recipes;
-      
-      // Also cache each individual recipe
       recipes.forEach(recipe => cacheRecipe(recipe));
       
       // Cache the random results too under a special key
@@ -93,9 +121,6 @@ export const fetchRandomRecipes = async (options = {}) => {
     }
   } else {
     console.warn('API limit reached: Using cached data for random recipes');
-    
-    // In a real app, you could show a notification to the user
-    // For now, just throw an error
     throw new Error('Daily API limit reached. Please try again tomorrow or use cached recipes.');
   }
 };
@@ -131,12 +156,11 @@ export const searchRecipes = async (query, options = {}) => {
         // Return the stale cache immediately
         setTimeout(() => {
           // Make the API call in the background to refresh the cache
-          api.get('/recipes/complexSearch', { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheSearchResults(searchQuery, response.data.results);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
+          tryApiCallWithFallback(async (api) => {
+            const response = await api.get('/recipes/complexSearch', { params });
+            incrementApiUsage();
+            cacheSearchResults(searchQuery, response.data.results);
+          }).catch(err => console.error('Background cache refresh failed:', err));
         }, 100);
         
         return cachedData.results;
@@ -149,13 +173,16 @@ export const searchRecipes = async (query, options = {}) => {
   // If we got here, we need to make an API call
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
+        
+        // Increment API usage counter
+        incrementApiUsage();
+        
+        return response.data.results;
+      });
       
       // Cache the results
-      const recipes = response.data.results;
       await cacheSearchResults(searchQuery, recipes);
       
       return recipes;
@@ -199,12 +226,11 @@ export const filterRecipesByCuisine = async (cuisine, options = {}) => {
         // Return the stale cache immediately
         setTimeout(() => {
           // Make the API call in the background to refresh the cache
-          api.get('/recipes/complexSearch', { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheCuisineResults(cuisineKey, response.data.results);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
+          tryApiCallWithFallback(async (api) => {
+            const response = await api.get('/recipes/complexSearch', { params });
+            incrementApiUsage();
+            cacheCuisineResults(cuisineKey, response.data.results);
+          }).catch(err => console.error('Background cache refresh failed:', err));
         }, 100);
         
         return cachedData.results;
@@ -217,13 +243,16 @@ export const filterRecipesByCuisine = async (cuisine, options = {}) => {
   // If we got here, we need to make an API call
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
+        
+        // Increment API usage counter
+        incrementApiUsage();
+        
+        return response.data.results;
+      });
       
       // Cache the results
-      const recipes = response.data.results;
       await cacheCuisineResults(cuisineKey, recipes);
       
       return recipes;
@@ -266,12 +295,11 @@ export const fetchRecipeById = async (id, options = {}) => {
         // Return the stale cache immediately
         setTimeout(() => {
           // Make the API call in the background to refresh the cache
-          api.get(`/recipes/${recipeId}/information`, { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheRecipe(response.data);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
+          tryApiCallWithFallback(async (api) => {
+            const response = await api.get(`/recipes/${recipeId}/information`, { params });
+            incrementApiUsage();
+            cacheRecipe(response.data);
+          }).catch(err => console.error('Background cache refresh failed:', err));
         }, 100);
         
         return cachedRecipe;
@@ -284,13 +312,16 @@ export const fetchRecipeById = async (id, options = {}) => {
   // If we got here, we need to make an API call
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get(`/recipes/${recipeId}/information`, { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
+      const recipe = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get(`/recipes/${recipeId}/information`, { params }));
+        
+        // Increment API usage counter
+        incrementApiUsage();
+        
+        return response.data;
+      });
       
       // Cache the recipe
-      const recipe = response.data;
       await cacheRecipe(recipe);
       
       return recipe;
