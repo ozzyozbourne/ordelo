@@ -49,6 +49,14 @@ const AdminSidebar = ({ isOpen, closeSidebar }) => {
           <i className="fas fa-utensils"></i>
           <span>Recipes</span>
         </NavLink>
+          <NavLink
+                to="/admin/ingredients"
+                className={({ isActive }) => `admin-nav-link ${isActive ? "active" : ""}`}
+                onClick={handleLinkClick}
+            >
+              <i className="fas fa-carrot"></i> {/* Or your chosen icon */}
+              <span>Ingredients</span>      {/* Check this text */}
+        </NavLink>
         {/* Add more links here (e.g., Settings, Analytics) */}
         {/* Example:
         <NavLink to="/admin/settings" className={...}>

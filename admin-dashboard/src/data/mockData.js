@@ -53,3 +53,65 @@ export const mockUsers = [
     { _id: 'r5', title: "Healthy Veggie Salad", author: 'Diana Developer', status: 'draft', createdAt: '2023-04-12T18:00:00Z', source: 'user' },
     { _id: 'r6', title: "Fiona's Famous Fish Tacos", author: "Fiona's Fine Foods", status: 'pending', createdAt: '2023-07-01T09:00:00Z', source: 'vendor' }, // Example pending recipe
   ];
+
+  // --- NEW: Ingredient Densities (g/ml) ---
+// Source: Various online cooking/conversion charts (approximate values)
+// You would expand this list significantly in a real application.
+export const mockIngredientDensities = {
+  // Use lowercase keys for easier lookup
+  'all-purpose flour': 0.53,
+  'bread flour': 0.53,
+  'cake flour': 0.49,
+  'granulated sugar': 0.84,
+  'brown sugar': 0.80, // Packed
+  'powdered sugar': 0.56,
+  'salt': 1.2, // Table salt
+  'kosher salt': 0.8, // Diamond Crystal estimate
+  'baking soda': 0.96,
+  'baking powder': 0.88,
+  'butter': 0.91,
+  'cocoa powder': 0.42,
+  'cornstarch': 0.53,
+  'honey': 1.42,
+  'molasses': 1.40,
+  'water': 1.0,
+  'milk': 1.03, // Whole milk approximation
+  'olive oil': 0.92,
+  'vegetable oil': 0.92,
+  // Add many more common ingredients...
+};
+
+
+// --- UPDATED: Mock Ingredients (added original inputs) ---
+export const mockIngredients = [
+{
+  _id: 'ing1', name: 'All-Purpose Flour', type: 'solid',
+  standardAmount: 1000, standardUnit: 'g',
+  originalAmount: 1, originalUnit: 'kg', // Example original input
+  createdAt: '2023-10-01T10:00:00Z'
+},
+{
+  _id: 'ing2', name: 'Granulated Sugar', type: 'solid',
+  standardAmount: 420, standardUnit: 'g',
+  originalAmount: 2, originalUnit: 'cup', // Example original input
+  createdAt: '2023-10-01T10:05:00Z'
+ },
+{
+  _id: 'ing3', name: 'Whole Milk', type: 'liquid',
+  standardAmount: 2000, standardUnit: 'ml',
+  originalAmount: 2, originalUnit: 'l', // Example original input
+  createdAt: '2023-10-01T10:10:00Z'
+},
+{
+  _id: 'ing4', name: 'Olive Oil', type: 'liquid',
+  standardAmount: 750, standardUnit: 'ml',
+  originalAmount: 750, originalUnit: 'ml', // Example original input
+  createdAt: '2023-10-01T10:15:00Z'
+},
+{
+  _id: 'ing5', name: 'Salt', type: 'solid',
+  standardAmount: 6, standardUnit: 'g',
+  originalAmount: 1, originalUnit: 'tsp', // Example original input
+  createdAt: '2023-10-01T10:20:00Z'
+},
+];

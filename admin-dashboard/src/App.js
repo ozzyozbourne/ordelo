@@ -12,9 +12,11 @@ import { AuthProvider, useAuth } from './context/AuthContext'; // Import AuthPro
 // Pages
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import IngredientManagementPage from './pages/admin/IngredientManagementPage';
 import RecipeManagementPage from './pages/admin/RecipeManagementPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import VendorManagementPage from './pages/admin/VendorManagementPage';
+
 
 
 // Protected Route Component for Admin
@@ -48,6 +50,7 @@ function AdminRoutes() {
           <Route path="users" element={<UserManagementPage />} />
           <Route path="vendors" element={<VendorManagementPage />} />
           <Route path="recipes" element={<RecipeManagementPage />} />
+          <Route path="ingredients" element={<IngredientManagementPage />} />
           {/* Add more admin routes here (e.g., settings) */}
           <Route path="*" element={<NotFoundPage />} /> {/* Catch-all within admin */}
         </Routes>
