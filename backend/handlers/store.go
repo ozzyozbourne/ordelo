@@ -88,6 +88,33 @@ func GetStore(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(store)
 }
 
+func GetStores(w http.ResponseWriter, r *http.Request) {
+	// Extract store ID from URL
+	pathParts := strings.Split(r.URL.Path, "/")
+	storeHex := pathParts[len(pathParts)-1]
+
+	storeId, err := bson.ObjectIDFromHex(storeHex)
+	if err != nil {
+		sendResponse(w, http.StatusBadRequest, "Invalid store ID format", "")
+		return
+	}
+
+	// Get store from database
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var store models.Store
+	err = db.StoresCollection.FindOne(ctx, bson.M{"_id": storeId}).Decode(&store)
+	if err != nil {
+		sendResponse(w, http.StatusNotFound, "Store not found", "")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(store)
+}
+
 // UpdateStore updates a store
 func UpdateStore(w http.ResponseWriter, r *http.Request) {
 	// Extract store ID from URL

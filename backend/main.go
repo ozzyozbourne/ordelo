@@ -29,16 +29,23 @@ func main() {
 	mux := http.NewServeMux()
 
 	// User routes
-	mux.HandleFunc("POST /user", handlers.CreateUser)
-	mux.HandleFunc("GET /user/{id}", handlers.GetUser)
-	mux.HandleFunc("PUT /user/{id}", handlers.UpdateUser)
-	mux.HandleFunc("DELETE /user/{id}", handlers.DeleteUser)
-	mux.HandleFunc("GET /user/{id}/recipes", handlers.GetUserRecipes)
-	mux.HandleFunc("POST /user/{id}/recipes/{recipeId}", handlers.SaveRecipe)
-	mux.HandleFunc("DELETE /user/{id}/recipes/{recipeId}", handlers.UnsaveRecipe)
-	mux.HandleFunc("GET /user/{id}/lists", handlers.GetUserLists)
-	mux.HandleFunc("GET /user/{id}/carts", handlers.GetUserCarts)
-	mux.HandleFunc("GET /user/{id}/orders", handlers.GetUserOrders)
+	mux.HandleFunc("POST /ordelo/user", handlers.CreateUser)
+	mux.HandleFunc("GET /ordelo/user/{id}", handlers.GetUser)
+	mux.HandleFunc("PUT /ordelo/user/{id}", handlers.UpdateUser)
+	mux.HandleFunc("DELETE /ordelo/user/{id}", handlers.DeleteUser)
+
+	// recipes
+	mux.HandleFunc("GET /ordelo/user/{id}/recipes", handlers.GetUserRecipes)
+	mux.HandleFunc("POST /ordero/user/{id}/recipes/{recipeId}", handlers.SaveRecipe)
+	mux.HandleFunc("POST /ordero/user/{id}/recipes/{recipeId}", handlers.UpdateRecipe)
+	mux.HandleFunc("DELETE /ordelo/user/{id}/recipes/{recipeId}", handlers.UnsaveRecipe)
+
+	// Store routes
+	mux.HandleFunc("GET /ordelo/vendor/{vendor_id}/store", handlers.GetStore)
+	mux.HandleFunc("GET /ordelo/vendor/{vendor_id}/{store_id}", handlers.GetStores)
+	mux.HandleFunc("POST /ordelo/vendor/{vendor_id}/store", handlers.CreateStore)
+	mux.HandleFunc("PUT /ordelo/vendor/{vendor_id}/{store_id}", handlers.UpdateStore)
+	mux.HandleFunc("DELETE /ordelo/vendor/{vendor_id}/{store_id}", handlers.DeleteStore)
 
 	// Recipe routes
 	mux.HandleFunc("POST /recipe", handlers.CreateRecipe)
@@ -52,14 +59,6 @@ func main() {
 	mux.HandleFunc("GET /list/{id}", handlers.GetList)
 	mux.HandleFunc("PUT /list/{id}", handlers.UpdateList)
 	mux.HandleFunc("DELETE /list/{id}", handlers.DeleteList)
-
-	// Store routes
-	mux.HandleFunc("POST /store", handlers.CreateStore)
-	mux.HandleFunc("GET /store/{id}", handlers.GetStore)
-	mux.HandleFunc("PUT /store/{id}", handlers.UpdateStore)
-	mux.HandleFunc("DELETE /store/{id}", handlers.DeleteStore)
-	mux.HandleFunc("GET /stores/nearby", handlers.GetNearbyStores)
-	mux.HandleFunc("GET /store/{id}/orders", handlers.GetStoreOrders)
 
 	// Cart routes
 	mux.HandleFunc("POST /cart", handlers.CreateCart)
