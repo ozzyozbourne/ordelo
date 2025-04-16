@@ -10,10 +10,10 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
@@ -62,9 +62,9 @@ func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	// ---------- Trace Exporters ----------
 
 	// 1. LGTM Trace Exporter
-	lgtmTraceExporter, err := otlptrace.New(ctx, otlptracehttp.NewClient(
-		otlptracehttp.WithEndpoint(os.Getenv("LGTM_HTTP_ENDPOINT")),
-		otlptracehttp.WithInsecure(),
+	lgtmTraceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
+		otlptracegrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlptracegrpc.WithInsecure(),
 	))
 	if err != nil {
 		handleErr(err)
@@ -73,9 +73,9 @@ func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	shutDownFuncs = append(shutDownFuncs, lgtmTraceExporter.Shutdown)
 
 	// 2. Honeycomb Trace Exporter
-	honeycombTraceExporter, err := otlptrace.New(ctx, otlptracehttp.NewClient(
-		otlptracehttp.WithEndpoint(os.Getenv("HONEYCOMB_API_ENDPOINT")),
-		otlptracehttp.WithHeaders(map[string]string{
+	honeycombTraceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
+		otlptracegrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlptracegrpc.WithHeaders(map[string]string{
 			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
 		}),
 	))
@@ -95,18 +95,18 @@ func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	// ---------- Metric Exporters ----------
 
 	// 1. LGTM Metric Exporter
-	lgtmMetricExporter, err := otlpmetrichttp.New(ctx,
-		otlpmetrichttp.WithEndpoint(os.Getenv("LGTM_HTTP_ENDPOINT")),
-		otlpmetrichttp.WithInsecure(),
+	lgtmMetricExporter, err := otlpmetricgrpc.New(ctx,
+		otlpmetricgrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlpmetricgrpc.WithInsecure(),
 	)
 	if err != nil {
 		handleErr(err)
 		return
 	}
 	// 2. Honeycomb Metric Exporter
-	honeycombMetricExporter, err := otlpmetrichttp.New(ctx,
-		otlpmetrichttp.WithEndpoint(os.Getenv("HONEYCOMB_API_ENDPOINT")),
-		otlpmetrichttp.WithHeaders(map[string]string{
+	honeycombMetricExporter, err := otlpmetricgrpc.New(ctx,
+		otlpmetricgrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlpmetricgrpc.WithHeaders(map[string]string{
 			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
 		}),
 	)
@@ -125,18 +125,18 @@ func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	// ---------- Log Exporters ----------
 
 	// 1. LGTM Log Exporter
-	lgtmLogExporter, err := otlploghttp.New(ctx,
-		otlploghttp.WithEndpoint(os.Getenv("LGTM_HTTP_ENDPOINT")),
-		otlploghttp.WithInsecure(),
+	lgtmLogExporter, err := otlploggrpc.New(ctx,
+		otlploggrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlploggrpc.WithInsecure(),
 	)
 	if err != nil {
 		handleErr(err)
 		return
 	}
 	// 2. Honeycomb Log Exporter
-	honeycombLogExporter, err := otlploghttp.New(ctx,
-		otlploghttp.WithEndpoint(os.Getenv("HONEYCOMB_API_ENDPOINT")),
-		otlploghttp.WithHeaders(map[string]string{
+	honeycombLogExporter, err := otlploggrpc.New(ctx,
+		otlploggrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlploggrpc.WithHeaders(map[string]string{
 			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
 		}),
 	)

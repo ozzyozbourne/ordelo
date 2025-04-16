@@ -9,10 +9,8 @@ import (
 )
 
 func main() {
-	log.Printf("Running the app\n")
-	log.Printf("%s\n%s\n%s\n", os.Getenv("HONEYCOMB_API_ENDPOINT"), os.Getenv("OTEL_SERVICE_NAME"), os.Getenv("HONEYCOMB_API_KEY"))
 	if err := run(); err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Error fatalk error in server startup -> \n%v\n", err)
 	}
 }
 
@@ -27,8 +25,6 @@ func run() (err error) {
 	defer func() {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
-
-	Logger.InfoContext(ctx, "Operation completed")
 
 	select {
 	case <-ctx.Done():
