@@ -152,8 +152,7 @@ func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	shutDownFuncs = append(shutDownFuncs, loggerProvider.Shutdown)
 	global.SetLoggerProvider(loggerProvider)
 
-	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
-	if err != nil {
+	if err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second)); err != nil {
 		Logger.ErrorContext(ctx, "otel runtime instrumentation failed:", slog.Any("error", err))
 	}
 	return

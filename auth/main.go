@@ -10,7 +10,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("Error fatalk error in server startup -> \n%v\n", err)
+		log.Fatalf("Error fatal error in server startup -> \n%v\n", err)
 	}
 }
 
@@ -28,7 +28,6 @@ func run() (err error) {
 
 	select {
 	case <-ctx.Done():
-		log.Printf("recieved ctrl-c\n")
 		stop()
 	}
 
