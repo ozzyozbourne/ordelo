@@ -26,21 +26,21 @@ func run() (err error) {
 		return
 	}
 
-	mongoShutDown, err := initDB(ctx, os.Getenv("DB_URI"))
+	mongoShutDown, err := initDB(ctx)
 	if err != nil {
 		return
 	}
 
-	redisShutDown, err := initRedis(ctx, os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0)
+	redisShutDown, err := initRedis(ctx)
 	if err != nil {
 		return
 	}
 
 	defer func() {
 		log.Printf("Cleaning up resources\n")
-		err = errors.Join(err, otelShutDown(ctx))
-		err = errors.Join(err, mongoShutDown(ctx))
-		err = errors.Join(err, redisShutDown(ctx))
+		err = errors.Join(err, mongoShutDown(context.Background()))
+		err = errors.Join(err, redisShutDown(context.Background()))
+		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
 	select {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
@@ -12,7 +13,9 @@ import (
 
 var Client *redis.Client
 
-func initRedis(ctx context.Context, addr string, password string, db int) (shutdown func(ctx context.Context) error, err error) {
+func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
+	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
+
 	conValues := fmt.Sprintf("Addr: %s, Password: %s, DB: %d", addr, password, db)
 	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.Any("Options", conValues))
 
