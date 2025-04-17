@@ -10,6 +10,7 @@
 **/logs
 **/target/
 **/debug/
+**/node_modules/
 
 *.log
 *.exe

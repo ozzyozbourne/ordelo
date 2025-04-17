@@ -16,6 +16,7 @@ type Ingredient struct {
 	Name         string        `bson:"name" json:"name"`
 	Quantity     float64       `bson:"quantity" json:"quantity"`
 	Unit         string        `bson:"unit" json:"unit"`
+	Category     string        `bson:"category" json:"category"`
 }
 
 // Recipe represents the Recipes collection
@@ -49,20 +50,19 @@ type GeoJSON struct {
 	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
 }
 
-// InventoryItem represents an item in a store's inventory
-type InventoryItem struct {
-	IngredientID   bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
-	IngredientName string        `bson:"ingredient_name" json:"ingredient_name"`
-	StockLevel     int           `bson:"stock_level" json:"stock_level"`
-	Price          float64       `bson:"price" json:"price"`
-	Quantity       float64       `bson:"quantity" json:"quantity"`
-	Category       string        `bson:"category" json:"category"`
-}
-
 // OperatingHours represents store operating hours
 type OperatingHours struct {
 	OpenTime  string `bson:"open_time" json:"open_time"`
 	CloseTime string `bson:"close_time" json:"close_time"`
+}
+
+// InventoryItem represents an item in a store's inventory
+type InventoryItem struct {
+	IngredientID   bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
+	IngredientName string        `bson:"ingredient_name" json:"ingredient_name"`
+	Price          float64       `bson:"price" json:"price"`
+	Quantity       float64       `bson:"quantity" json:"quantity"`
+	Category       string        `bson:"category" json:"category"`
 }
 
 // Store represents the Stores collection
