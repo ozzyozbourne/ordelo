@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+var MongoClient *mongo.Client
+
 type OtelMongoLogger struct {
 	logger *slog.Logger
 	mu     sync.Mutex
@@ -69,8 +71,18 @@ func (l *OtelMongoLogger) Error(err error, message string, keysAndValues ...inte
 	l.logger.LogAttrs(l.ctx, slog.LevelError, message, attrs...)
 }
 
-func initDB(ctx context.Context, db_uri string) (client *mongo.Client, err error) {
+func initDB(ctx context.Context, db_uri string) (shutDown func(ctx context.Context) error, err error) {
 	Logger.InfoContext(ctx, "Setting up connection to the mongodb", slog.String("URI", db_uri))
+
+	var mongoShutDownFunc func(ctx context.Context) error
+	shutDown = func(ctx context.Context) error {
+		if mongoShutDownFunc != nil {
+			err := mongoShutDownFunc(ctx)
+			mongoShutDownFunc = nil
+			return err
+		}
+		return nil
+	}
 
 	loggerOptions := options.
 		Logger().
@@ -87,14 +99,16 @@ func initDB(ctx context.Context, db_uri string) (client *mongo.Client, err error
 		SetMaxConnecting(25).
 		SetLoggerOptions(loggerOptions)
 
-	if client, err = mongo.Connect(clientOptions); err != nil {
+	if MongoClient, err = mongo.Connect(clientOptions); err != nil {
 		Logger.ErrorContext(ctx, "Unable to establish connection to mongoDB", err)
 		return
 	}
 
-	if err = client.Ping(ctx, nil); err != nil {
+	mongoShutDownFunc = MongoClient.Disconnect
+	if err = MongoClient.Ping(ctx, nil); err != nil {
 		Logger.ErrorContext(ctx, "Disconnecting client since unable to ping MongoDB after connection to check for liveness", err)
-		return nil, client.Disconnect(ctx)
+		err = shutDown(ctx)
+		return
 	}
 
 	Logger.InfoContext(ctx, "Connected Successfully to mongoDB", slog.String("Ping", "Success"))

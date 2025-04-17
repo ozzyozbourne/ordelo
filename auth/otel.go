@@ -29,7 +29,7 @@ var (
 	Logger = otelslog.NewLogger(schema)
 )
 
-func setupOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
+func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
 	var shutDownFuncs []func(context.Context) error
 
 	shutdown = func(ctx context.Context) error {

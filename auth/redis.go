@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -9,29 +10,50 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func initRedis(ctx context.Context, addr string, password string, db int) (client *redis.Client, err error) {
+var Client *redis.Client
+
+func initRedis(ctx context.Context, addr string, password string, db int) (shutdown func(ctx context.Context) error, err error) {
 	conValues := fmt.Sprintf("Addr: %s, Password: %s, DB: %d", addr, password, db)
 	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.Any("Options", conValues))
 
-	client = redis.NewClient(&redis.Options{
+	var redisShutDownFunc func() error
+	shutdown = func(ctx context.Context) error {
+		if redisShutDownFunc != nil {
+			err := redisShutDownFunc()
+			redisShutDownFunc = nil
+			return err
+		}
+		return nil
+	}
+
+	Client = redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
 		DB:       db,
 	})
+	if Client == nil {
+		Logger.ErrorContext(ctx, "New client function returned nil", slog.Any("error", "client return nil"))
+		err = errors.New("New client function returned nil")
+		return
+	}
 
-	if err = redisotel.InstrumentTracing(client); err != nil {
+	redisShutDownFunc = Client.Close
+	if err = redisotel.InstrumentTracing(Client); err != nil {
 		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis tracing", slog.Any("error", err))
-		return nil, client.Close()
+		err = shutdown(ctx)
+		return
 	}
 
-	if err = redisotel.InstrumentMetrics(client); err != nil {
+	if err = redisotel.InstrumentMetrics(Client); err != nil {
 		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis metrics", slog.Any("error", err))
-		return nil, client.Close()
+		err = shutdown(ctx)
+		return
 	}
 
-	if err = client.Ping(ctx).Err(); err != nil {
+	if err = Client.Ping(ctx).Err(); err != nil {
 		Logger.ErrorContext(ctx, "Redis ping test failed", slog.Any("error", err))
-		return nil, client.Close()
+		err = shutdown(ctx)
+		return
 	}
 
 	Logger.InfoContext(ctx, "Connected Successfully to Redis", slog.String("Ping", "Success"))
