@@ -15,7 +15,7 @@ func rolldice(w http.ResponseWriter, r *http.Request) {
 
 	roll := 1 + rand.Intn(6)
 
-	Logger.InfoContext(ctx, fmt.Sprintf("Rolled a dice: %d\n"), roll)
+	Logger.InfoContext(ctx, fmt.Sprintf("Rolled a dice: %d\n", roll))
 
 	res := strconv.Itoa(roll) + "\n"
 	if _, err := io.WriteString(w, res); err != nil {
