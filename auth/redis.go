@@ -11,13 +11,20 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var Client *redis.Client
+var (
+	RedisClient  *redis.Client
+	redis_source = slog.Any("source", "redis-cache")
+)
 
 func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
 	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
-
-	conValues := fmt.Sprintf("Addr: %s, Password: %s, DB: %d", addr, password, db)
-	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.Any("Options", conValues))
+	conValues := []slog.Attr{
+		slog.String("Addr", addr),
+		slog.String("Password", password),
+		slog.Int("DB", 0),
+		redis_source,
+	}
+	Logger.LogAttrs(ctx, slog.LevelInfo, "Setting up redis with Opentelemetry", conValues...)
 
 	var redisShutDownFunc func() error
 	shutdown = func(ctx context.Context) error {
@@ -29,36 +36,64 @@ func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, e
 		return nil
 	}
 
-	Client = redis.NewClient(&redis.Options{
+	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
 		DB:       db,
 	})
-	if Client == nil {
-		Logger.ErrorContext(ctx, "New client function returned nil", slog.Any("error", "client return nil"))
+	if RedisClient == nil {
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"New client function returned nil",
+				slog.String("error", "client returned nil"),
+				redis_source,
+			)
 		err = errors.New("New client function returned nil")
 		return
 	}
 
-	redisShutDownFunc = Client.Close
-	if err = redisotel.InstrumentTracing(Client); err != nil {
-		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis tracing", slog.Any("error", err))
+	redisShutDownFunc = RedisClient.Close
+	if err = redisotel.InstrumentTracing(RedisClient); err != nil {
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"Closing redis client since failed to instrument Redis tracing",
+				slog.Any("error", err),
+				redis_source,
+			)
 		err = shutdown(ctx)
 		return
 	}
 
-	if err = redisotel.InstrumentMetrics(Client); err != nil {
-		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis metrics", slog.Any("error", err))
+	if err = redisotel.InstrumentMetrics(RedisClient); err != nil {
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"Closing redis client since failed to instrument Redis metrics",
+				slog.Any("error", err),
+				redis_source,
+			)
 		err = shutdown(ctx)
 		return
 	}
 
-	if err = Client.Ping(ctx).Err(); err != nil {
-		Logger.ErrorContext(ctx, "Redis ping test failed", slog.Any("error", err))
+	if err = RedisClient.Ping(ctx).Err(); err != nil {
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"Redis ping test failed",
+				slog.Any("error", err),
+				redis_source,
+			)
 		err = shutdown(ctx)
 		return
 	}
 
-	Logger.InfoContext(ctx, "Connected Successfully to Redis", slog.String("Ping", "Success"))
+	Logger.InfoContext(ctx, "Connected Successfully to Redis", slog.String("Ping", "Success"), redis_source)
 	return
 }

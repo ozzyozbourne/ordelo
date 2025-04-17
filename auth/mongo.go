@@ -11,7 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var MongoClient *mongo.Client
+var (
+	MongoClient  *mongo.Client
+	mongo_source = slog.Any("source", "mongodb")
+)
 
 type OtelMongoLogger struct {
 	logger *slog.Logger
@@ -50,7 +53,7 @@ func (l *OtelMongoLogger) Info(level int, message string, keysAndValues ...inter
 		}
 	}
 
-	attrs = append(attrs, slog.String("source", "mongoDB"))
+	attrs = append(attrs, mongo_source)
 	l.logger.LogAttrs(l.ctx, logLevel, message, attrs...)
 }
 
@@ -68,13 +71,13 @@ func (l *OtelMongoLogger) Error(err error, message string, keysAndValues ...inte
 		}
 	}
 
-	attrs = append(attrs, slog.Any("source", "mongodb"))
+	attrs = append(attrs, mongo_source)
 	l.logger.LogAttrs(l.ctx, slog.LevelError, message, attrs...)
 }
 
 func initDB(ctx context.Context) (shutDown func(ctx context.Context) error, err error) {
 	db_uri := os.Getenv("DB_URI")
-	Logger.InfoContext(ctx, "Setting up connection to the mongodb", slog.String("URI", db_uri))
+	Logger.LogAttrs(ctx, slog.LevelInfo, "Setting up connection to the mongodb", slog.String("URI", db_uri), mongo_source)
 
 	var mongoShutDownFunc func(ctx context.Context) error
 	shutDown = func(ctx context.Context) error {
@@ -102,17 +105,31 @@ func initDB(ctx context.Context) (shutDown func(ctx context.Context) error, err 
 		SetLoggerOptions(loggerOptions)
 
 	if MongoClient, err = mongo.Connect(clientOptions); err != nil {
-		Logger.ErrorContext(ctx, "Unable to establish connection to mongoDB", err)
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"Unable to establish connection to mongoDB",
+				slog.Any("Error", err),
+				mongo_source,
+			)
 		return
 	}
 
 	mongoShutDownFunc = MongoClient.Disconnect
 	if err = MongoClient.Ping(ctx, nil); err != nil {
-		Logger.ErrorContext(ctx, "Disconnecting client since unable to ping MongoDB after connection to check for liveness", err)
+		Logger.
+			LogAttrs(
+				ctx,
+				slog.LevelError,
+				"Disconnecting client since unable to ping MongoDB after connection to check for liveness",
+				slog.Any("Error", err),
+				mongo_source,
+			)
 		err = shutDown(ctx)
 		return
 	}
 
-	Logger.InfoContext(ctx, "Connected Successfully to mongoDB", slog.String("Ping", "Success"))
+	Logger.LogAttrs(ctx, slog.LevelInfo, "Connected Successfully to mongoDB", slog.String("Ping", "Success"), mongo_source)
 	return
 }
