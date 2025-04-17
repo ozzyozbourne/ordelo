@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -18,13 +17,15 @@ var (
 
 func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
 	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
-	conValues := []slog.Attr{
-		slog.String("Addr", addr),
-		slog.String("Password", password),
-		slog.Int("DB", 0),
-		redis_source,
-	}
-	Logger.LogAttrs(ctx, slog.LevelInfo, "Setting up redis with Opentelemetry", conValues...)
+	Logger.
+		InfoContext(
+			ctx,
+			"Setting up redis with Opentelemetry",
+			slog.String("Addr", addr),
+			slog.String("Password", password),
+			slog.Int("DB", 0),
+			redis_source,
+		)
 
 	var redisShutDownFunc func() error
 	shutdown = func(ctx context.Context) error {
@@ -42,54 +43,26 @@ func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, e
 		DB:       db,
 	})
 	if RedisClient == nil {
-		Logger.
-			LogAttrs(
-				ctx,
-				slog.LevelError,
-				"New client function returned nil",
-				slog.String("error", "client returned nil"),
-				redis_source,
-			)
+		Logger.ErrorContext(ctx, "New client function returned nil", slog.String("error", "client returned nil"), redis_source)
 		err = errors.New("New client function returned nil")
 		return
 	}
 
 	redisShutDownFunc = RedisClient.Close
 	if err = redisotel.InstrumentTracing(RedisClient); err != nil {
-		Logger.
-			LogAttrs(
-				ctx,
-				slog.LevelError,
-				"Closing redis client since failed to instrument Redis tracing",
-				slog.Any("error", err),
-				redis_source,
-			)
+		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis tracing", slog.Any("error", err), redis_source)
 		err = shutdown(ctx)
 		return
 	}
 
 	if err = redisotel.InstrumentMetrics(RedisClient); err != nil {
-		Logger.
-			LogAttrs(
-				ctx,
-				slog.LevelError,
-				"Closing redis client since failed to instrument Redis metrics",
-				slog.Any("error", err),
-				redis_source,
-			)
+		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis metrics", slog.Any("error", err), redis_source)
 		err = shutdown(ctx)
 		return
 	}
 
 	if err = RedisClient.Ping(ctx).Err(); err != nil {
-		Logger.
-			LogAttrs(
-				ctx,
-				slog.LevelError,
-				"Redis ping test failed",
-				slog.Any("error", err),
-				redis_source,
-			)
+		Logger.ErrorContext(ctx, "Redis ping test failed", slog.Any("error", err), redis_source)
 		err = shutdown(ctx)
 		return
 	}
