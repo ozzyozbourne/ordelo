@@ -28,13 +28,22 @@ func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, e
 		)
 
 	var redisShutDownFunc func() error
-	shutdown = func(ctx context.Context) error {
+	shutdown = func(ctx context.Context) (err error) {
 		if redisShutDownFunc != nil {
-			err := redisShutDownFunc()
+			done := make(chan error, 1)
+			go func() {
+				done <- redisShutDownFunc()
+			}()
 			redisShutDownFunc = nil
-			return err
+			select {
+			case err = <-done:
+				return
+			case <-ctx.Done():
+				Logger.ErrorContext(context.Background(), "Redis shutdown context timed out", slog.Any("Error", ctx.Err()), redis_source)
+				return ctx.Err()
+			}
 		}
-		return nil
+		return
 	}
 
 	RedisClient = redis.NewClient(&redis.Options{
