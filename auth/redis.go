@@ -31,8 +31,9 @@ func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, e
 	shutdown = func(ctx context.Context) (err error) {
 		if redisShutDownFunc != nil {
 			done := make(chan error, 1)
+			goRoutineCopy := redisShutDownFunc
 			go func() {
-				done <- redisShutDownFunc()
+				done <- goRoutineCopy()
 			}()
 			redisShutDownFunc = nil
 			select {
