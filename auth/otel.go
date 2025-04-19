@@ -87,8 +87,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	traceProvider := trace.NewTracerProvider(
 		trace.WithResource(res),
-		trace.WithBatcher(lgtmTraceExporter),
-		trace.WithBatcher(honeycombTraceExporter))
+		trace.WithBatcher(lgtmTraceExporter, trace.WithBatchTimeout(5*time.Second)),
+		trace.WithBatcher(honeycombTraceExporter, trace.WithBatchTimeout(5*time.Second)))
 
 	otel.SetTracerProvider(traceProvider)
 
@@ -116,8 +116,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 
 	meterProvider := metric.NewMeterProvider(metric.WithResource(res),
-		metric.WithReader(metric.NewPeriodicReader(lgtmMetricExporter)),
-		metric.WithReader(metric.NewPeriodicReader(honeycombMetricExporter)),
+		metric.WithReader(metric.NewPeriodicReader(lgtmMetricExporter, metric.WithInterval(5*time.Second))),
+		metric.WithReader(metric.NewPeriodicReader(honeycombMetricExporter, metric.WithInterval(5*time.Second))),
 	)
 	shutDownFuncs = append(shutDownFuncs, meterProvider.Shutdown)
 	otel.SetMeterProvider(meterProvider)
@@ -146,8 +146,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 
 	loggerProvider := log.NewLoggerProvider(log.WithResource(res),
-		log.WithProcessor(log.NewBatchProcessor(lgtmLogExporter)),
-		log.WithProcessor(log.NewBatchProcessor(honeycombLogExporter)),
+		log.WithProcessor(log.NewBatchProcessor(lgtmLogExporter, log.WithExportInterval(5*time.Second))),
+		log.WithProcessor(log.NewBatchProcessor(honeycombLogExporter, log.WithExportInterval(5*time.Second))),
 	)
 	shutDownFuncs = append(shutDownFuncs, loggerProvider.Shutdown)
 	global.SetLoggerProvider(loggerProvider)
