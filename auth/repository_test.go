@@ -2,22 +2,46 @@ package main
 
 import (
 	"context"
+	"errors"
+	"log"
 	"testing"
 )
 
-func TestUserRepository(t *testing.T) {
+func TestMain(m *testing.M) {
+	var err error
 
 	otelShutDown, err := initOtelSDK(context.TODO())
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
-	defer otelShutDown(context.TODO())
-
 	mongoShutDown, err := initDB(context.TODO())
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
-	defer mongoShutDown(context.TODO())
+	if err = initRepositories(); err != nil {
+		return
+	}
+
+	defer func() {
+		log.Printf("Cleaning up\n")
+		if otelShutDown != nil {
+			err = errors.Join(otelShutDown(context.TODO()))
+		}
+		if mongoShutDown != nil {
+			err = errors.Join(mongoShutDown(context.TODO()))
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Clean up Successfull\n")
+
+	}()
+	code := m.Run()
+	log.Printf("Exit code -> %d\n", code)
+}
+
+func TestUserRepository(t *testing.T) {
+	t.Logf("Testing the create user func")
 
 	user := User{
 		UserName:     "TestUser",
@@ -26,9 +50,6 @@ func TestUserRepository(t *testing.T) {
 		PasswordHash: "hashedpassword",
 		SavedRecipes: []Recipe{},
 		Role:         "user",
-	}
-	if err := initRepositories(); err != nil {
-		t.Fatal(err)
 	}
 
 	Repos.User.CreateUser(context.TODO(), &user)
