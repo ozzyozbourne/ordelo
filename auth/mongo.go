@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"sync"
@@ -75,12 +76,16 @@ func (l *OtelMongoLogger) Error(err error, message string, keysAndValues ...inte
 	l.logger.LogAttrs(l.ctx, slog.LevelError, message, attrs...)
 }
 
-func initDB(ctx context.Context) (shutDown func(ctx context.Context) error, err error) {
+func initDB(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
 	db_uri := os.Getenv("DB_URI")
+	if db_uri == "" {
+		err = errors.New("Env variable DB_URI is empty!")
+		return
+	}
 	Logger.InfoContext(ctx, "Setting up connection to the mongodb", slog.String("URI", db_uri), mongo_source)
 
 	var mongoShutDownFunc func(ctx context.Context) error
-	shutDown = func(ctx context.Context) error {
+	shutdown = func(ctx context.Context) error {
 		if mongoShutDownFunc != nil {
 			err := mongoShutDownFunc(ctx)
 			mongoShutDownFunc = nil
@@ -118,7 +123,7 @@ func initDB(ctx context.Context) (shutDown func(ctx context.Context) error, err 
 				slog.Any("Error", err),
 				mongo_source,
 			)
-		err = shutDown(ctx)
+		err = shutdown(ctx)
 		return
 	}
 

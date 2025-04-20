@@ -41,6 +41,7 @@ func run() (err error) {
 		return
 	}
 
+	log.Printf("Inited Successfully\n")
 	defer func() {
 		log.Printf("Cleaning up resources\n")
 		err = errors.Join(err, mongoShutDown(context.Background()))
@@ -48,8 +49,23 @@ func run() (err error) {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
+	log.Printf("Initing repositories, caching and service layers\n")
+	if err = initRepositories(); err != nil {
+		return
+	}
+	if err = initCaching(); err != nil {
+		return
+	}
+	log.Printf("Inited Successfully\n")
+
+	log.Printf("Starting Server\n")
+	port := os.Getenv("PORT")
+	if port == "" {
+		err = errors.New("Env varible PORT is empty!")
+		return
+	}
 	srv := &http.Server{
-		Addr:         os.Getenv("PORT"),
+		Addr:         port,
 		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -60,6 +76,7 @@ func run() (err error) {
 	go func() {
 		srvErr <- srv.ListenAndServe()
 	}()
+	log.Printf("Server started on port -> %s\n", port)
 
 	select {
 	case err = <-srvErr:

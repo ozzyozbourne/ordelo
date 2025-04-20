@@ -30,8 +30,27 @@ var (
 )
 
 func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
-	var shutDownFuncs []func(context.Context) error
+	if schema == "" {
+		err = errors.New("Env variable OTEL_SERVICE_NAME is empty!")
+		return
+	}
 
+	lgtm_grpc_endpoint, honeycomb_grpc_endpoint, honeycomb_api_key :=
+		os.Getenv("LGTM_GRPC_ENDPOINT"), os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT"), os.Getenv("HONEYCOMB_API_KEY")
+	if lgtm_grpc_endpoint == "" {
+		err = errors.New("Env variable LGTM_GRPC_ENDPOINT is empty!")
+		return
+	}
+	if honeycomb_grpc_endpoint == "" {
+		err = errors.New("Env variable HONEYCOMB_API_GRPC_ENDPOINT is empty!")
+		return
+	}
+	if honeycomb_api_key == "" {
+		err = errors.New("Env variable HONEYCOMB_API_KEY is empty!")
+		return
+	}
+
+	var shutDownFuncs []func(context.Context) error
 	shutdown = func(ctx context.Context) error {
 		var err error
 		for _, fn := range shutDownFuncs {
@@ -63,7 +82,7 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	// 1. LGTM Trace Exporter
 	lgtmTraceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
-		otlptracegrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlptracegrpc.WithEndpoint(lgtm_grpc_endpoint),
 		otlptracegrpc.WithInsecure(),
 	))
 	if err != nil {
@@ -74,9 +93,9 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	// 2. Honeycomb Trace Exporter
 	honeycombTraceExporter, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
-		otlptracegrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlptracegrpc.WithEndpoint(honeycomb_grpc_endpoint),
 		otlptracegrpc.WithHeaders(map[string]string{
-			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
+			"x-honeycomb-team": honeycomb_api_key,
 		}),
 	))
 	if err != nil {
@@ -96,7 +115,7 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	// 1. LGTM Metric Exporter
 	lgtmMetricExporter, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlpmetricgrpc.WithEndpoint(lgtm_grpc_endpoint),
 		otlpmetricgrpc.WithInsecure(),
 	)
 	if err != nil {
@@ -105,9 +124,9 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 	// 2. Honeycomb Metric Exporter
 	honeycombMetricExporter, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlpmetricgrpc.WithEndpoint(honeycomb_grpc_endpoint),
 		otlpmetricgrpc.WithHeaders(map[string]string{
-			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
+			"x-honeycomb-team": honeycomb_api_key,
 		}),
 	)
 	if err != nil {
@@ -126,7 +145,7 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	// 1. LGTM Log Exporter
 	lgtmLogExporter, err := otlploggrpc.New(ctx,
-		otlploggrpc.WithEndpoint(os.Getenv("LGTM_GRPC_ENDPOINT")),
+		otlploggrpc.WithEndpoint(lgtm_grpc_endpoint),
 		otlploggrpc.WithInsecure(),
 	)
 	if err != nil {
@@ -135,9 +154,9 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 	// 2. Honeycomb Log Exporter
 	honeycombLogExporter, err := otlploggrpc.New(ctx,
-		otlploggrpc.WithEndpoint(os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT")),
+		otlploggrpc.WithEndpoint(honeycomb_grpc_endpoint),
 		otlploggrpc.WithHeaders(map[string]string{
-			"x-honeycomb-team": os.Getenv("HONEYCOMB_API_KEY"),
+			"x-honeycomb-team": honeycomb_api_key,
 		}),
 	)
 	if err != nil {

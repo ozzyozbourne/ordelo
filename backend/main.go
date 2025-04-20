@@ -29,7 +29,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// User routes
-	mux.HandleFunc("POST /ordelo/user", handlers.CreateUser)
+	mux.Handle("POST /ordelo/user", http.HandlerFunc(handlers.CreateUser))
 	mux.HandleFunc("GET /ordelo/user/{id}", handlers.GetUser)
 	mux.HandleFunc("PUT /ordelo/user/{id}", handlers.UpdateUser)
 	mux.HandleFunc("DELETE /ordelo/user/{id}", handlers.DeleteUser)
