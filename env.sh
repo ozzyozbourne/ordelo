@@ -9,7 +9,7 @@ export PORT="8080"
 
 # MongoDB
 export DB_URI="<enter-value>"
-export DB_NAME="test"
+export DB_NAME="ordelo"
 
 # Redis
 export RD_PORT="localhost:6379"
