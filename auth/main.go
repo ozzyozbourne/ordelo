@@ -49,7 +49,7 @@ func run() (err error) {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
-	log.Printf("Initing repositories and caching\n")
+	log.Printf("Initing repositories, caching and service layers\n")
 	if err = initRepositories(); err != nil {
 		return
 	}
@@ -76,6 +76,7 @@ func run() (err error) {
 	go func() {
 		srvErr <- srv.ListenAndServe()
 	}()
+	log.Printf("Server started on port -> %s\n", port)
 
 	select {
 	case err = <-srvErr:

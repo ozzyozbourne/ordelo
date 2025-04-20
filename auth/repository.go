@@ -3,12 +3,25 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
-var Repos *Repositories
+var (
+	Repos              *Repositories
+	defSessOpts        = options.Session().SetDefaultTransactionOptions(options.Transaction().SetWriteConcern(writeconcern.Majority()))
+	user_repo_source   = slog.Any("source", "UserRepository")
+	store_repo_source  = slog.Any("source", "StoreRepository")
+	order_repo_source  = slog.Any("source", "OrderRepository")
+	cart_repo_source   = slog.Any("source", "CartRepository")
+	vendor_repo_source = slog.Any("source", "VendorRepository")
+)
 
 type Repositories struct {
 	User   UserRepository
@@ -19,7 +32,7 @@ type Repositories struct {
 }
 
 type UserRepository interface {
-	CreateUser(context.Context, *User) error
+	CreateUser(context.Context, *User) (string, error)
 	CreateUserRecipes(context.Context, string, []*Recipe) error
 
 	FindUser(context.Context, string) (*User, error)
@@ -52,17 +65,34 @@ func initRepositories() error {
 	return nil
 }
 
-type MongoUserRepository struct{ collection *mongo.Collection }
-type MongoStoreRepository struct{ collection *mongo.Collection }
-type MongoOrderRepository struct{ collection *mongo.Collection }
-type MongoCartRepository struct{ collection *mongo.Collection }
-type MongoVendorRepository struct{ collection *mongo.Collection }
+type MongoUserRepository struct{ col *mongo.Collection }
+type MongoStoreRepository struct{ col *mongo.Collection }
+type MongoOrderRepository struct{ col *mongo.Collection }
+type MongoCartRepository struct{ col *mongo.Collection }
+type MongoVendorRepository struct{ col *mongo.Collection }
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
-	return &MongoUserRepository{collection: client.Database(dbName).Collection("user")}
+	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) error { return nil }
+func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string, error) {
+	Logger.InfoContext(ctx, fmt.Sprintf("Insertion -> %+v in Users collection", user), slog.String("Opt", "Insert"), user_repo_source)
+	result, err := m.col.InsertOne(ctx, user)
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
+		return "", err
+	}
+	id, ok := result.InsertedID.(bson.ObjectID)
+
+	if !ok {
+		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID", slog.String("error", "Casting Error"),
+			user_repo_source)
+	}
+
+	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", id.Hex()), user_repo_source)
+	return id.Hex(), nil
+}
 
 func (m MongoUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
 	return nil
