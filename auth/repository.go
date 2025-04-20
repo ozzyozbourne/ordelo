@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -76,15 +75,15 @@ func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository 
 }
 
 func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string, error) {
-	Logger.InfoContext(ctx, fmt.Sprintf("Insertion -> %+v in Users collection", user), slog.String("Opt", "Insert"), user_repo_source)
-	result, err := m.col.InsertOne(ctx, user)
+	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
 
+	result, err := m.col.InsertOne(ctx, user)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
 		return "", err
 	}
-	id, ok := result.InsertedID.(bson.ObjectID)
 
+	id, ok := result.InsertedID.(bson.ObjectID)
 	if !ok {
 		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID", slog.String("error", "Casting Error"),
 			user_repo_source)
@@ -95,45 +94,53 @@ func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string
 }
 
 func (m MongoUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
+	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
+	_, err := bson.ObjectIDFromHex(id)
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
 	return nil
 }
 
 func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
-
+	return nil, nil
 }
 
 func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]Recipe, error) {
-
+	return nil, nil
 }
 
 func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
-
+	return nil
 }
 
 func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recipe []*Recipe) error {
-
+	return nil
 }
 
 func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
-
+	return nil
 }
 
 func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
-
+	return nil
 }
 
 func newMongoStoreRepository(client *mongo.Client, dbName string) StoreRepository {
-	return &MongoStoreRepository{collection: client.Database(dbName).Collection("store")}
+	return &MongoStoreRepository{col: client.Database(dbName).Collection("store")}
 }
 
 func newMongoOrderRepository(client *mongo.Client, dbName string) OrderRepository {
-	return &MongoOrderRepository{collection: client.Database(dbName).Collection("order")}
+	return &MongoOrderRepository{col: client.Database(dbName).Collection("order")}
 }
 
 func newMongoCartRepository(client *mongo.Client, dbName string) StoreRepository {
-	return &MongoCartRepository{collection: client.Database(dbName).Collection("cart")}
+	return &MongoCartRepository{col: client.Database(dbName).Collection("cart")}
 }
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
-	return &MongoVendorRepository{collection: client.Database(dbName).Collection("vendor")}
+	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
 }
