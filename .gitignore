@@ -20,6 +20,7 @@
 *.dylib
 *.test
 *.out
+*.ordelo
 
 ##############################
 ## Visual Studio Code

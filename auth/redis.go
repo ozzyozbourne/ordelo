@@ -17,6 +17,15 @@ var (
 
 func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
 	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
+	if addr == "" {
+		err = errors.New("Env variable RD_PORT is empty!")
+		return
+	}
+	if password == "" {
+		err = errors.New("Env variable RD_PASSWORD is empty!")
+		return
+	}
+
 	Logger.
 		InfoContext(
 			ctx,
