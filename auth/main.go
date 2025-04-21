@@ -28,16 +28,19 @@ func run() (err error) {
 	log.Printf("Initing resources Otel, Mongo and Redis\n")
 	otelShutDown, err := initOtelSDK(ctx)
 	if err != nil {
+		log.Printf("Error in initing otel -> %v\n", err)
 		return
 	}
 
 	mongoShutDown, err := initDB(ctx)
 	if err != nil {
+		log.Printf("Error in initing mongoDB -> %v\n", err)
 		return
 	}
 
 	redisShutDown, err := initRedis(ctx)
 	if err != nil {
+		log.Printf("Error in initing redis -> %v\n", err)
 		return
 	}
 
@@ -49,8 +52,9 @@ func run() (err error) {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
-	log.Printf("Initing repositories, caching and service layers\n")
-	if err = initRepositories(15 * time.Minute); err != nil {
+	log.Printf("Initing cached repositories\n")
+	if err = InitCachedMongoRepositories(ctx, 15*time.Minute); err != nil {
+		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}
 	log.Printf("Inited Successfully\n")

@@ -51,19 +51,36 @@ type OrderRepository interface{}
 type CartRepository interface{}
 type VendorRepository interface{}
 
-func initRepositories(cacheTTL time.Duration) error {
+func InitCachedMongoRepositories(ctx context.Context, cacheTTL time.Duration) error {
+	mongoRepos, err := initMongoRepositories()
+	if err != nil {
+		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
+		return err
+	}
+
+	mongoRepos.User = NewCachedUserRepository(RedisClient, mongoRepos.User, cacheTTL)
+	mongoRepos.Store = NewCachedOrderRepository(RedisClient, mongoRepos.Store, cacheTTL)
+	mongoRepos.Order = NewCachedOrderRepository(RedisClient, mongoRepos.Order, cacheTTL)
+	mongoRepos.Cart = NewCachedCartRepository(RedisClient, mongoRepos.Cart, cacheTTL)
+	mongoRepos.Vendor = NewCachedVendorRepository(RedisClient, mongoRepos.Vendor, cacheTTL)
+
+	Repos = mongoRepos
+	return nil
+}
+
+func initMongoRepositories() (*Repositories, error) {
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		return errors.New("Env varible DB_NAME is empty!")
+		return nil, errors.New("Env varible DB_NAME is empty!")
 	}
-	Repos = &Repositories{
-		User:   NewCachedUserRepository(RedisClient, newMongoUserRepository(MongoClient, dbName), cacheTTL),
-		Store:  NewCachedOrderRepository(RedisClient, newMongoStoreRepository(MongoClient, dbName), cacheTTL),
-		Order:  NewCachedOrderRepository(RedisClient, newMongoOrderRepository(MongoClient, dbName), cacheTTL),
-		Cart:   NewCachedCartRepository(RedisClient, newMongoCartRepository(MongoClient, dbName), cacheTTL),
-		Vendor: NewCachedVendorRepository(RedisClient, newMongoVendorRepository(MongoClient, dbName), cacheTTL),
+	mongoRepos := &Repositories{
+		User:   newMongoUserRepository(MongoClient, dbName),
+		Store:  newMongoStoreRepository(MongoClient, dbName),
+		Order:  newMongoOrderRepository(MongoClient, dbName),
+		Cart:   newMongoCartRepository(MongoClient, dbName),
+		Vendor: newMongoVendorRepository(MongoClient, dbName),
 	}
-	return nil
+	return mongoRepos, nil
 }
 
 type MongoUserRepository struct{ col *mongo.Collection }

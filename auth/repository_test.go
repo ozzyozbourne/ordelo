@@ -25,13 +25,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	r = &Repositories{
-		User:   newMongoUserRepository(MongoClient, dbName),
-		Store:  newMongoStoreRepository(MongoClient, dbName),
-		Order:  newMongoOrderRepository(MongoClient, dbName),
-		Cart:   newMongoCartRepository(MongoClient, dbName),
-		Vendor: newMongoVendorRepository(MongoClient, dbName),
+	if r, err = initMongoRepositories(); err != nil {
+		log.Fatal(err)
 	}
 
 	code := m.Run()
