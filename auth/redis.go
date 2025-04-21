@@ -15,7 +15,10 @@ var (
 	redis_source = slog.Any("source", "redis-cache")
 )
 
-func initRedis(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
+func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err error) {
+	ctx, span := Tracer.Start(c, "initRedis")
+	defer span.End()
+
 	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
 	if addr == "" {
 		err = errors.New("Env variable RD_PORT is empty!")

@@ -75,7 +75,10 @@ func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository 
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string, error) {
+func (m MongoUserRepository) CreateUser(c context.Context, user *User) (string, error) {
+	ctx, span := Tracer.Start(c, "CreateUser")
+	defer span.End()
+
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
 
 	result, err := m.col.InsertOne(ctx, user)
@@ -94,7 +97,10 @@ func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string
 	return id.Hex(), nil
 }
 
-func (m MongoUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
+func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, recipes []*Recipe) error {
+	ctx, span := Tracer.Start(c, "CreateUserRecipes")
+	defer span.End()
+
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
 	objId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
