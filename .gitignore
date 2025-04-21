@@ -20,8 +20,10 @@
 *.dylib
 *.test
 *.out
-*.ordelo
 *.sh
+
+ordelo
+auth
 
 ##############################
 ## Visual Studio Code

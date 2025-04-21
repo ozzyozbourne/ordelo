@@ -36,7 +36,7 @@ type UserRepository interface {
 	CreateUserRecipes(context.Context, string, []*Recipe) error
 
 	FindUser(context.Context, string) (*User, error)
-	FindRecipes(context.Context, string) ([]Recipe, error)
+	FindRecipes(context.Context, string) ([]*Recipe, error)
 
 	UpdateUser(context.Context, *User) error
 	UpdateRecipes(context.Context, string, []*Recipe) error
@@ -131,27 +131,51 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	return nil
 }
 
-func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
+func (m MongoUserRepository) FindUser(c context.Context, id string) (*User, error) {
+	ctx, span := Tracer.Start(c, "FindUser")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id), user_repo_source)
+	objId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return nil, err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objId}}
+	var user User
+
+	err = m.col.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+			return nil, fmt.Errorf("user with ID %s not found", id)
+		}
+		Logger.ErrorContext(ctx, "Error finding user", slog.Any("error", err), user_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id), slog.Any("User", user), user_repo_source)
+	return &user, nil
+}
+
+func (m MongoUserRepository) FindRecipes(c context.Context, id string) ([]*Recipe, error) {
 	return nil, nil
 }
 
-func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]Recipe, error) {
-	return nil, nil
-}
-
-func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (m MongoUserRepository) UpdateUser(c context.Context, user *User) error {
 	return nil
 }
 
-func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recipe []*Recipe) error {
+func (m MongoUserRepository) UpdateRecipes(c context.Context, id string, recipe []*Recipe) error {
 	return nil
 }
 
-func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
+func (m MongoUserRepository) DeleteUser(c context.Context, id string) error {
 	return nil
 }
 
-func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
+func (m MongoUserRepository) DeleteRecipes(c context.Context, id string, ids []string) error {
 	return nil
 }
 
