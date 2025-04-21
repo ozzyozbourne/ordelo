@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -50,17 +51,17 @@ type OrderRepository interface{}
 type CartRepository interface{}
 type VendorRepository interface{}
 
-func initRepositories() error {
+func initRepositories(cacheTTL time.Duration) error {
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		return errors.New("Env varible DB_NAME is empty!")
 	}
 	Repos = &Repositories{
-		User:   newMongoUserRepository(MongoClient, dbName),
-		Store:  newMongoStoreRepository(MongoClient, dbName),
-		Order:  newMongoOrderRepository(MongoClient, dbName),
-		Cart:   newMongoCartRepository(MongoClient, dbName),
-		Vendor: newMongoVendorRepository(MongoClient, dbName),
+		User:   NewCachedUserRepository(RedisClient, newMongoUserRepository(MongoClient, dbName), cacheTTL),
+		Store:  NewCachedOrderRepository(RedisClient, newMongoStoreRepository(MongoClient, dbName), cacheTTL),
+		Order:  NewCachedOrderRepository(RedisClient, newMongoOrderRepository(MongoClient, dbName), cacheTTL),
+		Cart:   NewCachedCartRepository(RedisClient, newMongoCartRepository(MongoClient, dbName), cacheTTL),
+		Vendor: NewCachedVendorRepository(RedisClient, newMongoVendorRepository(MongoClient, dbName), cacheTTL),
 	}
 	return nil
 }
@@ -191,10 +192,11 @@ func (m MongoUserRepository) FindRecipes(c context.Context, id string) ([]*Recip
 }
 
 func (m MongoUserRepository) UpdateUser(c context.Context, user *User) error {
+
 	return nil
 }
 
-func (m MongoUserRepository) UpdateRecipes(c context.Context, id string, recipe []*Recipe) error {
+func (m MongoUserRepository) UpdateRecipes(c context.Context, id string, recipes []*Recipe) error {
 	return nil
 }
 

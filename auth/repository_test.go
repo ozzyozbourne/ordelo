@@ -8,9 +8,15 @@ import (
 	"testing"
 )
 
+var r *Repositories
+
 func TestMain(m *testing.M) {
 	var err error
 
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal(errors.New("Env varible DB_NAME is empty!"))
+	}
 	otelShutDown, err := initOtelSDK(context.TODO())
 	if err != nil {
 		log.Fatal(err)
@@ -19,8 +25,13 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = initRepositories(); err != nil {
-		log.Fatal(err)
+
+	r = &Repositories{
+		User:   newMongoUserRepository(MongoClient, dbName),
+		Store:  newMongoStoreRepository(MongoClient, dbName),
+		Order:  newMongoOrderRepository(MongoClient, dbName),
+		Cart:   newMongoCartRepository(MongoClient, dbName),
+		Vendor: newMongoVendorRepository(MongoClient, dbName),
 	}
 
 	code := m.Run()
@@ -50,6 +61,5 @@ func TestUserRepository(t *testing.T) {
 		SavedRecipes: []Recipe{},
 		Role:         "user",
 	}
-
-	Repos.User.CreateUser(context.TODO(), &user)
+	r.User.CreateUser(context.TODO(), &user)
 }

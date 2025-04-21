@@ -45,5 +45,5 @@ git clone git@github.com:ozzyozbourne/ordelo.git && cd ordelo && go build ./back
 #### Setup Redis and LGTM in docker and run Server
 
 ```bash
-docker-compose up && ./backend/ordelo
+docker-compose up && ./backend/./ordelo
 ```

@@ -50,10 +50,7 @@ func run() (err error) {
 	}()
 
 	log.Printf("Initing repositories, caching and service layers\n")
-	if err = initRepositories(); err != nil {
-		return
-	}
-	if err = initCaching(); err != nil {
+	if err = initRepositories(15 * time.Minute); err != nil {
 		return
 	}
 	log.Printf("Inited Successfully\n")
