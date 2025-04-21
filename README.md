@@ -9,7 +9,7 @@
 
 1. Sharukh Saiyed
 2. Zoha Ahmed
-3. Aqif
+3. Akif Qureshi
 4. Javid
 5. Osaid Khan
 
