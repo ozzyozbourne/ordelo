@@ -76,7 +76,10 @@ func (l *OtelMongoLogger) Error(err error, message string, keysAndValues ...inte
 	l.logger.LogAttrs(l.ctx, slog.LevelError, message, attrs...)
 }
 
-func initDB(ctx context.Context) (shutdown func(ctx context.Context) error, err error) {
+func initDB(c context.Context) (shutdown func(ctx context.Context) error, err error) {
+	ctx, span := Tracer.Start(c, "initDB")
+	defer span.End()
+
 	db_uri := os.Getenv("DB_URI")
 	if db_uri == "" {
 		err = errors.New("Env variable DB_URI is empty!")

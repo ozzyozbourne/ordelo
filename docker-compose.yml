@@ -1,16 +1,62 @@
-
 services:
-  mongodb:
-    image: mongo
-    container_name: mongodb
+  redis:
+    image: redis:latest  
+    container_name: my-redis
+    restart: unless-stopped
     ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      - "6379:6379"  
     volumes:
-      - mongodb_data:/data/db
-    restart: always
+      - redis-data:/data  
+    command: redis-server --appendonly yes --requirepass myStrongPassword
+    environment:
+      - TZ=UTC  
+    networks:
+      - redis-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight-data:/data
+    networks:
+      - redis-network
+    depends_on:
+      - redis
+      
+  lgtm:
+    image: docker.io/grafana/otel-lgtm:latest  
+    container_name: lgtm
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./container/grafana:/data/grafana
+      - ./container/prometheus:/data/prometheus
+      - ./container/loki:/data/loki
+    environment:
+      - GF_PATHS_DATA=/data/grafana
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+    networks:
+      - redis-network
 
+networks:
+  redis-network:
+    driver: bridge
+    
 volumes:
-  mongodb_data:
+  redis-data:
+    driver: local
+  redisinsight-data:
+    driver: local
