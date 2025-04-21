@@ -22,9 +22,9 @@
 - Spoonacular API Key
 - HoneyComb API Key
 
-#### To set up env variables run
-
 **Enter the API keys and DB url in the .sh files**
+
+#### To set up env variables run
 
 ```bash
 chmod 700 env.sh && . ./env.sh
