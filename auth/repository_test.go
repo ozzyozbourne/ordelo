@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -19,29 +20,27 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	if err = initRepositories(); err != nil {
-		return
+		log.Fatal(err)
 	}
 
-	defer func() {
-		log.Printf("Cleaning up\n")
-		if otelShutDown != nil {
-			err = errors.Join(otelShutDown(context.TODO()))
-		}
-		if mongoShutDown != nil {
-			err = errors.Join(mongoShutDown(context.TODO()))
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("Clean up Successfull\n")
-
-	}()
 	code := m.Run()
+
+	log.Printf("Cleaning up\n")
+	err = errors.Join(otelShutDown(context.TODO()))
+	err = errors.Join(mongoShutDown(context.TODO()))
+
+	if err != nil {
+		log.Printf("Error in cleaning up resources -> %v\n", err)
+	} else {
+		log.Printf("Cleaned up resources successfull\n")
+	}
+
 	log.Printf("Exit code -> %d\n", code)
+	os.Exit(code)
 }
 
 func TestUserRepository(t *testing.T) {
-	t.Logf("Testing the create user func")
+	t.Logf("Testing User repos CRUD")
 
 	user := User{
 		UserName:     "TestUser",
