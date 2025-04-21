@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -95,13 +96,32 @@ func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (string
 
 func (m MongoUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	_, err := bson.ObjectIDFromHex(id)
-
+	objId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Id not valid unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return err
 	}
 
+	filter := bson.D{{Key: "_id", Value: objId}}
+	update := bson.D{
+		{Key: "$push", Value: bson.M{
+			"saved_recipes": bson.M{
+				"$each": recipes,
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating user recipes", slog.Any("error", err), user_repo_source)
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id), slog.Any("Result", result), user_repo_source)
 	return nil
 }
 

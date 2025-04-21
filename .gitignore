@@ -45,43 +45,7 @@
 go.work
 go.work.sum
 
-##############################
-## Java
-##############################
-local.properties
-gradle-app.setting
-!gradle-wrapper.jar
-
-*.idea_modules/
-*.settings/
-*.mtj.tmp/
-.metadata
-.classpath
-.project
-.loadpath
-.factorypath
-.gradle
-.gradletasknamecache
-
-
-hs_err_pid*
-replay_pid*
-
-*.iml
-*.ipr
-*.iws
-*.tmp
-*.bak
-*.swp
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*~.nib
-
 
 ##############################
 ## Miscellaneous
 ##############################
-env.sh
