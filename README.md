@@ -33,7 +33,7 @@ chmod 700 env.sh && . ./env.sh
 #### To set up for test env variables run
 
 ```bash
-chmod 700 env.sh && . ./env_test.sh
+chmod 700 env_test.sh && . ./env_test.sh
 ```
 
 #### To Build Golang Sever
