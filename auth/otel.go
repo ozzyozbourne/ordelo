@@ -30,6 +30,7 @@ var (
 )
 
 func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
+	interval := 5 * time.Second
 	if schema == "" {
 		err = errors.New("Env variable OTEL_SERVICE_NAME is empty!")
 		return
@@ -106,8 +107,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 
 	traceProvider := trace.NewTracerProvider(
 		trace.WithResource(res),
-		trace.WithBatcher(lgtmTraceExporter, trace.WithBatchTimeout(5*time.Second)),
-		trace.WithBatcher(honeycombTraceExporter, trace.WithBatchTimeout(5*time.Second)))
+		trace.WithBatcher(lgtmTraceExporter, trace.WithBatchTimeout(interval)),
+		trace.WithBatcher(honeycombTraceExporter, trace.WithBatchTimeout(interval)))
 
 	otel.SetTracerProvider(traceProvider)
 
@@ -135,8 +136,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 
 	meterProvider := metric.NewMeterProvider(metric.WithResource(res),
-		metric.WithReader(metric.NewPeriodicReader(lgtmMetricExporter, metric.WithInterval(5*time.Second))),
-		metric.WithReader(metric.NewPeriodicReader(honeycombMetricExporter, metric.WithInterval(5*time.Second))),
+		metric.WithReader(metric.NewPeriodicReader(lgtmMetricExporter, metric.WithInterval(interval))),
+		metric.WithReader(metric.NewPeriodicReader(honeycombMetricExporter, metric.WithInterval(interval))),
 	)
 	shutDownFuncs = append(shutDownFuncs, meterProvider.Shutdown)
 	otel.SetMeterProvider(meterProvider)
@@ -165,8 +166,8 @@ func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err
 	}
 
 	loggerProvider := log.NewLoggerProvider(log.WithResource(res),
-		log.WithProcessor(log.NewBatchProcessor(lgtmLogExporter, log.WithExportInterval(5*time.Second))),
-		log.WithProcessor(log.NewBatchProcessor(honeycombLogExporter, log.WithExportInterval(5*time.Second))),
+		log.WithProcessor(log.NewBatchProcessor(lgtmLogExporter, log.WithExportInterval(interval))),
+		log.WithProcessor(log.NewBatchProcessor(honeycombLogExporter, log.WithExportInterval(interval))),
 	)
 	shutDownFuncs = append(shutDownFuncs, loggerProvider.Shutdown)
 	global.SetLoggerProvider(loggerProvider)
