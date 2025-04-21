@@ -17,8 +17,14 @@
 
 - Golang version 1.24.1 or higher
 - Nodejs 22 or higher
+- Docker
+- Mongo Cloud DB URL
+- Spoonacular API Key
+- HoneyComb API Key
 
 #### To set up env variables run
+
+**Enter the API keys and DB url in the .sh files**
 
 ```bash
 chmod 700 env.sh && . ./env.sh
@@ -34,4 +40,10 @@ chmod 700 env.sh && . ./env_test.sh
 
 ```bash
 git clone git@github.com:ozzyozbourne/ordelo.git && cd ordelo && go build ./backend/
+```
+
+#### Setup Redis and LGTM in docker and run Server
+
+```bash
+docker-compose up && ./backend/ordelo
 ```
