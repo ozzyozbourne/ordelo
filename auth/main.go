@@ -52,11 +52,16 @@ func run() (err error) {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
-	log.Printf("Initing cached repositories\n")
+	log.Printf("Initing cached repositories and auth service\n")
 	if err = InitCachedMongoRepositories(ctx, RedisClient, MongoClient, 15*time.Minute); err != nil {
 		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}
+	if err = InitAuthService(ctx, Repos, RedisClient, 15*time.Minute, 7*24*time.Hour); err != nil {
+		log.Printf("Error in initing auth service -> %v\n", err)
+		return
+	}
+
 	log.Printf("Inited Successfully\n")
 
 	log.Printf("Starting Server\n")

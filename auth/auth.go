@@ -12,10 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var auth_source = slog.String("source", "auth-service")
+var (
+	AuthService *authService
+	auth_source = slog.String("source", "auth-service")
+)
 
-type AuthService struct {
-	cachedRepo    UserRepository
+type authService struct {
+	cachedRepo    *Repositories
 	redisClient   *redis.Client
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
@@ -23,29 +26,31 @@ type AuthService struct {
 	refreshSecret []byte
 }
 
-func NewAuthService(
-	ctx context.Context,
-	cachedRepo UserRepository,
-	redisClient *redis.Client,
-	accessExpiry, refreshExpiry time.Duration,
-	jwtSecret, refreshSecret []byte,
-) (*AuthService, error) {
-
+func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient *redis.Client,
+	accessExpiry, refreshExpiry time.Duration) error {
 	_, span := Tracer.Start(ctx, "initAuthService")
 	defer span.End()
 
 	jwt_secret, refresh_secret := os.Getenv("JWT_SECRET"), os.Getenv("REFRESH_SECRET")
 	if jwt_secret == "" {
-		return nil, errors.New("Env variable JWT_SECRET is empty!")
+		return errors.New("Env variable JWT_SECRET is empty!")
 	}
 	if refresh_secret == "" {
-		return nil, errors.New("Env variable REFRESH_SECRET is empty!")
+		return errors.New("Env variable REFRESH_SECRET is empty!")
 	}
 
-	return &AuthService{cachedRepo, redisClient, accessExpiry, refreshExpiry, jwtSecret, refreshSecret}, nil
+	AuthService = &authService{
+		cachedRepo,
+		redisClient,
+		accessExpiry,
+		refreshExpiry,
+		[]byte(jwt_secret),
+		[]byte(refresh_secret),
+	}
+	return nil
 }
 
-func (s *AuthService) Register(ctx context.Context, username, email, password, address, role string) (userID bson.ObjectID, err error) {
+func (s *authService) Register(ctx context.Context, username, email, password, address, role string) (userID bson.ObjectID, err error) {
 	ctx, span := Tracer.Start(ctx, "RegisterUser")
 	defer span.End()
 
@@ -71,7 +76,7 @@ func (s *AuthService) Register(ctx context.Context, username, email, password, a
 		Role:         role,
 	}
 
-	if userID, err = s.cachedRepo.CreateUser(ctx, user); err != nil {
+	if userID, err = s.cachedRepo.User.CreateUser(ctx, user); err != nil {
 		return
 	}
 
