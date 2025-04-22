@@ -53,7 +53,7 @@ func run() (err error) {
 	}()
 
 	log.Printf("Initing cached repositories\n")
-	if err = InitCachedMongoRepositories(ctx, 15*time.Minute); err != nil {
+	if err = InitCachedMongoRepositories(ctx, RedisClient, MongoClient, 15*time.Minute); err != nil {
 		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}

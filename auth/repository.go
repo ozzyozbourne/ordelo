@@ -52,34 +52,17 @@ type OrderRepository interface{}
 type CartRepository interface{}
 type VendorRepository interface{}
 
-func InitCachedMongoRepositories(ctx context.Context, cacheTTL time.Duration) error {
-	mongoRepos, err := initMongoRepositories()
-	if err != nil {
-		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
-		return err
-	}
-
-	mongoRepos.User = NewCachedUserRepository(RedisClient, mongoRepos.User, cacheTTL)
-	mongoRepos.Store = NewCachedOrderRepository(RedisClient, mongoRepos.Store, cacheTTL)
-	mongoRepos.Order = NewCachedOrderRepository(RedisClient, mongoRepos.Order, cacheTTL)
-	mongoRepos.Cart = NewCachedCartRepository(RedisClient, mongoRepos.Cart, cacheTTL)
-	mongoRepos.Vendor = NewCachedVendorRepository(RedisClient, mongoRepos.Vendor, cacheTTL)
-
-	Repos = mongoRepos
-	return nil
-}
-
-func initMongoRepositories() (*Repositories, error) {
+func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		return nil, errors.New("Env varible DB_NAME is empty!")
 	}
 	mongoRepos := &Repositories{
-		User:   newMongoUserRepository(MongoClient, dbName),
-		Store:  newMongoStoreRepository(MongoClient, dbName),
-		Order:  newMongoOrderRepository(MongoClient, dbName),
-		Cart:   newMongoCartRepository(MongoClient, dbName),
-		Vendor: newMongoVendorRepository(MongoClient, dbName),
+		User:   newMongoUserRepository(mongoClient, dbName),
+		Store:  newMongoStoreRepository(mongoClient, dbName),
+		Order:  newMongoOrderRepository(mongoClient, dbName),
+		Cart:   newMongoCartRepository(mongoClient, dbName),
+		Vendor: newMongoVendorRepository(mongoClient, dbName),
 	}
 	return mongoRepos, nil
 }

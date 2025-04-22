@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"log/Slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type CachedUserRepository struct {
@@ -35,6 +37,23 @@ type CachedVendorRepository struct {
 	redis      *redis.Client
 	vendorRepo VendorRepository
 	expiration time.Duration
+}
+
+func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client, mongoClient *mongo.Client, cacheTTL time.Duration) error {
+	mongoRepos, err := initMongoRepositories(mongoClient)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
+		return err
+	}
+
+	mongoRepos.User = NewCachedUserRepository(redisClient, mongoRepos.User, cacheTTL)
+	mongoRepos.Store = NewCachedOrderRepository(redisClient, mongoRepos.Store, cacheTTL)
+	mongoRepos.Order = NewCachedOrderRepository(redisClient, mongoRepos.Order, cacheTTL)
+	mongoRepos.Cart = NewCachedCartRepository(redisClient, mongoRepos.Cart, cacheTTL)
+	mongoRepos.Vendor = NewCachedVendorRepository(redisClient, mongoRepos.Vendor, cacheTTL)
+
+	Repos = mongoRepos
+	return nil
 }
 
 func NewCachedUserRepository(r *redis.Client, user UserRepository, expiration time.Duration) UserRepository {
