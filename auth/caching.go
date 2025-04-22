@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
-	"log/Slog"
+	"encoding/json"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -64,39 +67,63 @@ func NewCachedUserRepository(r *redis.Client, user UserRepository, expiration ti
 	}
 }
 
-func (r CachedUserRepository) CreateUser(c context.Context, user *User) (string, error) {
-	return "", nil
+func (r CachedUserRepository) CreateUser(ctx context.Context, user *User) (userID bson.ObjectID, err error) {
+	ctx, span := Tracer.Start(ctx, "CreateUser Redis")
+	defer span.End()
+
+	if userID, err = r.userRepo.CreateUser(ctx, user); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("user", user), redis_source)
+	user.ID = userID
+
+	userData, err := json.Marshal(user)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in marshing the persisted user struct", slog.Any("user", user), redis_source)
+		return
+	}
+
+	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.Hex()), userData, r.expiration)
+	if result.Err() != nil {
+		Logger.ErrorContext(ctx, "Unable to persist in Redis", slog.Any("error", err), slog.Any("Redis result", result), redis_source)
+		err = result.Err()
+		return
+	}
+
+	Logger.InfoContext(ctx, "Persisted Successfully", redis_source)
+	return
 }
 
-func (r CachedUserRepository) CreateUserRecipes(c context.Context, id string, recipes []*Recipe) error {
+func (r CachedUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
 	return nil
 }
 
-func (r CachedUserRepository) FindUser(c context.Context, id string) (*User, error) {
+func (r CachedUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
 	return nil, nil
 }
 
-func (r CachedUserRepository) FindUserByEmail(c context.Context, id string) (*User, error) {
+func (r CachedUserRepository) FindUserByEmail(ctx context.Context, id string) (*User, error) {
 	return nil, nil
 }
 
-func (r CachedUserRepository) FindRecipes(c context.Context, id string) ([]*Recipe, error) {
+func (r CachedUserRepository) FindRecipes(ctx context.Context, id string) ([]*Recipe, error) {
 	return nil, nil
 }
 
-func (r CachedUserRepository) UpdateUser(c context.Context, user *User) error {
+func (r CachedUserRepository) UpdateUser(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (r CachedUserRepository) UpdateRecipes(c context.Context, id string, recipes []*Recipe) error {
+func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id string, recipes []*Recipe) error {
 	return nil
 }
 
-func (r CachedUserRepository) DeleteUser(c context.Context, id string) error {
+func (r CachedUserRepository) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r CachedUserRepository) DeleteRecipes(c context.Context, id string, ids []string) error {
+func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
 	return nil
 }
 

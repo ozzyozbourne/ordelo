@@ -1,5 +1,80 @@
 package main
 
-import "log/slog"
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"os"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/crypto/bcrypt"
+)
 
 var auth_source = slog.String("source", "auth-service")
+
+type AuthService struct {
+	cachedRepo    UserRepository
+	redisClient   *redis.Client
+	accessExpiry  time.Duration
+	refreshExpiry time.Duration
+	jwtSecret     []byte
+	refreshSecret []byte
+}
+
+func NewAuthService(
+	ctx context.Context,
+	cachedRepo UserRepository,
+	redisClient *redis.Client,
+	accessExpiry, refreshExpiry time.Duration,
+	jwtSecret, refreshSecret []byte,
+) (*AuthService, error) {
+
+	_, span := Tracer.Start(ctx, "initAuthService")
+	defer span.End()
+
+	jwt_secret, refresh_secret := os.Getenv("JWT_SECRET"), os.Getenv("REFRESH_SECRET")
+	if jwt_secret == "" {
+		return nil, errors.New("Env variable JWT_SECRET is empty!")
+	}
+	if refresh_secret == "" {
+		return nil, errors.New("Env variable REFRESH_SECRET is empty!")
+	}
+
+	return &AuthService{cachedRepo, redisClient, accessExpiry, refreshExpiry, jwtSecret, refreshSecret}, nil
+}
+
+func (s *AuthService) Register(ctx context.Context, username, email, password, address, role string) (userID bson.ObjectID, err error) {
+	ctx, span := Tracer.Start(ctx, "RegisterUser")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Registering a new user", slog.String("email", email), auth_source)
+	if !isValidRole(role) {
+		Logger.ErrorContext(ctx, "Invalid role", auth_source)
+		err = errors.New("invalid role")
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to hash password", slog.Any("error", err), auth_source)
+		return
+	}
+
+	user := &User{
+		UserName:     username,
+		UserAddress:  address,
+		Email:        email,
+		PasswordHash: string(hashedPassword),
+		SavedRecipes: []*Recipe{},
+		Role:         role,
+	}
+
+	if userID, err = s.cachedRepo.CreateUser(ctx, user); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "User registered successfully", slog.String("user_id", userID.Hex()), auth_source)
+	return
+}
