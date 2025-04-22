@@ -57,6 +57,10 @@ func (r CachedUserRepository) FindUser(c context.Context, id string) (*User, err
 	return nil, nil
 }
 
+func (r CachedUserRepository) FindUserByEmail(c context.Context, id string) (*User, error) {
+	return nil, nil
+}
+
 func (r CachedUserRepository) FindRecipes(c context.Context, id string) ([]*Recipe, error) {
 	return nil, nil
 }

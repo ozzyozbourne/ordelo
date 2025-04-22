@@ -37,6 +37,7 @@ type UserRepository interface {
 	CreateUserRecipes(context.Context, string, []*Recipe) error
 
 	FindUser(context.Context, string) (*User, error)
+	FindUserByEmail(context.Context, string) (*User, error)
 	FindRecipes(context.Context, string) ([]*Recipe, error)
 
 	UpdateUser(context.Context, *User) error
@@ -175,6 +176,10 @@ func (m MongoUserRepository) FindUser(c context.Context, id string) (*User, erro
 
 	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id), slog.Any("User", user), user_repo_source)
 	return &user, nil
+}
+
+func (m MongoUserRepository) FindUserByEmail(c context.Context, id string) (*User, error) {
+	return nil, nil
 }
 
 func (m MongoUserRepository) FindRecipes(c context.Context, id string) ([]*Recipe, error) {

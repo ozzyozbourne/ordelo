@@ -1,8 +1,25 @@
 package main
 
 import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
+
+type Claims struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+type AuthService struct {
+	userRepo      UserRepository
+	jwtSecret     []byte
+	accessExpiry  time.Duration
+	refreshExpiry time.Duration
+	refreshSecret []byte
+}
 
 type User struct {
 	ID           bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
