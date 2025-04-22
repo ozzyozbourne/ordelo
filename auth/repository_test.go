@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if r, err = initMongoRepositories(); err != nil {
+	if r, err = initMongoRepositories(MongoClient); err != nil {
 		log.Fatal(err)
 	}
 
@@ -53,7 +53,7 @@ func TestUserRepository(t *testing.T) {
 		UserAddress:  "123 Test St",
 		Email:        generateRandowEmails(),
 		PasswordHash: "hashedpassword",
-		SavedRecipes: []Recipe{},
+		SavedRecipes: []*Recipe{},
 		Role:         "user",
 	}
 	r.User.CreateUser(context.TODO(), &user)

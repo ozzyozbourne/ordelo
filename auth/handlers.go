@@ -36,10 +36,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var user *User
+	user := &User{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a user struct", slog.Any("error", err), source)
 		sendFailure("Error in parsing Request body")
+		return
 	}
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
@@ -59,17 +60,20 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	case user.Role == "":
 		sendFailure("role is empty")
 		return
-	default:
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
 	userID, err := AuthService.Register(ctx, user)
 	if err != nil {
-		sendFailure("Unable to register")
+		if err := sendResponse(ctx, w, http.StatusInternalServerError,
+			map[string]any{"status": "Registration failed"}, source); err != nil {
+			http.Error(w, "Oops!", http.StatusInternalServerError)
+		}
+		return
 	}
 
-	okResponsMap := map[string]any{"user_id": userID.Hex(), "message": "User registered successfully"}
-	if err := sendResponse(ctx, w, http.StatusCreated, okResponsMap, source); err != nil {
+	okResponseMap := map[string]any{"user_id": userID.Hex(), "message": "User registered successfully"}
+	if err := sendResponse(ctx, w, http.StatusCreated, okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }
