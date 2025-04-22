@@ -36,8 +36,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var user *User
+	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a user struct", slog.Any("error", err), source)
 		sendFailure("Error in parsing Request body")
 	}
@@ -63,7 +63,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	if err := sendResponse(ctx, w, http.StatusOK, "", source); err != nil {
+	userID, err := AuthService.Register(ctx, user)
+	if err != nil {
+		sendFailure("Unable to register")
+	}
+
+	okResponsMap := map[string]any{"user_id": userID.Hex(), "message": "User registered successfully"}
+	if err := sendResponse(ctx, w, http.StatusCreated, okResponsMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }

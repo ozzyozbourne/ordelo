@@ -50,32 +50,24 @@ func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient 
 	return nil
 }
 
-func (s *authService) Register(ctx context.Context, username, email, password, address, role string) (userID bson.ObjectID, err error) {
+func (s *authService) Register(ctx context.Context, user *User) (userID bson.ObjectID, err error) {
 	ctx, span := Tracer.Start(ctx, "RegisterUser")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Registering a new user", slog.String("email", email), auth_source)
-	if !isValidRole(role) {
+	Logger.InfoContext(ctx, "Registering a new user", slog.Any("User", user), auth_source)
+	if !isValidRole(user.Role) {
 		Logger.ErrorContext(ctx, "Invalid role", auth_source)
 		err = errors.New("invalid role")
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Failed to hash password", slog.Any("error", err), auth_source)
 		return
 	}
 
-	user := &User{
-		UserName:     username,
-		UserAddress:  address,
-		Email:        email,
-		PasswordHash: string(hashedPassword),
-		SavedRecipes: []*Recipe{},
-		Role:         role,
-	}
-
+	user.PasswordHash = string(hashedPassword)
 	if userID, err = s.cachedRepo.User.CreateUser(ctx, user); err != nil {
 		return
 	}
