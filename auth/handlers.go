@@ -66,13 +66,16 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := AuthService.Register(ctx, user)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
-			map[string]any{"status": "Registration failed"}, source); err != nil {
+			map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
 			http.Error(w, "Oops!", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	okResponseMap := map[string]any{"user_id": userID.Hex(), "message": "User registered successfully"}
+	okResponseMap := map[string]any{
+		"status":  true,
+		"user_id": userID.Hex(),
+	}
 	if err := sendResponse(ctx, w, http.StatusCreated, okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
