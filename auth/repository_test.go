@@ -146,7 +146,7 @@ func getUserRecipes(t *testing.T, id string) []*Recipe {
 
 func compareUserStruct(t *testing.T, user_in, user_out *User) {
 	t.Logf("Comparing the two user structs\n")
-	if err := checkUserStructs(user_in, user_out); err != nil {
+	if err := checkUserStruct(user_in, user_out); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Success the two user structs are the same\n")

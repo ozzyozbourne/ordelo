@@ -256,6 +256,22 @@ func checkUserStruct(in, out *User) error {
 	return nil
 }
 
+func checkRecipes(in, out []*Recipe) error {
+
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("Recipe Length mismatch: %d vs %d", inLen, outLen)
+	}
+
+	for i, inRecipe := range in {
+		outRecipe := out[i]
+		if err := checkRecipe(inRecipe, outRecipe); err != nil {
+			return errors.Join(fmt.Errorf("Error at recipes index -> %d", i), err)
+		}
+	}
+	return nil
+}
+
 func checkRecipe(in, out *Recipe) error {
 	if in == nil && out == nil {
 		return fmt.Errorf("Both recipes are nil")
