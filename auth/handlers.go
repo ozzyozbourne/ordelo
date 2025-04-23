@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap map[string]any, source slog.Attr) (err error) {
+func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap *map[string]any, source slog.Attr) (err error) {
 	ctx, span := Tracer.Start(ctx, "sendReponse")
 	defer span.End()
 
@@ -31,7 +31,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			"success": false,
 			"error":   err,
 		}
-		if err := sendResponse(ctx, w, http.StatusBadRequest, errorResponseMap, source); err != nil {
+		if err := sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source); err != nil {
 			http.Error(w, "Oops!", http.StatusInternalServerError)
 		}
 	}
@@ -66,7 +66,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := AuthService.Register(ctx, user)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
-			map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
+			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
 			http.Error(w, "Oops!", http.StatusInternalServerError)
 		}
 		return
@@ -76,7 +76,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		"status":  true,
 		"user_id": userID.Hex(),
 	}
-	if err := sendResponse(ctx, w, http.StatusCreated, okResponseMap, source); err != nil {
+	if err := sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }
