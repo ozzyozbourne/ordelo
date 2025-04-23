@@ -4,7 +4,6 @@ go 1.24.1
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
-	github.com/google/go-cmp v0.7.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.7.3
 	github.com/redis/go-redis/v9 v9.7.3
 	go.mongodb.org/mongo-driver/v2 v2.2.0
