@@ -3,6 +3,7 @@ module auth
 go 1.24.1
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/redis/go-redis/extra/redisotel/v9 v9.7.3
 	github.com/redis/go-redis/v9 v9.7.3
 	go.mongodb.org/mongo-driver/v2 v2.2.0
@@ -18,6 +19,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/sdk/log v0.11.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
+	golang.org/x/crypto v0.33.0
 )
 
 require (
@@ -40,7 +42,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect

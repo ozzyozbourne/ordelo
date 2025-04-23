@@ -52,11 +52,16 @@ func run() (err error) {
 		err = errors.Join(err, otelShutDown(context.Background()))
 	}()
 
-	log.Printf("Initing cached repositories\n")
-	if err = InitCachedMongoRepositories(ctx, 15*time.Minute); err != nil {
+	log.Printf("Initing cached repositories and auth service\n")
+	if err = InitCachedMongoRepositories(ctx, RedisClient, MongoClient, 15*time.Minute); err != nil {
 		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}
+	if err = InitAuthService(ctx, Repos, RedisClient, 15*time.Minute, 7*24*time.Hour); err != nil {
+		log.Printf("Error in initing auth service -> %v\n", err)
+		return
+	}
+
 	log.Printf("Inited Successfully\n")
 
 	log.Printf("Starting Server\n")
@@ -93,12 +98,12 @@ func run() (err error) {
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
-	_ = func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
+	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
 		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
 		mux.Handle(pattern, handler)
 	}
 
-	// handleFunc("/rolldice", rolldice)
+	handleFunc("POST /register", CreateUser)
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return handler

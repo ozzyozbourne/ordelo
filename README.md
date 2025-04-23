@@ -21,8 +21,15 @@
 - Mongo Cloud DB URL
 - Spoonacular API Key
 - HoneyComb API Key
+- openssl
 
-**Enter the API keys and DB url in the .sh files**
+#### To generate JWT Secret use openssl
+
+```bash
+openssl rand -hex 32
+```
+
+**Enter the API keys, DB url JWT secrets in the .sh files**
 
 #### To set up env variables run
 
@@ -33,7 +40,7 @@ chmod 700 env.sh && . ./env.sh
 #### To set up for test env variables run
 
 ```bash
-chmod 700 env.sh && . ./env_test.sh
+chmod 700 env_test.sh && . ./env_test.sh
 ```
 
 #### To Build Golang Sever

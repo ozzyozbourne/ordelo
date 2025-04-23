@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -33,10 +32,11 @@ type Repositories struct {
 }
 
 type UserRepository interface {
-	CreateUser(context.Context, *User) (string, error)
+	CreateUser(context.Context, *User) (bson.ObjectID, error)
 	CreateUserRecipes(context.Context, string, []*Recipe) error
 
 	FindUser(context.Context, string) (*User, error)
+	FindUserByEmail(context.Context, string) (*User, error)
 	FindRecipes(context.Context, string) ([]*Recipe, error)
 
 	UpdateUser(context.Context, *User) error
@@ -51,34 +51,17 @@ type OrderRepository interface{}
 type CartRepository interface{}
 type VendorRepository interface{}
 
-func InitCachedMongoRepositories(ctx context.Context, cacheTTL time.Duration) error {
-	mongoRepos, err := initMongoRepositories()
-	if err != nil {
-		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
-		return err
-	}
-
-	mongoRepos.User = NewCachedUserRepository(RedisClient, mongoRepos.User, cacheTTL)
-	mongoRepos.Store = NewCachedOrderRepository(RedisClient, mongoRepos.Store, cacheTTL)
-	mongoRepos.Order = NewCachedOrderRepository(RedisClient, mongoRepos.Order, cacheTTL)
-	mongoRepos.Cart = NewCachedCartRepository(RedisClient, mongoRepos.Cart, cacheTTL)
-	mongoRepos.Vendor = NewCachedVendorRepository(RedisClient, mongoRepos.Vendor, cacheTTL)
-
-	Repos = mongoRepos
-	return nil
-}
-
-func initMongoRepositories() (*Repositories, error) {
+func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
 		return nil, errors.New("Env varible DB_NAME is empty!")
 	}
 	mongoRepos := &Repositories{
-		User:   newMongoUserRepository(MongoClient, dbName),
-		Store:  newMongoStoreRepository(MongoClient, dbName),
-		Order:  newMongoOrderRepository(MongoClient, dbName),
-		Cart:   newMongoCartRepository(MongoClient, dbName),
-		Vendor: newMongoVendorRepository(MongoClient, dbName),
+		User:   newMongoUserRepository(mongoClient, dbName),
+		Store:  newMongoStoreRepository(mongoClient, dbName),
+		Order:  newMongoOrderRepository(mongoClient, dbName),
+		Cart:   newMongoCartRepository(mongoClient, dbName),
+		Vendor: newMongoVendorRepository(mongoClient, dbName),
 	}
 	return mongoRepos, nil
 }
@@ -93,8 +76,8 @@ func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository 
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) CreateUser(c context.Context, user *User) (string, error) {
-	ctx, span := Tracer.Start(c, "CreateUser")
+func (m MongoUserRepository) CreateUser(c context.Context, user *User) (bson.ObjectID, error) {
+	ctx, span := Tracer.Start(c, "CreateUser Mongo")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
@@ -102,7 +85,7 @@ func (m MongoUserRepository) CreateUser(c context.Context, user *User) (string, 
 	result, err := m.col.InsertOne(ctx, user)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
-		return "", err
+		return bson.NilObjectID, err
 	}
 
 	id, ok := result.InsertedID.(bson.ObjectID)
@@ -112,7 +95,7 @@ func (m MongoUserRepository) CreateUser(c context.Context, user *User) (string, 
 	}
 
 	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", id.Hex()), user_repo_source)
-	return id.Hex(), nil
+	return id, nil
 }
 
 func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, recipes []*Recipe) error {
@@ -138,6 +121,7 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error updating user recipes", slog.Any("error", err), user_repo_source)
+		return err
 	}
 
 	if result.MatchedCount == 0 {
@@ -149,8 +133,8 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	return nil
 }
 
-func (m MongoUserRepository) FindUser(c context.Context, id string) (*User, error) {
-	ctx, span := Tracer.Start(c, "FindUser")
+func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
+	ctx, span := Tracer.Start(ctx, "FindUser")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id), user_repo_source)
@@ -177,8 +161,12 @@ func (m MongoUserRepository) FindUser(c context.Context, id string) (*User, erro
 	return &user, nil
 }
 
-func (m MongoUserRepository) FindRecipes(c context.Context, id string) ([]*Recipe, error) {
-	ctx, span := Tracer.Start(c, "FindRecipes")
+func (m MongoUserRepository) FindUserByEmail(c context.Context, id string) (*User, error) {
+	return nil, nil
+}
+
+func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]*Recipe, error) {
+	ctx, span := Tracer.Start(ctx, "FindRecipes")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding recipies for user", slog.String("UserId", id), user_repo_source)
@@ -208,20 +196,20 @@ func (m MongoUserRepository) FindRecipes(c context.Context, id string) ([]*Recip
 	return result.SavedRecipes, nil
 }
 
-func (m MongoUserRepository) UpdateUser(c context.Context, user *User) error {
+func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 
 	return nil
 }
 
-func (m MongoUserRepository) UpdateRecipes(c context.Context, id string, recipes []*Recipe) error {
+func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recipes []*Recipe) error {
 	return nil
 }
 
-func (m MongoUserRepository) DeleteUser(c context.Context, id string) error {
+func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (m MongoUserRepository) DeleteRecipes(c context.Context, id string, ids []string) error {
+func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
 	return nil
 }
 

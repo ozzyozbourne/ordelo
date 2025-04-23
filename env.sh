@@ -4,8 +4,10 @@ set -xe
  
 export SPOONACULAR_API_KEY="<enter-value>"
 
-# Backend server port 
-export PORT="8080"
+# Backend server properties
+export PORT=":8080"
+export JWT_SECRET=""
+export REFRESH_SECRET=""
 
 # MongoDB
 export DB_URI="<enter-value>"
