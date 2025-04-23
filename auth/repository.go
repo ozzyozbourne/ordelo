@@ -35,7 +35,7 @@ type UserRepository interface {
 	CreateUser(context.Context, *User) (bson.ObjectID, error)
 	CreateUserRecipes(context.Context, string, []*Recipe) error
 
-	FindUser(context.Context, string) (*User, error)
+	FindUserByID(context.Context, string) (*User, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindRecipes(context.Context, string) ([]*Recipe, error)
 
@@ -133,8 +133,8 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	return nil
 }
 
-func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
-	ctx, span := Tracer.Start(ctx, "FindUser")
+func (m MongoUserRepository) FindUserByID(ctx context.Context, id string) (*User, error) {
+	ctx, span := Tracer.Start(ctx, "FindUserID")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id), user_repo_source)
@@ -153,7 +153,7 @@ func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, er
 			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
 			return nil, fmt.Errorf("user with ID %s not found", id)
 		}
-		Logger.ErrorContext(ctx, "Error finding user", slog.Any("error", err), user_repo_source)
+		Logger.ErrorContext(ctx, "Error finding user by ID", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -161,8 +161,26 @@ func (m MongoUserRepository) FindUser(ctx context.Context, id string) (*User, er
 	return &user, nil
 }
 
-func (m MongoUserRepository) FindUserByEmail(c context.Context, id string) (*User, error) {
-	return nil, nil
+func (m MongoUserRepository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
+	ctx, span := Tracer.Start(ctx, "FindUserByEmail")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding User by Email", slog.String("Email", email), user_repo_source)
+	filter := bson.D{{Key: "email", Value: email}}
+	var user User
+
+	err := m.col.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("email", email), user_repo_source)
+			return nil, fmt.Errorf("user with email %s not found", email)
+		}
+		Logger.ErrorContext(ctx, "Error finding user by email", slog.Any("error", err), user_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "User found successfully", slog.String("email", email), slog.Any("User", user), user_repo_source)
+	return &user, nil
 }
 
 func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]*Recipe, error) {

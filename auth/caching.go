@@ -99,7 +99,7 @@ func (r CachedUserRepository) CreateUserRecipes(ctx context.Context, id string, 
 	return nil
 }
 
-func (r CachedUserRepository) FindUser(ctx context.Context, id string) (*User, error) {
+func (r CachedUserRepository) FindUserByID(ctx context.Context, id string) (*User, error) {
 	return nil, nil
 }
 
