@@ -39,8 +39,8 @@ func TestMain(m *testing.M) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		log.Printf("Waiting for OTEL logs to flush (6 seconds)...")
-		time.Sleep(6 * time.Second)
+		log.Printf("Waiting for OTEL logs to flush (8 seconds)...")
+		time.Sleep(8 * time.Second)
 		log.Printf("Done waiting for OTEL logs")
 	}()
 
@@ -67,7 +67,7 @@ func TestUserRepository(t *testing.T) {
 	t.Logf("Testing Create User fn\n")
 
 	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
-	user := User{
+	user_in := &User{
 		UserName:     generateRandowName(),
 		UserAddress:  generateRandomAddress(),
 		Email:        generateRandowEmails(),
@@ -76,13 +76,14 @@ func TestUserRepository(t *testing.T) {
 		Role:         "user",
 	}
 
-	id, err := r.User.CreateUser(context.TODO(), &user)
+	id, err := r.User.CreateUser(context.TODO(), user_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
 
 	t.Logf("Id -> %v\n", id)
 	t.Logf("Testing Create User Recipes fn\n")
+	user_in.ID = id
 
 	recipes := generateRecipesArray(3)
 	err = r.User.CreateUserRecipes(context.TODO(), id.Hex(), recipes)
@@ -90,5 +91,20 @@ func TestUserRepository(t *testing.T) {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Recipes added successfull\n")
+
+	user_in.SavedRecipes = recipes
+
+	t.Logf("Getting the saved usen\n")
+	user_out, err := r.User.FindUser(context.TODO(), id.Hex())
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Got the user successfully\n")
+
+	t.Logf("Comparing the two user structs\n")
+	if err := checkUserStructs(user_in, user_out); err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Success the two user structs are the same\n")
 
 }

@@ -28,16 +28,8 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 		err = errors.New("Env variable RD_PASSWORD is empty!")
 		return
 	}
-
-	Logger.
-		InfoContext(
-			ctx,
-			"Setting up redis with Opentelemetry",
-			slog.String("Addr", addr),
-			slog.String("Password", password),
-			slog.Int("DB", 0),
-			redis_source,
-		)
+	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.String("Addr", addr),
+		slog.String("Password", password), slog.Int("DB", 0), redis_source)
 
 	var redisShutDownFunc func() error
 	shutdown = func(ctx context.Context) (err error) {

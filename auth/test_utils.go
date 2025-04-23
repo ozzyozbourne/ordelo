@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -218,4 +219,107 @@ func generateRandomAddress() string {
 	return fmt.Sprintf("%s %s %s, %s, %s %s, %s",
 		a.StreetNumber, a.StreetName, a.StreetType,
 		a.City, a.State, a.ZipCode, a.Country)
+}
+
+func checkUserStructs(user_in, user_out *User) (err error) {
+	if user_in.ID != user_out.ID {
+		return fmt.Errorf("UserID are not the same %v %v", user_in.ID, user_out.ID)
+	}
+
+	if user_in.UserName != user_out.UserName {
+		return fmt.Errorf("UserName mismatch: %q vs %q", user_in.UserName, user_out.UserName)
+	}
+
+	if user_in.UserAddress != user_out.UserAddress {
+		return fmt.Errorf("UserAddress mismatch: %q vs %q", user_in.UserAddress, user_out.UserAddress)
+	}
+
+	if user_in.Email != user_out.Email {
+		return fmt.Errorf("Email mismatch: %q vs %q", user_in.Email, user_out.Email)
+	}
+
+	if user_in.PasswordHash != user_out.PasswordHash {
+		return fmt.Errorf("PasswordHash mismatch: %q vs %q", user_in.PasswordHash, user_out.PasswordHash)
+	}
+
+	if user_in.Role != user_out.Role {
+		return fmt.Errorf("Role mismatch: %q vs %q", user_in.Role, user_out.Role)
+	}
+
+	if len(user_in.SavedRecipes) != len(user_out.SavedRecipes) {
+		return fmt.Errorf("SavedRecipes length mismatch: %d vs %d",
+			len(user_in.SavedRecipes), len(user_out.SavedRecipes))
+	}
+
+	for i, recipe_in := range user_in.SavedRecipes {
+		recipe_out := user_out.SavedRecipes[i]
+
+		if recipe_in == nil && recipe_out == nil {
+			continue
+		}
+		if recipe_in == nil || recipe_out == nil {
+			return fmt.Errorf("Recipe at index %d: one is nil, other is not", i)
+		}
+
+		if recipe_in.ID != recipe_out.ID {
+			return fmt.Errorf("Recipe[%d].ID mismatch: %v vs %v", i, recipe_in.ID, recipe_out.ID)
+		}
+
+		if recipe_in.Title != recipe_out.Title {
+			return fmt.Errorf("Recipe[%d].Title mismatch: %q vs %q", i, recipe_in.Title, recipe_out.Title)
+		}
+
+		if recipe_in.Description != recipe_out.Description {
+			return fmt.Errorf("Recipe[%d].Description mismatch: %q vs %q",
+				i, recipe_in.Description, recipe_out.Description)
+		}
+
+		if recipe_in.PreparationTime != recipe_out.PreparationTime {
+			return fmt.Errorf("Recipe[%d].PreparationTime mismatch: %d vs %d",
+				i, recipe_in.PreparationTime, recipe_out.PreparationTime)
+		}
+
+		if recipe_in.ServingSize != recipe_out.ServingSize {
+			return fmt.Errorf("Recipe[%d].ServingSize mismatch: %d vs %d",
+				i, recipe_in.ServingSize, recipe_out.ServingSize)
+		}
+
+		if len(recipe_in.Ingredients) != len(recipe_out.Ingredients) {
+			return fmt.Errorf("Recipe[%d].Ingredients length mismatch: %d vs %d",
+				i, len(recipe_in.Ingredients), len(recipe_out.Ingredients))
+		}
+
+		for j, ing_in := range recipe_in.Ingredients {
+			ing_out := recipe_out.Ingredients[j]
+
+			if ing_in == nil && ing_out == nil {
+				continue
+			}
+			if ing_in == nil || ing_out == nil {
+				return fmt.Errorf("Recipe[%d].Ingredient[%d]: one is nil, other is not", i, j)
+			}
+
+			if ing_in.IngredientID != ing_out.IngredientID {
+				return fmt.Errorf("Recipe[%d].Ingredient[%d].IngredientID mismatch: %v vs %v",
+					i, j, ing_in.IngredientID, ing_out.IngredientID)
+			}
+
+			if ing_in.Name != ing_out.Name {
+				return fmt.Errorf("Recipe[%d].Ingredient[%d].Name mismatch: %q vs %q",
+					i, j, ing_in.Name, ing_out.Name)
+			}
+
+			if ing_in.Quantity != ing_out.Quantity {
+				return fmt.Errorf("Recipe[%d].Ingredient[%d].Quantity mismatch: %f vs %f",
+					i, j, ing_in.Quantity, ing_out.Quantity)
+			}
+
+			if ing_in.Unit != ing_out.Unit {
+				return fmt.Errorf("Recipe[%d].Ingredient[%d].Unit mismatch: %q vs %q",
+					i, j, ing_in.Unit, ing_out.Unit)
+			}
+		}
+	}
+
+	return nil
 }
