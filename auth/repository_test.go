@@ -116,7 +116,7 @@ func addRecipe(t *testing.T, user *User) *User {
 
 func getUserByID(t *testing.T, id string) *User {
 	t.Logf("Getting the by ID\n")
-	user, err := r.User.FindUser(context.TODO(), id)
+	user, err := r.User.FindUserByID(context.TODO(), id)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -221,148 +221,98 @@ func generateRandomAddress() string {
 		a.City, a.State, a.ZipCode, a.Country)
 }
 
-func checkUserStructs(user_in, user_out *User) error {
-	if user_in.ID != user_out.ID {
-		return fmt.Errorf("UserID are not the same %v %v", user_in.ID, user_out.ID)
+func checkUserStruct(in, out *User) error {
+	if in.ID != out.ID {
+		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)
 	}
-	if user_in.UserName != user_out.UserName {
-		return fmt.Errorf("UserName mismatch: %q vs %q", user_in.UserName, user_out.UserName)
+	if in.UserName != out.UserName {
+		return fmt.Errorf("UserName mismatch: %s vs %s", in.UserName, out.UserName)
 	}
-	if user_in.UserAddress != user_out.UserAddress {
-		return fmt.Errorf("UserAddress mismatch: %q vs %q", user_in.UserAddress, user_out.UserAddress)
+	if in.UserAddress != out.UserAddress {
+		return fmt.Errorf("UserAddress mismatch -> \n%s\n%s", in.UserAddress, out.UserAddress)
 	}
-	if user_in.Email != user_out.Email {
-		return fmt.Errorf("Email mismatch: %q vs %q", user_in.Email, user_out.Email)
+	if in.Email != out.Email {
+		return fmt.Errorf("Email mismatch: %s vs %s", in.Email, out.Email)
 	}
-	if user_in.PasswordHash != user_out.PasswordHash {
-		return fmt.Errorf("PasswordHash mismatch: %q vs %q", user_in.PasswordHash, user_out.PasswordHash)
+	if in.PasswordHash != out.PasswordHash {
+		return fmt.Errorf("PasswordHash mismatch: %s vs %s", in.PasswordHash, out.PasswordHash)
 	}
-	if user_in.Role != user_out.Role {
-		return fmt.Errorf("Role mismatch: %q vs %q", user_in.Role, user_out.Role)
+	if in.Role != out.Role {
+		return fmt.Errorf("Role mismatch: %s vs %s", in.Role, out.Role)
 	}
-	if len(user_in.SavedRecipes) != len(user_out.SavedRecipes) {
-		return fmt.Errorf("SavedRecipes length mismatch: %d vs %d",
-			len(user_in.SavedRecipes), len(user_out.SavedRecipes))
+
+	inRecipeLen, outRecipeLen := len(in.SavedRecipes), len(out.SavedRecipes)
+	if inRecipeLen != outRecipeLen {
+		return fmt.Errorf("Recipe Length mismatch: %d vs %d", inRecipeLen, outRecipeLen)
 	}
-	for i, recipe_in := range user_in.SavedRecipes {
-		recipe_out := user_out.SavedRecipes[i]
-		if recipe_in == nil && recipe_out == nil {
-			continue
-		}
-		if recipe_in == nil || recipe_out == nil {
-			return fmt.Errorf("Recipe at index %d: one is nil, other is not", i)
-		}
-		if recipe_in.ID != recipe_out.ID {
-			return fmt.Errorf("Recipe[%d].ID mismatch: %v vs %v", i, recipe_in.ID, recipe_out.ID)
-		}
-		if recipe_in.Title != recipe_out.Title {
-			return fmt.Errorf("Recipe[%d].Title mismatch: %q vs %q", i, recipe_in.Title, recipe_out.Title)
-		}
-		if recipe_in.Description != recipe_out.Description {
-			return fmt.Errorf("Recipe[%d].Description mismatch: %q vs %q",
-				i, recipe_in.Description, recipe_out.Description)
-		}
-		if recipe_in.PreparationTime != recipe_out.PreparationTime {
-			return fmt.Errorf("Recipe[%d].PreparationTime mismatch: %d vs %d",
-				i, recipe_in.PreparationTime, recipe_out.PreparationTime)
-		}
-		if recipe_in.ServingSize != recipe_out.ServingSize {
-			return fmt.Errorf("Recipe[%d].ServingSize mismatch: %d vs %d",
-				i, recipe_in.ServingSize, recipe_out.ServingSize)
-		}
-		if len(recipe_in.Ingredients) != len(recipe_out.Ingredients) {
-			return fmt.Errorf("Recipe[%d].Ingredients length mismatch: %d vs %d",
-				i, len(recipe_in.Ingredients), len(recipe_out.Ingredients))
-		}
-		for j, ing_in := range recipe_in.Ingredients {
-			ing_out := recipe_out.Ingredients[j]
-			if ing_in == nil && ing_out == nil {
-				continue
-			}
-			if ing_in == nil || ing_out == nil {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d]: one is nil, other is not", i, j)
-			}
-			if ing_in.IngredientID != ing_out.IngredientID {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].IngredientID mismatch: %v vs %v",
-					i, j, ing_in.IngredientID, ing_out.IngredientID)
-			}
-			if ing_in.Name != ing_out.Name {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Name mismatch: %q vs %q",
-					i, j, ing_in.Name, ing_out.Name)
-			}
-			if ing_in.Quantity != ing_out.Quantity {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Quantity mismatch: %f vs %f",
-					i, j, ing_in.Quantity, ing_out.Quantity)
-			}
-			if ing_in.Unit != ing_out.Unit {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Unit mismatch: %q vs %q",
-					i, j, ing_in.Unit, ing_out.Unit)
-			}
+
+	for i, inRecipe := range in.SavedRecipes {
+		outRecipe := out.SavedRecipes[i]
+		if err := checkRecipe(inRecipe, outRecipe); err != nil {
+			return errors.Join(fmt.Errorf("Error at recipes index -> %d", i), err)
 		}
 	}
+
 	return nil
 }
 
-func checkRecipes(recipes_in, recipes_out []*Recipe) error {
-	if len(recipes_in) != len(recipes_out) {
-		return fmt.Errorf("SavedRecipes length mismatch: %d vs %d",
-			len(recipes_in), len(recipes_out))
+func checkRecipe(in, out *Recipe) error {
+	if in == nil && out == nil {
+		return fmt.Errorf("Both recipes are nil")
 	}
-	for i, recipe_in := range recipes_in {
-		recipe_out := recipes_out[i]
-		if recipe_in == nil && recipe_out == nil {
-			continue
+	if in == nil || out == nil {
+		return fmt.Errorf("In nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
+	}
+	if in.ID != out.ID {
+		return fmt.Errorf("ID mismatch: %v vs %v", in.ID, out.ID)
+	}
+	if in.Title != out.Title {
+		return fmt.Errorf("Title mismatch: %s vs %s", in.Title, out.Title)
+	}
+	if in.Description != out.Description {
+		return fmt.Errorf("Description mismatch: %s vs %s", in.Description, out.Description)
+	}
+	if in.PreparationTime != out.PreparationTime {
+		return fmt.Errorf("PreparationTime mismatch: %d vs %d", in.PreparationTime, out.PreparationTime)
+	}
+	if in.ServingSize != out.ServingSize {
+		return fmt.Errorf("ServingSize mismatch: %d vs %d", in.ServingSize, out.ServingSize)
+	}
+
+	inIgLen, outIgLen := len(in.Ingredients), len(out.Ingredients)
+	if inIgLen != outIgLen {
+		return fmt.Errorf("Ingredients Length mismatch: %d vs %d", inIgLen, outIgLen)
+	}
+
+	for i, inIg := range in.Ingredients {
+		outIg := out.Ingredients[i]
+		if err := checkIngredient(inIg, outIg); err != nil {
+			return errors.Join(fmt.Errorf("Error at Ingredient index -> %d", i), err)
 		}
-		if recipe_in == nil || recipe_out == nil {
-			return fmt.Errorf("Recipe at index %d: one is nil, other is not", i)
-		}
-		if recipe_in.ID != recipe_out.ID {
-			return fmt.Errorf("Recipe[%d].ID mismatch: %v vs %v", i, recipe_in.ID, recipe_out.ID)
-		}
-		if recipe_in.Title != recipe_out.Title {
-			return fmt.Errorf("Recipe[%d].Title mismatch: %q vs %q", i, recipe_in.Title, recipe_out.Title)
-		}
-		if recipe_in.Description != recipe_out.Description {
-			return fmt.Errorf("Recipe[%d].Description mismatch: %q vs %q",
-				i, recipe_in.Description, recipe_out.Description)
-		}
-		if recipe_in.PreparationTime != recipe_out.PreparationTime {
-			return fmt.Errorf("Recipe[%d].PreparationTime mismatch: %d vs %d",
-				i, recipe_in.PreparationTime, recipe_out.PreparationTime)
-		}
-		if recipe_in.ServingSize != recipe_out.ServingSize {
-			return fmt.Errorf("Recipe[%d].ServingSize mismatch: %d vs %d",
-				i, recipe_in.ServingSize, recipe_out.ServingSize)
-		}
-		if len(recipe_in.Ingredients) != len(recipe_out.Ingredients) {
-			return fmt.Errorf("Recipe[%d].Ingredients length mismatch: %d vs %d",
-				i, len(recipe_in.Ingredients), len(recipe_out.Ingredients))
-		}
-		for j, ing_in := range recipe_in.Ingredients {
-			ing_out := recipe_out.Ingredients[j]
-			if ing_in == nil && ing_out == nil {
-				continue
-			}
-			if ing_in == nil || ing_out == nil {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d]: one is nil, other is not", i, j)
-			}
-			if ing_in.IngredientID != ing_out.IngredientID {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].IngredientID mismatch: %v vs %v",
-					i, j, ing_in.IngredientID, ing_out.IngredientID)
-			}
-			if ing_in.Name != ing_out.Name {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Name mismatch: %q vs %q",
-					i, j, ing_in.Name, ing_out.Name)
-			}
-			if ing_in.Quantity != ing_out.Quantity {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Quantity mismatch: %f vs %f",
-					i, j, ing_in.Quantity, ing_out.Quantity)
-			}
-			if ing_in.Unit != ing_out.Unit {
-				return fmt.Errorf("Recipe[%d].Ingredient[%d].Unit mismatch: %q vs %q",
-					i, j, ing_in.Unit, ing_out.Unit)
-			}
-		}
+	}
+
+	return nil
+}
+
+func checkIngredient(in, out *Ingredient) error {
+	if in == nil && out == nil {
+		return fmt.Errorf("Both ingredients struct are nil")
+	}
+	if in == nil || out == nil {
+		return fmt.Errorf("In nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
+	}
+	if in.IngredientID != out.IngredientID {
+		return fmt.Errorf("IngredientID mismatch: %v vs %v", in.IngredientID, out.IngredientID)
+	}
+	if in.Name != out.Name {
+		return fmt.Errorf("Name mismatch: %s vs %s", in.Name, out.Name)
+	}
+
+	if in.Quantity != out.Quantity {
+		return fmt.Errorf("Quantity mismatch: %f vs %f", in.Quantity, out.Quantity)
+	}
+	if in.Unit != out.Unit {
+		return fmt.Errorf("Unit mismatch: %d vs %d", in.Unit, out.Unit)
 	}
 	return nil
 }
