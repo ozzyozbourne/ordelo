@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log"
 	"os"
+	"sync"
 	"testing"
+	"time"
 )
 
 var r *Repositories
@@ -31,6 +33,19 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Printf("Waiting for OTEL logs to flush (6 seconds)...")
+		time.Sleep(6 * time.Second)
+		log.Printf("Done waiting for OTEL logs")
+	}()
+
+	log.Printf("Waiting for background tasks to complete...")
+	wg.Wait()
+	log.Printf("All background tasks completed")
+
 	log.Printf("Cleaning up\n")
 	err = errors.Join(otelShutDown(context.TODO()))
 	err = errors.Join(mongoShutDown(context.TODO()))
@@ -46,7 +61,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestUserRepository(t *testing.T) {
-	t.Logf("Testing User repos CRUD")
+	t.Logf("Testing User repos CRUD\n")
+	t.Logf("Testing Create User fn\n")
 
 	user := User{
 		UserName:     "TestUser",
@@ -56,5 +72,20 @@ func TestUserRepository(t *testing.T) {
 		SavedRecipes: []*Recipe{},
 		Role:         "user",
 	}
-	r.User.CreateUser(context.TODO(), &user)
+
+	id, err := r.User.CreateUser(context.TODO(), &user)
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+
+	t.Logf("Id -> %v\n", id)
+	t.Logf("Testing Create User Recipes fn\n")
+
+	recipes := generateRecipesArray(3)
+	err = r.User.CreateUserRecipes(context.TODO(), id.Hex(), recipes)
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Recipes added successfull\n")
+
 }
