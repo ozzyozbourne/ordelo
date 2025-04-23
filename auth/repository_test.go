@@ -64,7 +64,22 @@ func TestMain(m *testing.M) {
 
 func TestUserRepository(t *testing.T) {
 	t.Logf("Testing User repos CRUD\n")
-	t.Logf("Testing Create User fn\n")
+
+	user_in := createUser(t)
+	user_in = addRecipe(t, user_in)
+	user_out := getUserByID(t, user_in.ID.Hex())
+	compareUserStruct(t, user_in, user_out)
+
+	user_out = getUserByEmail(t, user_in.Email)
+	compareUserStruct(t, user_in, user_out)
+
+	recipes_out := getUserRecipes(t, user_in.ID.Hex())
+	compareUserRecipes(t, user_in.SavedRecipes, recipes_out)
+
+}
+
+func createUser(t *testing.T) *User {
+	t.Logf("Testing Create User \n")
 
 	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
 	user_in := &User{
@@ -82,29 +97,67 @@ func TestUserRepository(t *testing.T) {
 	}
 
 	t.Logf("Id -> %v\n", id)
-	t.Logf("Testing Create User Recipes fn\n")
 	user_in.ID = id
+	t.Logf("Sucess\n")
+	return user_in
+}
 
-	recipes := generateRecipesArray(3)
-	err = r.User.CreateUserRecipes(context.TODO(), id.Hex(), recipes)
+func addRecipe(t *testing.T, user *User) *User {
+	t.Logf("Testing Adding Recipe to a user")
+	recipes_in := generateRecipesArray(3)
+	err := r.User.CreateUserRecipes(context.TODO(), user.ID.Hex(), recipes_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Recipes added successfull\n")
+	user.SavedRecipes = recipes_in
+	return user
+}
 
-	user_in.SavedRecipes = recipes
-
-	t.Logf("Getting the saved usen\n")
-	user_out, err := r.User.FindUser(context.TODO(), id.Hex())
+func getUserByID(t *testing.T, id string) *User {
+	t.Logf("Getting the by ID\n")
+	user, err := r.User.FindUser(context.TODO(), id)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Got the user successfully\n")
+	return user
+}
 
+func getUserByEmail(t *testing.T, email string) *User {
+	t.Logf("Getting the by email\n")
+	user, err := r.User.FindUserByEmail(context.TODO(), email)
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Got the user successfully\n")
+	return user
+}
+
+func getUserRecipes(t *testing.T, id string) []*Recipe {
+	t.Logf("Getting the user Recipes\n")
+	recipes, err := r.User.FindRecipes(context.TODO(), id)
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Got the user recipes successfully\n")
+	return recipes
+}
+
+func compareUserStruct(t *testing.T, user_in, user_out *User) {
 	t.Logf("Comparing the two user structs\n")
 	if err := checkUserStructs(user_in, user_out); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Success the two user structs are the same\n")
+
+}
+
+func compareUserRecipes(t *testing.T, recipes_in, recipes_out []*Recipe) {
+	t.Logf("Comparing the two recipe structs\n")
+	if err := checkRecipes(recipes_in, recipes_out); err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Success the two recipes structs are the same\n")
 
 }
