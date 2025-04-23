@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 var r *Repositories
@@ -64,11 +66,12 @@ func TestUserRepository(t *testing.T) {
 	t.Logf("Testing User repos CRUD\n")
 	t.Logf("Testing Create User fn\n")
 
+	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
 	user := User{
-		UserName:     "TestUser",
-		UserAddress:  "123 Test St",
+		UserName:     generateRandowName(),
+		UserAddress:  generateRandomAddress(),
 		Email:        generateRandowEmails(),
-		PasswordHash: "hashedpassword",
+		PasswordHash: string(password),
 		SavedRecipes: []*Recipe{},
 		Role:         "user",
 	}

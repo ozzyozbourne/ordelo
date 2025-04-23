@@ -7,6 +7,22 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
+func generateRandowEmails() string {
+	b := make([]byte, 5)
+	for i := range b {
+		b[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[rand.Intn(36)]
+	}
+	return fmt.Sprintf("%s@test.com", string(b))
+}
+
+func generateRandowName() string {
+	b := make([]byte, 5)
+	for i := range b {
+		b[i] = "abcdefghijklmnopqrstuvwxyz"[rand.Intn(26)]
+	}
+	return fmt.Sprintf("%s tester", string(b))
+}
+
 func generateIngredientsArray(n int) []*Ingredient {
 	genRandIngredient := func() string {
 
@@ -163,4 +179,43 @@ func generateRecipesArray(n int) []*Recipe {
 
 	}
 	return res
+}
+
+func generateRandomAddress() string {
+	streetNames := []string{"Main", "Oak", "Pine", "Maple", "Cedar", "Elm", "Washington", "Lake", "Hill",
+		"Park", "River", "Meadow", "Forest", "Spring", "Sunset", "Highland", "Valley", "Mountain"}
+
+	streetTypes := []string{"St", "Ave", "Blvd", "Rd", "Ln", "Dr", "Way", "Pl", "Ct"}
+
+	cities := []string{"Springfield", "Franklin", "Greenville", "Bristol", "Clinton", "Salem",
+		"Georgetown", "Arlington", "Burlington", "Manchester", "Oxford", "Riverside", "Kingston"}
+
+	states := []string{"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+		"IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV",
+		"NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
+		"UT", "VT", "VA", "WA", "WV", "WI", "WY"}
+
+	countries := []string{"USA", "Chile", "China", "India", "Mexico", "Australia"}
+
+	a := &struct {
+		StreetNumber string
+		StreetName   string
+		StreetType   string
+		City         string
+		State        string
+		ZipCode      string
+		Country      string
+	}{
+		StreetNumber: fmt.Sprintf("%d", rand.Intn(9999)+1),
+		StreetName:   streetNames[rand.Intn(len(streetNames))],
+		StreetType:   streetTypes[rand.Intn(len(streetTypes))],
+		City:         cities[rand.Intn(len(cities))],
+		State:        states[rand.Intn(len(states))],
+		ZipCode:      fmt.Sprintf("%05d", rand.Intn(100000)),
+		Country:      countries[rand.Intn(len(countries))],
+	}
+
+	return fmt.Sprintf("%s %s %s, %s, %s %s, %s",
+		a.StreetNumber, a.StreetName, a.StreetType,
+		a.City, a.State, a.ZipCode, a.Country)
 }
