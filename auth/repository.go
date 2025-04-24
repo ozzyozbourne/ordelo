@@ -103,7 +103,7 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Id not valid unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return err
@@ -138,9 +138,8 @@ func (m MongoUserRepository) FindUserByID(ctx context.Context, id string) (*User
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -188,11 +187,11 @@ func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]*Rec
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding recipies for user", slog.String("UserId", id), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
+
 	filter := bson.D{{Key: "_id", Value: objId}}
 	projection := bson.D{{Key: "saved_recipes", Value: 1}, {Key: "_id", Value: 0}}
 
@@ -224,23 +223,55 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 		Logger.ErrorContext(ctx, "The user struct has no ObjectID", slog.Any("error", "No ObjectID"), user_repo_source)
 		return fmt.Errorf("User struct has no ObjectID")
 	}
-
-	user.ID = bson.NilObjectID
-	filter := bson.D{{Key: "_id", Value: objId}}
-	update := bson.D{{Key: "$set", Value: user}}
-
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating user", slog.Any("error", err), user_repo_source)
+	if err := checkIfDocumentExists(ctx, m.col, objId); err != nil {
 		return err
 	}
 
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", user.ID.Hex()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", user.ID.Hex())
+	filter := bson.D{{Key: "_id", Value: objId}}
+
+	user.ID = bson.NilObjectID
+	user.SavedRecipes = nil
+
+	var models []mongo.WriteModel
+	updateModel := func(update bson.D) {
+		updateModel := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
+		models = append(models, updateModel)
+
 	}
 
-	Logger.InfoContext(ctx, "User updated successfully", slog.String("ID", user.ID.Hex()), user_repo_source)
+	if user.UserName != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"user_name": user.UserName}}})
+	}
+	if user.Email != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": user.Email}}})
+	}
+	if user.UserAddress != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"user_address": user.UserAddress}}})
+	}
+	if user.PasswordHash != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": user.PasswordHash}}})
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), user_repo_source)
+		return fmt.Errorf("No updates were mode for user %+v", user)
+	}
+
+	Logger.InfoContext(
+		ctx, "User updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		slog.Any("Result", *result),
+		user_repo_source,
+	)
+
 	return nil
 }
 
@@ -249,21 +280,12 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recip
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating recipes for user", slog.String("userID", id), slog.Any("recipes", recipes), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
-	filter := bson.D{{Key: "_id", Value: objId}}
-	count, err := m.col.CountDocuments(ctx, filter)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error checking if user exists", slog.Any("error", err), user_repo_source)
+	if err = checkIfDocumentExists(ctx, m.col, objId); err != nil {
 		return err
-	}
-	if count == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
 	}
 
 	models := make([]mongo.WriteModel, 0, len(recipes)*2)
@@ -314,9 +336,8 @@ func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Deleting a user", slog.String("ID", id), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return err
 	}
 
@@ -341,9 +362,8 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids [
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Deleting recipes for user", slog.String("userID", id), slog.Any("recipeIDs", ids), user_repo_source)
-	objId, err := bson.ObjectIDFromHex(id)
+	objId, err := checkObjID(ctx, id)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
 		return err
 	}
 
@@ -400,4 +420,27 @@ func newMongoCartRepository(client *mongo.Client, dbName string) StoreRepository
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
+}
+
+func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bson.ObjectID) error {
+	filter := bson.D{{Key: "_id", Value: objID}}
+	count, err := col.CountDocuments(ctx, filter)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in checking if document exists", slog.Any("error", err), user_repo_source)
+		return err
+	}
+	if count == 0 {
+		Logger.ErrorContext(ctx, "Document not found", slog.String("ID", objID.Hex()), user_repo_source)
+		return fmt.Errorf("Document with ID %s not found", objID.Hex())
+	}
+	return nil
+}
+
+func checkObjID(ctx context.Context, id string) (objID bson.ObjectID, err error) {
+	objID, err = bson.ObjectIDFromHex(id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return
+	}
+	return
 }

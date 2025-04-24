@@ -163,3 +163,7 @@ func compareUserRecipes(t *testing.T, recipes_in, recipes_out []*Recipe) {
 	t.Logf("Success the two recipes structs are the same\n")
 
 }
+
+func updateUser(t *testing.T, user *User) {
+	t.Logf("Testing Update user ")
+}
