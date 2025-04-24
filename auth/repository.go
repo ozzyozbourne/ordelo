@@ -245,6 +245,67 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 }
 
 func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recipes []*Recipe) error {
+	ctx, span := Tracer.Start(ctx, "UpdateRecipes")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating recipes for user", slog.String("userID", id), slog.Any("recipes", recipes), user_repo_source)
+	objId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objId}}
+	count, err := m.col.CountDocuments(ctx, filter)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error checking if user exists", slog.Any("error", err), user_repo_source)
+		return err
+	}
+	if count == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	models := make([]mongo.WriteModel, 0, len(recipes)*2)
+
+	for _, recipe := range recipes {
+		updateFilter := bson.D{
+			{Key: "_id", Value: objId},
+			{Key: "saved_recipes._id", Value: recipe.ID},
+		}
+		update := bson.D{
+			{Key: "$set", Value: bson.M{"saved_recipes.$": recipe}},
+		}
+		updateModel := mongo.NewUpdateOneModel().
+			SetFilter(updateFilter).
+			SetUpdate(update)
+		models = append(models, updateModel)
+
+		addFilter := bson.D{
+			{Key: "_id", Value: objId},
+			{Key: "saved_recipes._id", Value: bson.M{"$ne": recipe.ID}},
+		}
+		addUpdate := bson.D{
+			{Key: "$push", Value: bson.M{"saved_recipes": recipe}},
+		}
+		addModel := mongo.NewUpdateOneModel().
+			SetFilter(addFilter).
+			SetUpdate(addUpdate)
+		models = append(models, addModel)
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Recipes updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		user_repo_source)
+
 	return nil
 }
 
