@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -76,6 +77,12 @@ func TestUserRepositoryPositve(t *testing.T) {
 
 	recipes_out := getUserRecipes(t, user_in.ID.Hex())
 	compareUserRecipes(t, user_in.SavedRecipes, recipes_out)
+
+	updateUser(t, user_in)
+	user_out = getUserByID(t, user_in.ID.Hex())
+	compareUserStruct(t, user_in, user_out)
+
+	_ = updateRecipes(t, user_in.ID, user_in.SavedRecipes)
 
 	t.Logf("Tested User Repo CRUD Successfully\n")
 }
@@ -164,6 +171,28 @@ func compareUserRecipes(t *testing.T, recipes_in, recipes_out []*Recipe) {
 
 }
 
-func updateUser(t *testing.T, user *User) {
-	t.Logf("Testing Update user ")
+func updateUser(t *testing.T, user_in *User) {
+	t.Logf("Testing Update user Function")
+	password, _ := bcrypt.GenerateFromPassword([]byte("chinchecker"), bcrypt.DefaultCost)
+
+	user_in.UserName = generateRandowName()
+	user_in.UserAddress = generateRandomAddress()
+	user_in.Email = generateRandowEmails()
+	user_in.PasswordHash = string(password)
+
+	if err := r.User.UpdateUser(context.TODO(), user_in); err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Tested Update user Function Success!")
+}
+
+func updateRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
+	recipes[2] = generateRecipesArray(1)[0]
+	recipes[0].Title = "Min"
+	recipes[0].ServingSize = 100
+
+	if err := r.User.UpdateRecipes(context.TODO(), id.Hex(), recipes); err != nil {
+		t.Fatal(err)
+	}
+	return recipes
 }

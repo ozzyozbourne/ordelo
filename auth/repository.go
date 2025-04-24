@@ -228,15 +228,10 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 	}
 
 	filter := bson.D{{Key: "_id", Value: objId}}
-
-	user.ID = bson.NilObjectID
-	user.SavedRecipes = nil
-
 	var models []mongo.WriteModel
 	updateModel := func(update bson.D) {
 		updateModel := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
 		models = append(models, updateModel)
-
 	}
 
 	if user.UserName != "" {
@@ -271,7 +266,6 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 		slog.Any("Result", *result),
 		user_repo_source,
 	)
-
 	return nil
 }
 
