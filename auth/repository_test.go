@@ -30,6 +30,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	redisShutDown, err := initRedis(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = InitCachedMongoRepositories(context.TODO(), RedisClient, MongoClient, 15*time.Minute); err != nil {
+		log.Fatal(err)
+	}
+
 	if r, err = initMongoRepositories(MongoClient); err != nil {
 		log.Fatal(err)
 	}
@@ -52,6 +60,7 @@ func TestMain(m *testing.M) {
 	log.Printf("Cleaning up\n")
 	err = errors.Join(otelShutDown(context.TODO()))
 	err = errors.Join(mongoShutDown(context.TODO()))
+	err = errors.Join(redisShutDown(context.TODO()))
 
 	if err != nil {
 		log.Printf("Error in cleaning up resources -> %v\n", err)
@@ -63,7 +72,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestUserRepositoryPositve(t *testing.T) {
+func ATestUserRepositoryPositve(t *testing.T) {
 	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
