@@ -82,8 +82,15 @@ func TestUserRepositoryPositve(t *testing.T) {
 	user_out = getUserByID(t, user_in.ID.Hex())
 	compareUserStruct(t, user_in, user_out)
 
-	_ = updateRecipes(t, user_in.ID, user_in.SavedRecipes)
+	user_in.SavedRecipes = updateRecipes(t, user_in.ID, user_in.SavedRecipes)
+	user_out = getUserByID(t, user_in.ID.Hex())
+	compareUserStruct(t, user_in, user_out)
 
+	user_in.SavedRecipes = deleteRecipes(t, user_in.ID, user_in.SavedRecipes)
+	user_out = getUserByID(t, user_in.ID.Hex())
+	compareUserStruct(t, user_in, user_out)
+
+	deleteUser(t, user_in.ID)
 	t.Logf("Tested User Repo CRUD Successfully\n")
 }
 
@@ -187,12 +194,33 @@ func updateUser(t *testing.T, user_in *User) {
 }
 
 func updateRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
-	recipes[2] = generateRecipesArray(1)[0]
+	t.Logf("Testing Update Recipe Function")
 	recipes[0].Title = "Min"
 	recipes[0].ServingSize = 100
+	recipes = append(recipes, generateRecipesArray(1)[0])
 
 	if err := r.User.UpdateRecipes(context.TODO(), id.Hex(), recipes); err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("Tested Update recipe Function Success!")
 	return recipes
+}
+
+func deleteRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
+	t.Logf("Testing Delete Recipes Function")
+	ids := []string{recipes[0].ID.Hex(), recipes[1].ID.Hex()}
+	if err := r.User.DeleteRecipes(context.TODO(), id.Hex(), ids); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Tested Delete Recipes Function Success!")
+	return []*Recipe{recipes[2], recipes[3]}
+}
+
+func deleteUser(t *testing.T, id bson.ObjectID) {
+	t.Logf("Testing Delete User Function")
+	if err := r.User.DeleteUser(context.TODO(), id.Hex()); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Tested Delete User Function Success!")
 }
