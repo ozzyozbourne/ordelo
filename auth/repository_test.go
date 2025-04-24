@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -62,11 +63,12 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestUserRepository(t *testing.T) {
-	t.Logf("Testing User repos CRUD\n")
+func TestUserRepositoryPositve(t *testing.T) {
+	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
 	user_in = addRecipe(t, user_in)
+
 	user_out := getUserByID(t, user_in.ID.Hex())
 	compareUserStruct(t, user_in, user_out)
 
@@ -76,6 +78,13 @@ func TestUserRepository(t *testing.T) {
 	recipes_out := getUserRecipes(t, user_in.ID.Hex())
 	compareUserRecipes(t, user_in.SavedRecipes, recipes_out)
 
+	updateUser(t, user_in)
+	user_out = getUserByID(t, user_in.ID.Hex())
+	compareUserStruct(t, user_in, user_out)
+
+	_ = updateRecipes(t, user_in.ID, user_in.SavedRecipes)
+
+	t.Logf("Tested User Repo CRUD Successfully\n")
 }
 
 func createUser(t *testing.T) *User {
@@ -116,7 +125,7 @@ func addRecipe(t *testing.T, user *User) *User {
 
 func getUserByID(t *testing.T, id string) *User {
 	t.Logf("Getting the by ID\n")
-	user, err := r.User.FindUser(context.TODO(), id)
+	user, err := r.User.FindUserByID(context.TODO(), id)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -146,7 +155,7 @@ func getUserRecipes(t *testing.T, id string) []*Recipe {
 
 func compareUserStruct(t *testing.T, user_in, user_out *User) {
 	t.Logf("Comparing the two user structs\n")
-	if err := checkUserStructs(user_in, user_out); err != nil {
+	if err := checkUserStruct(user_in, user_out); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Success the two user structs are the same\n")
@@ -160,4 +169,30 @@ func compareUserRecipes(t *testing.T, recipes_in, recipes_out []*Recipe) {
 	}
 	t.Logf("Success the two recipes structs are the same\n")
 
+}
+
+func updateUser(t *testing.T, user_in *User) {
+	t.Logf("Testing Update user Function")
+	password, _ := bcrypt.GenerateFromPassword([]byte("chinchecker"), bcrypt.DefaultCost)
+
+	user_in.UserName = generateRandowName()
+	user_in.UserAddress = generateRandomAddress()
+	user_in.Email = generateRandowEmails()
+	user_in.PasswordHash = string(password)
+
+	if err := r.User.UpdateUser(context.TODO(), user_in); err != nil {
+		t.Fatalf("%v\n", err)
+	}
+	t.Logf("Tested Update user Function Success!")
+}
+
+func updateRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
+	recipes[2] = generateRecipesArray(1)[0]
+	recipes[0].Title = "Min"
+	recipes[0].ServingSize = 100
+
+	if err := r.User.UpdateRecipes(context.TODO(), id.Hex(), recipes); err != nil {
+		t.Fatal(err)
+	}
+	return recipes
 }
