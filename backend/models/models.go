@@ -4,32 +4,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// Common Response
-type APIReponse struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Data    string `json:"data,omnitempty"`
-}
-
-type Ingredient struct {
-	IngredientID bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
-	Name         string        `bson:"name" json:"name"`
-	Quantity     float64       `bson:"quantity" json:"quantity"`
-	Unit         string        `bson:"unit" json:"unit"`
-	Category     string        `bson:"category" json:"category"`
-}
-
-// Recipe represents the Recipes collection
-type Recipe struct {
-	ID              bson.ObjectID `bson:"_id,omitempty" json:"recipe_id"`
-	Title           string        `bson:"title" json:"title"`
-	Ingredients     []Ingredient  `bson:"ingredients" json:"ingredients"`
-	Description     string        `bson:"description" json:"description"`
-	PreparationTime int           `bson:"preparation_time" json:"preparation_time"`
-	ServingSize     int           `bson:"serving_size" json:"serving_size"`
-	UserID          bson.ObjectID `bson:"user_id" json:"user_id"`
-}
-
 // ListItem represents an item in a shopping list
 type ListItem struct {
 	IngredientID   bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
