@@ -222,7 +222,7 @@ func generateRandomAddress() string {
 }
 
 func checkUserStruct(in, out *User) error {
-	if in.ID != out.ID {
+	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)
 	}
 	if in.UserName != out.UserName {
@@ -279,7 +279,7 @@ func checkRecipe(in, out *Recipe) error {
 	if in == nil || out == nil {
 		return fmt.Errorf("In nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
 	}
-	if in.ID != out.ID {
+	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("ID mismatch: %v vs %v", in.ID, out.ID)
 	}
 	if in.Title != out.Title {
@@ -317,7 +317,7 @@ func checkIngredient(in, out *Ingredient) error {
 	if in == nil || out == nil {
 		return fmt.Errorf("In nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
 	}
-	if in.IngredientID != out.IngredientID {
+	if in.IngredientID.Hex() != out.IngredientID.Hex() {
 		return fmt.Errorf("IngredientID mismatch: %v vs %v", in.IngredientID, out.IngredientID)
 	}
 	if in.Name != out.Name {
@@ -328,7 +328,7 @@ func checkIngredient(in, out *Ingredient) error {
 		return fmt.Errorf("Quantity mismatch: %f vs %f", in.Quantity, out.Quantity)
 	}
 	if in.Unit != out.Unit {
-		return fmt.Errorf("Unit mismatch: %d vs %d", in.Unit, out.Unit)
+		return fmt.Errorf("Unit mismatch: %s vs %s", in.Unit, out.Unit)
 	}
 	return nil
 }

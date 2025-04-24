@@ -215,7 +215,32 @@ func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]*Rec
 }
 
 func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
+	ctx, span := Tracer.Start(ctx, "UpdateUser")
+	defer span.End()
+	Logger.InfoContext(ctx, "Updating user", slog.Any("user", user), user_repo_source)
 
+	var objId bson.ObjectID
+	if objId = user.ID; objId == bson.NilObjectID {
+		Logger.ErrorContext(ctx, "The user struct has no ObjectID", slog.Any("error", "No ObjectID"), user_repo_source)
+		return fmt.Errorf("User struct has no ObjectID")
+	}
+
+	user.ID = bson.NilObjectID
+	filter := bson.D{{Key: "_id", Value: objId}}
+	update := bson.D{{Key: "$set", Value: user}}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating user", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", user.ID.Hex()), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", user.ID.Hex())
+	}
+
+	Logger.InfoContext(ctx, "User updated successfully", slog.String("ID", user.ID.Hex()), user_repo_source)
 	return nil
 }
 
@@ -224,10 +249,79 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recip
 }
 
 func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
+	ctx, span := Tracer.Start(ctx, "DeleteUser")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting a user", slog.String("ID", id), user_repo_source)
+	objId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objId}}
+	result, err := m.col.DeleteOne(ctx, filter)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id), user_repo_source)
 	return nil
 }
 
 func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
+	ctx, span := Tracer.Start(ctx, "DeleteRecipes")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting recipes for user", slog.String("userID", id), slog.Any("recipeIDs", ids), user_repo_source)
+	objId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	recipesObjIDs := make([]bson.ObjectID, len(ids))
+	for i, rid := range ids {
+		recipeObjId, err := bson.ObjectIDFromHex(rid)
+		if err != nil {
+			Logger.ErrorContext(ctx, "Recipe ID not valid", slog.String("recipeID", rid), slog.Any("error", err), user_repo_source)
+			return err
+		}
+		recipesObjIDs[i] = recipeObjId
+	}
+	filter := bson.D{{Key: "_id", Value: objId}}
+	update := bson.D{
+		{Key: "$pull", Value: bson.M{
+			"saved_recipes": bson.M{
+				"_id": bson.M{"$in": recipesObjIDs},
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting recipes", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	if result.ModifiedCount == 0 {
+		Logger.InfoContext(ctx, "No recipes were deleted, they may not exist", slog.String("userID", id), user_repo_source)
+	} else {
+		Logger.InfoContext(ctx, "Recipes deleted successfully", slog.String("userID", id),
+			slog.Int("count", int(result.ModifiedCount)), user_repo_source)
+	}
+
 	return nil
 }
 

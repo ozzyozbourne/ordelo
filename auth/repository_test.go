@@ -62,11 +62,12 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestUserRepository(t *testing.T) {
-	t.Logf("Testing User repos CRUD\n")
+func TestUserRepositoryPositve(t *testing.T) {
+	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
 	user_in = addRecipe(t, user_in)
+
 	user_out := getUserByID(t, user_in.ID.Hex())
 	compareUserStruct(t, user_in, user_out)
 
@@ -76,6 +77,7 @@ func TestUserRepository(t *testing.T) {
 	recipes_out := getUserRecipes(t, user_in.ID.Hex())
 	compareUserRecipes(t, user_in.SavedRecipes, recipes_out)
 
+	t.Logf("Tested User Repo CRUD Successfully\n")
 }
 
 func createUser(t *testing.T) *User {
