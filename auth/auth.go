@@ -55,12 +55,6 @@ func (s *authService) Register(ctx context.Context, user *User) (userID bson.Obj
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Registering a new user", slog.Any("User", user), auth_source)
-	if !isValidRole(user.Role) {
-		Logger.ErrorContext(ctx, "Invalid role", auth_source)
-		err = errors.New("invalid role")
-		return
-	}
-
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Failed to hash password", slog.Any("error", err), auth_source)
@@ -68,7 +62,22 @@ func (s *authService) Register(ctx context.Context, user *User) (userID bson.Obj
 	}
 
 	user.PasswordHash = string(hashedPassword)
-	if userID, err = s.cachedRepo.User.CreateUser(ctx, user); err != nil {
+	switch user.Role {
+	case "user":
+		if userID, err = s.cachedRepo.User.CreateUser(ctx, user); err != nil {
+			return
+		}
+	case "vender":
+		// if userID, err = s.cachedRepo.Vendor.CreateUser(ctx, user); err != nil {
+		// 	return
+		// }
+	case "admin":
+		// if userID, err = s.cachedRepo.Vendor.CreateUser(ctx, user); err != nil {
+		// 	return
+		// }
+	default:
+		Logger.ErrorContext(ctx, "Invalid role", auth_source)
+		err = errors.New("invalid role")
 		return
 	}
 
