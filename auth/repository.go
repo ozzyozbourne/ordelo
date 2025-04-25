@@ -17,7 +17,6 @@ var (
 	Repos              *Repositories
 	defSessOpts        = options.Session().SetDefaultTransactionOptions(options.Transaction().SetWriteConcern(writeconcern.Majority()))
 	user_repo_source   = slog.Any("source", "UserRepository")
-	store_repo_source  = slog.Any("source", "StoreRepository")
 	order_repo_source  = slog.Any("source", "OrderRepository")
 	cart_repo_source   = slog.Any("source", "CartRepository")
 	vendor_repo_source = slog.Any("source", "VendorRepository")
@@ -25,7 +24,6 @@ var (
 
 type Repositories struct {
 	User   UserRepository
-	Store  StoreRepository
 	Order  OrderRepository
 	Cart   CartRepository
 	Vendor VendorRepository
@@ -46,7 +44,6 @@ type UserRepository interface {
 	DeleteRecipes(context.Context, string, []string) error
 }
 
-type StoreRepository interface{}
 type OrderRepository interface{}
 type CartRepository interface{}
 type VendorRepository interface{}
@@ -58,7 +55,6 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	}
 	mongoRepos := &Repositories{
 		User:   newMongoUserRepository(mongoClient, dbName),
-		Store:  newMongoStoreRepository(mongoClient, dbName),
 		Order:  newMongoOrderRepository(mongoClient, dbName),
 		Cart:   newMongoCartRepository(mongoClient, dbName),
 		Vendor: newMongoVendorRepository(mongoClient, dbName),
@@ -400,15 +396,11 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids [
 	return nil
 }
 
-func newMongoStoreRepository(client *mongo.Client, dbName string) StoreRepository {
-	return &MongoStoreRepository{col: client.Database(dbName).Collection("store")}
-}
-
 func newMongoOrderRepository(client *mongo.Client, dbName string) OrderRepository {
 	return &MongoOrderRepository{col: client.Database(dbName).Collection("order")}
 }
 
-func newMongoCartRepository(client *mongo.Client, dbName string) StoreRepository {
+func newMongoCartRepository(client *mongo.Client, dbName string) CartRepository {
 	return &MongoCartRepository{col: client.Database(dbName).Collection("cart")}
 }
 
