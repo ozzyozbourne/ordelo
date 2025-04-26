@@ -36,3 +36,34 @@ type Ingredient struct {
 	Quantity     float64       `bson:"quantity" json:"quantity"`
 	Unit         string        `bson:"unit" json:"unit"`
 }
+
+type Vendor struct {
+	ID            bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	VendorName    string        `bson:"vendor_name" json:"vendor_name"`
+	VendorAddress string        `bson:"vendor_address" json:"vendor_address"`
+	Email         string        `bson:"email" json:"email"`
+	PasswordHash  string        `bson:"password_hash" json:"password_hash,omitempty"`
+	Stores        []*Store      `bson:"stores" json:"stores"`
+	Role          string        `bson:"role" json:"role"`
+}
+
+type Store struct {
+	ID        bson.ObjectID   `bson:"_id,omitempty" json:"store_id"`
+	Name      string          `bson:"name" json:"name"`
+	StoreType string          `bson:"store_type" json:"store_type"`
+	Location  GeoJSON         `bson:"location" json:"location"`
+	Inventory []InventoryItem `bson:"inventory" json:"inventory"`
+}
+
+type InventoryItem struct {
+	ID       bson.ObjectID `bson:"_id,omitempty" json:"ingredient_id"`
+	Name     string        `bson:"name" json:"name"`
+	Price    float64       `bson:"price" json:"price"`
+	Quantity float64       `bson:"quantity" json:"quantity"`
+	Category string        `bson:"category" json:"category"`
+}
+
+type GeoJSON struct {
+	Type        string    `bson:"type" json:"type"`
+	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
+}

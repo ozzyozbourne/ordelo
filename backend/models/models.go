@@ -19,10 +19,6 @@ type List struct {
 }
 
 // GeoJSON represents geographic coordinates for store locations
-type GeoJSON struct {
-	Type        string    `bson:"type" json:"type"`
-	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
-}
 
 // OperatingHours represents store operating hours
 type OperatingHours struct {
@@ -31,23 +27,6 @@ type OperatingHours struct {
 }
 
 // InventoryItem represents an item in a store's inventory
-type InventoryItem struct {
-	IngredientID   bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
-	IngredientName string        `bson:"ingredient_name" json:"ingredient_name"`
-	Price          float64       `bson:"price" json:"price"`
-	Quantity       float64       `bson:"quantity" json:"quantity"`
-	Category       string        `bson:"category" json:"category"`
-}
-
-// Store represents the Stores collection
-type Store struct {
-	ID             bson.ObjectID   `bson:"_id,omitempty" json:"store_id"`
-	Name           string          `bson:"name" json:"name"`
-	StoreType      string          `bson:"store_type" json:"store_type"`
-	Location       GeoJSON         `bson:"location" json:"location"`
-	Inventory      []InventoryItem `bson:"inventory" json:"inventory"`
-	OperatingHours OperatingHours  `bson:"operating_hours" json:"operating_hours"`
-}
 
 // CartItem represents an item in a cart
 type CartItem struct {

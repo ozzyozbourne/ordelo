@@ -10,7 +10,7 @@
 1. Sharukh Saiyed
 2. Zoha Ahmed
 3. Akif Qureshi
-4. Javid
+4. Javid Shaik
 5. Osaid Khan
 
 ### Requirements:
@@ -22,6 +22,7 @@
 - Spoonacular API Key
 - HoneyComb API Key
 - openssl
+- Make
 
 #### To generate JWT Secret use openssl
 
@@ -46,7 +47,7 @@ chmod 700 env_test.sh && . ./env_test.sh
 #### To Build Golang Sever
 
 ```bash
-git clone git@github.com:ozzyozbourne/ordelo.git && cd ordelo && go build ./backend/
+make build
 ```
 
 #### Setup Redis and LGTM in docker and run Server

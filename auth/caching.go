@@ -18,12 +18,6 @@ type CachedUserRepository struct {
 	expiration time.Duration
 }
 
-type CachedStoreRepository struct {
-	redis      *redis.Client
-	storeRepo  StoreRepository
-	expiration time.Duration
-}
-
 type CachedOrderRepository struct {
 	redis      *redis.Client
 	orderRepo  OrderRepository
@@ -50,7 +44,6 @@ func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client,
 	}
 
 	mongoRepos.User = NewCachedUserRepository(redisClient, mongoRepos.User, cacheTTL)
-	mongoRepos.Store = NewCachedOrderRepository(redisClient, mongoRepos.Store, cacheTTL)
 	mongoRepos.Order = NewCachedOrderRepository(redisClient, mongoRepos.Order, cacheTTL)
 	mongoRepos.Cart = NewCachedCartRepository(redisClient, mongoRepos.Cart, cacheTTL)
 	mongoRepos.Vendor = NewCachedVendorRepository(redisClient, mongoRepos.Vendor, cacheTTL)
@@ -125,14 +118,6 @@ func (r CachedUserRepository) DeleteUser(ctx context.Context, id string) error {
 
 func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
 	return nil
-}
-
-func NewCachedStoreRepository(r *redis.Client, store StoreRepository, expiration time.Duration) StoreRepository {
-	return &CachedStoreRepository{
-		redis:      r,
-		storeRepo:  store,
-		expiration: expiration,
-	}
 }
 
 func NewCachedOrderRepository(r *redis.Client, order OrderRepository, expiration time.Duration) OrderRepository {

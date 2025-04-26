@@ -1,18 +1,5 @@
 package handlers
 
-import (
-	"context"
-	"encoding/json"
-	"log"
-	"net/http"
-	"ordelo/models"
-	"strings"
-	"time"
-
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"golang.org/x/crypto/bcrypt"
-)
-
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	sendResponse := func(status int, message, userId string) {
 		createdUser := &models.UserRes{
