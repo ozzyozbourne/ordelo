@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func generateRandowEmails() string {
@@ -14,6 +15,35 @@ func generateRandowEmails() string {
 		b[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[rand.Intn(36)]
 	}
 	return fmt.Sprintf("%s@test.com", string(b))
+}
+
+func generateCommon(role string) Common {
+	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
+	return Common{
+		ID:           bson.NewObjectID(),
+		Name:         generateRandowName(),
+		Address:      generateRandomAddress(),
+		Email:        generateRandowEmails(),
+		PasswordHash: string(password),
+		Role:         role,
+	}
+}
+
+func generateUser(n, m int) *User {
+	return &User{
+		Common:       generateCommon("user"),
+		SavedRecipes: generateRecipesArray(n, m),
+		Carts:        generateCartsArray(n, m),
+		Orders:       generateUserOrdersArray(n, m),
+	}
+}
+
+func generateVendor(n, m int) *Vendor {
+	return &Vendor{
+		Common: generateCommon("vendor"),
+		Stores: generateStoresArray(n, m),
+		Orders: generateVendorOrderArray(n, m),
+	}
 }
 
 func generateRandowName() string {
@@ -78,21 +108,31 @@ func generateIngredientsArray(n int) []*Ingredient {
 		return allIngredients[rand.Intn(len(allIngredients))]
 	}
 
-	var res []*Ingredient
-	for _ = range n {
-		val := &Ingredient{
+	res := make([]*Ingredient, n)
+	for i := range n {
+		res[i] = &Ingredient{
 			IngredientID: bson.NewObjectID(),
 			Name:         genRandIngredient(),
-			Quantity:     (rand.Float64() + 1) * 100,
 			Unit:         []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
+			Price:        (rand.Float64() + 1) * 1000,
 		}
-
-		res = append(res, val)
 	}
 	return res
 }
 
-func generateRecipesArray(n int) []*Recipe {
+func generateItemsArray(n int) []*Item {
+	res := make([]*Item, n)
+	ingredients := generateIngredientsArray(n)
+	for i := range n {
+		res[i] = &Item{
+			Ingredient: *ingredients[i],
+			Quantity:   rand.Intn(100) + 1,
+		}
+	}
+	return res
+}
+
+func generateRecipesArray(n, m int) []*Recipe {
 	generateRandomTitle := func() string {
 
 		adjectives := []string{
@@ -166,17 +206,16 @@ func generateRecipesArray(n int) []*Recipe {
 
 		return fmt.Sprintf("%s %s %s", intros[randIntro], methods[randMethods], serving[randServing])
 	}
-	var res []*Recipe
-	for _ = range n {
-		val := &Recipe{
+	res := make([]*Recipe, n)
+	for i := range n {
+		res[i] = &Recipe{
 			ID:              bson.NewObjectID(),
 			Title:           generateRandomTitle(),
-			Ingredients:     generateIngredientsArray(10),
+			Items:           generateItemsArray(m),
 			Description:     generateRandonDescription(),
 			PreparationTime: rand.Intn(10) + 1,
 			ServingSize:     rand.Intn(10) + 1,
 		}
-		res = append(res, val)
 
 	}
 	return res
@@ -221,7 +260,7 @@ func generateRandomAddress() string {
 		a.City, a.State, a.ZipCode, a.Country)
 }
 
-func generateCartArray(n int) []*Cart {
+func generateCartsArray(n, m int) []*Cart {
 	carts := make([]*Cart, n)
 	for i := range n {
 		carts[i] = &Cart{
@@ -229,39 +268,75 @@ func generateCartArray(n int) []*Cart {
 			VendorID:   bson.NewObjectID(),
 			StoreID:    bson.NewObjectID(),
 			TotalPrice: (rand.Float64() + 1) * 1000,
-			Ingredient: generateIngredientsArray(3),
+			Items:      generateItemsArray(m),
 		}
 	}
 	return carts
 }
 
-func generateUserOrdersArray(n int) []*UserOrder {
-	orders := make([]*UserOrder, n)
-	for i := range n {
-		orders[i] = &UserOrder{}
-	}
-	return orders
-}
-
-func generateOrderArray(n int) []*Order {
-	orderItems := generateIngredientsArray(n)
+func generateOrdersArray(n, m int) []*Order {
 	orders := make([]*Order, n)
 	for i := range n {
-
+		orders[i] = &Order{
+			ID:             bson.NewObjectID(),
+			StoreID:        bson.NewObjectID(),
+			DeliveryMethod: "Deliver",
+			OrderStatus:    "pending",
+			TotalPrice:     (rand.Float64() + 1) * 1000,
+			Items:          generateItemsArray(m),
+		}
 	}
 	return orders
 }
 
-func generateRandomOrder() *Order {
-	return &Order{
-		ID:      bson.NewObjectID(),
-		StoreID: bson.NewObjectID(),
+func generateUserOrdersArray(n, m int) []*UserOrder {
+	userOrders := make([]*UserOrder, n)
+	orders := generateOrdersArray(n, m)
+	for i := range n {
+		userOrders[i] = &UserOrder{
+			Order:         *orders[i],
+			VendorID:      bson.NewObjectID(),
+			PaymentStatus: "success",
+		}
+	}
+	return userOrders
+}
+
+func generateStoresArray(n, m int) []*Store {
+	res := make([]*Store, n)
+	for i := range n {
+		res[i] = &Store{
+			ID:        bson.NewObjectID(),
+			Name:      generateRandowName(),
+			StoreType: "Delivery",
+			Location:  generateRandomUSLocation(),
+			Items:     generateItemsArray(m),
+		}
+	}
+	return res
+}
+
+func generateRandomUSLocation() *GeoJSON {
+	longitude := -125.0 + rand.Float64()*58.0
+	latitude := 24.0 + rand.Float64()*25.0
+
+	return &GeoJSON{
+		Type:        "Point",
+		Coordinates: []float64{longitude, latitude},
 	}
 }
 
-func generateRandomOrderItem() *OrderItem {
-	ing := generateIngredientsArray
-	return &OrderItem{}
+func generateVendorOrderArray(n, m int) []*VendorOrder {
+	orders := generateOrdersArray(n, m)
+	vendorOrder := make([]*VendorOrder, n)
+	for i := range n {
+		vendorOrder[i] = &VendorOrder{
+			Order:  *orders[i],
+			UserID: bson.NewObjectID(),
+		}
+	}
+	return vendorOrder
+
 }
 
 func checkUserStruct(in, out *User) error {

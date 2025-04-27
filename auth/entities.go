@@ -25,11 +25,6 @@ type Ingredient struct {
 	Price        float64       `bson:"price" json:"price"`
 }
 
-type Item struct {
-	Ingredient
-	Unit int `bson:"unit" json:"unit"`
-}
-
 type GeoJSON struct {
 	Type        string    `bson:"type" json:"type"`
 	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
@@ -38,13 +33,14 @@ type GeoJSON struct {
 // -----------------------------------------------------------------------
 //
 // ------------------------Embedding--------------------------------------
+
 type Order struct {
 	ID             bson.ObjectID `bson:"_id,omitempty" json:"order_id"`
 	StoreID        bson.ObjectID `bson:"store_id" json:"store_id"`
-	Items          []*Item       `bson:"items" json:"items"`
 	DeliveryMethod string        `bson:"delivery_method" json:"delivery_method"`
 	OrderStatus    string        `bson:"order_status" json:"order_status"`
 	TotalPrice     float64       `bson:"total_price" json:"total_price"`
+	Items          []*Item       `bson:"items" json:"items"`
 }
 
 type Common struct {
@@ -59,6 +55,11 @@ type Common struct {
 // ----------------------------------------------------------------------
 //
 // ---------------------------Embedded-Types------------------------------
+
+type Item struct {
+	Ingredient
+	Quantity int `bson:"quantity" json:"quantity"`
+}
 
 type UserOrder struct {
 	Order
@@ -101,7 +102,6 @@ type Cart struct {
 	VendorID   bson.ObjectID `bson:"vendor_id" json:"vendor_id"`
 	StoreID    bson.ObjectID `bson:"store_id" json:"store_id"`
 	TotalPrice float64       `bson:"total_price" json:"total_price"`
-	CartStatus string        `bson:"cart_status" json:"cart_status"`
 	Items      []*Item       `bson:"items" json:"items"`
 }
 
@@ -109,7 +109,7 @@ type Store struct {
 	ID        bson.ObjectID `bson:"_id,omitempty" json:"store_id"`
 	Name      string        `bson:"name" json:"name"`
 	StoreType string        `bson:"store_type" json:"store_type"`
-	Location  GeoJSON       `bson:"location" json:"location"`
+	Location  *GeoJSON      `bson:"location" json:"location"`
 	Items     []*Item       `bson:"items" json:"items"`
 }
 
