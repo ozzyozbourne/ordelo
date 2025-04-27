@@ -48,6 +48,7 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import "./App.css";
 import "./styles/auth.css";
 import "./styles/profile.css";
+import "./styles/admin-styles.css";
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
