@@ -24,28 +24,31 @@ var (
 
 type Repositories struct {
 	User   UserRepository
-	Order  OrderRepository
-	Cart   CartRepository
 	Vendor VendorRepository
 }
 
 type UserRepository interface {
-	CreateUser(context.Context, *User) (bson.ObjectID, error)
-	CreateUserRecipes(context.Context, string, []*Recipe) error
+	Create(context.Context, *User) (ID, error)
+	CreateRecipes(context.Context, ID, []*Recipe) error
+	CreateCarts(context.Context, ID, []*Cart) error
+	CreateOrders(context.Context, ID, []*UserOrder) error
 
-	FindUserByID(context.Context, string) (*User, error)
-	FindUserByEmail(context.Context, string) (*User, error)
-	FindRecipes(context.Context, string) ([]*Recipe, error)
+	FindByID(context.Context, ID) (*User, error)
+	FindByEmail(context.Context, string) (*User, error)
+	FindRecipes(context.Context, ID) ([]*Recipe, error)
+	FindCarts(context.Context, ID) ([]*Cart, error)
+	FindOrders(context.Context, ID) ([]*UserOrder, error)
 
 	UpdateUser(context.Context, *User) error
-	UpdateRecipes(context.Context, string, []*Recipe) error
+	UpdateRecipes(context.Context, ID, []*Recipe) error
+	UpdateCarts(context.Context, ID, []*Cart) error
+	UpdateOrders(context.Context, ID, []*UserOrder) error
 
-	DeleteUser(context.Context, string) error
-	DeleteRecipes(context.Context, string, []string) error
+	DeleteUser(context.Context, ID) error
+	DeleteRecipes(context.Context, ID, []*ID) error
+	DeleteCarts(context.Context, ID, []*ID) error
 }
 
-type OrderRepository interface{}
-type CartRepository interface{}
 type VendorRepository interface{}
 
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
@@ -55,25 +58,20 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	}
 	mongoRepos := &Repositories{
 		User:   newMongoUserRepository(mongoClient, dbName),
-		Order:  newMongoOrderRepository(mongoClient, dbName),
-		Cart:   newMongoCartRepository(mongoClient, dbName),
 		Vendor: newMongoVendorRepository(mongoClient, dbName),
 	}
 	return mongoRepos, nil
 }
 
 type MongoUserRepository struct{ col *mongo.Collection }
-type MongoStoreRepository struct{ col *mongo.Collection }
-type MongoOrderRepository struct{ col *mongo.Collection }
-type MongoCartRepository struct{ col *mongo.Collection }
 type MongoVendorRepository struct{ col *mongo.Collection }
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) CreateUser(c context.Context, user *User) (bson.ObjectID, error) {
-	ctx, span := Tracer.Start(c, "CreateUser Mongo")
+func (m MongoUserRepository) Create(ctx context.Context, user *User) (res ID, err error) {
+	ctx, span := Tracer.Start(ctx, "CreateUser")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
@@ -81,31 +79,26 @@ func (m MongoUserRepository) CreateUser(c context.Context, user *User) (bson.Obj
 	result, err := m.col.InsertOne(ctx, user)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
-		return bson.NilObjectID, err
+		return
 	}
 
 	id, ok := result.InsertedID.(bson.ObjectID)
 	if !ok {
-		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID", slog.String("error", "Casting Error"),
-			user_repo_source)
+		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID",
+			slog.String("error", "Casting Error"), user_repo_source)
 	}
-
-	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", id.Hex()), user_repo_source)
-	return id, nil
+	res.value = id
+	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
+		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
+	return
 }
 
-func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, recipes []*Recipe) error {
-	ctx, span := Tracer.Start(c, "CreateUserRecipes")
+func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
+	ctx, span := Tracer.Start(ctx, "CreateUserRecipes")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
-		return err
-	}
-
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "_id", Value: id.value}}
 	update := bson.D{
 		{Key: "$push", Value: bson.M{
 			"saved_recipes": bson.M{
@@ -121,92 +114,197 @@ func (m MongoUserRepository) CreateUserRecipes(c context.Context, id string, rec
 	}
 
 	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id), user_repo_source)
+		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id)
 	}
 
-	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id), slog.Any("Result", result), user_repo_source)
+	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id.String()),
+		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
 	return nil
 }
 
-func (m MongoUserRepository) FindUserByID(ctx context.Context, id string) (*User, error) {
+func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) error {
+	ctx, span := Tracer.Start(ctx, "CreateUserCarts")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$push", Value: bson.M{
+			"carts": bson.M{
+				"$each": carts,
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating user carts", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	Logger.InfoContext(ctx, "Carts added successfully", slog.String("userId", id.String()),
+		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
+	return nil
+}
+
+func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+	ctx, span := Tracer.Start(ctx, "CreateUserOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$push", Value: bson.M{
+			"orders": bson.M{
+				"$each": orders,
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating user orders", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+
+	Logger.InfoContext(ctx, "Orders added successfully", slog.String("userId", id.String()),
+		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
+
+	return nil
+}
+
+func (m MongoUserRepository) FindByID(ctx context.Context, id ID) (user *User, err error) {
 	ctx, span := Tracer.Start(ctx, "FindUserID")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
+	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id.String()), user_repo_source)
 
-	filter := bson.D{{Key: "_id", Value: objId}}
-	var user User
-
-	err = m.col.FindOne(ctx, filter).Decode(&user)
-	if err != nil {
+	if err = m.col.FindOne(ctx, bson.D{{Key: "_id", Value: id.value}}).Decode(&user); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
-			return nil, fmt.Errorf("user with ID %s not found", id)
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
+			return nil, fmt.Errorf("user with ID %s not found", id.String())
 		}
 		Logger.ErrorContext(ctx, "Error finding user by ID", slog.Any("error", err), user_repo_source)
-		return nil, err
+		return
 	}
 
-	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id), slog.Any("User", user), user_repo_source)
-	return &user, nil
+	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id.String()),
+		slog.String("User", fmt.Sprintf("%+v", *user)), user_repo_source)
+	return
 }
 
-func (m MongoUserRepository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
+func (m MongoUserRepository) FindByEmail(ctx context.Context, email string) (user *User, err error) {
 	ctx, span := Tracer.Start(ctx, "FindUserByEmail")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding User by Email", slog.String("Email", email), user_repo_source)
 	filter := bson.D{{Key: "email", Value: email}}
-	var user User
 
-	err := m.col.FindOne(ctx, filter).Decode(&user)
-	if err != nil {
+	if err = m.col.FindOne(ctx, filter).Decode(&user); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			Logger.ErrorContext(ctx, "User not found", slog.String("email", email), user_repo_source)
 			return nil, fmt.Errorf("user with email %s not found", email)
 		}
 		Logger.ErrorContext(ctx, "Error finding user by email", slog.Any("error", err), user_repo_source)
-		return nil, err
+		return
 	}
 
-	Logger.InfoContext(ctx, "User found successfully", slog.String("email", email), slog.Any("User", user), user_repo_source)
-	return &user, nil
+	Logger.InfoContext(ctx, "User found successfully", slog.String("email", email),
+		slog.String("User", fmt.Sprintf("%+v", *user)), user_repo_source)
+	return
 }
 
-func (m MongoUserRepository) FindRecipes(ctx context.Context, id string) ([]*Recipe, error) {
+func (m MongoUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe, error) {
 	ctx, span := Tracer.Start(ctx, "FindRecipes")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding recipies for user", slog.String("UserId", id), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
+	Logger.InfoContext(ctx, "Finding recipies for user", slog.String("UserId", id.value.Hex()), user_repo_source)
 
-	filter := bson.D{{Key: "_id", Value: objId}}
+	filter := bson.D{{Key: "_id", Value: id.value}}
 	projection := bson.D{{Key: "saved_recipes", Value: 1}, {Key: "_id", Value: 0}}
 
 	var result struct {
 		SavedRecipes []*Recipe `bson:"saved_recipes"`
 	}
 
-	err = m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result)
-	if err != nil {
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
-			return nil, fmt.Errorf("User with ID %s not found", id)
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
+			return nil, fmt.Errorf("User with ID %s not found", id.value.Hex())
 		}
 		Logger.ErrorContext(ctx, "Error finding recipes", slog.Any("error", err), user_repo_source)
 
 	}
 
-	Logger.InfoContext(ctx, "Recipes found successfully", slog.Any("Recipes", result.SavedRecipes), user_repo_source)
+	Logger.InfoContext(ctx, "Recipes found successfully",
+		slog.String("Recipes", fmt.Sprintf("%+v", result.SavedRecipes)), user_repo_source)
 	return result.SavedRecipes, nil
+}
+
+func (m MongoUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, error) {
+	ctx, span := Tracer.Start(ctx, "FindUserCarts")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding carts for user", slog.String("UserId", id.String()), user_repo_source)
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: "carts", Value: 1}, {Key: "_id", Value: 0}}
+
+	var result struct {
+		Carts []*Cart `bson:"carts"`
+	}
+
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
+			return nil, fmt.Errorf("User with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding carts", slog.Any("error", err), user_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Carts found successfully", slog.String("Carts",
+		fmt.Sprintf("%+v", result.Carts)), user_repo_source)
+	return result.Carts, nil
+
+}
+
+func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
+	ctx, span := Tracer.Start(ctx, "FindUserOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding orders for user", slog.String("UserId", id.String()), user_repo_source)
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: "orders", Value: 1}, {Key: "_id", Value: 0}}
+
+	var result struct {
+		Orders []*UserOrder `bson:"orders"`
+	}
+
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
+			return nil, fmt.Errorf("User with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding orders", slog.Any("error", err), user_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Orders found successfully", slog.Any("Orders",
+		fmt.Sprintf("%+v", result.Orders)), user_repo_source)
+	return result.Orders, nil
 }
 
 func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
@@ -259,30 +357,27 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
 		slog.Int64("insertedCount", result.InsertedCount),
-		slog.Any("Result", *result),
+		slog.String("Result", fmt.Sprintf("%+v", *result)),
 		user_repo_source,
 	)
 	return nil
 }
 
-func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recipes []*Recipe) error {
-	ctx, span := Tracer.Start(ctx, "UpdateRecipes")
+func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
+	ctx, span := Tracer.Start(ctx, "UpdateUserRecipes")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating recipes for user", slog.String("userID", id), slog.Any("recipes", recipes), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if err = checkIfDocumentExists(ctx, m.col, objId); err != nil {
+	Logger.InfoContext(ctx, "Updating recipes for user",
+		slog.String("userID", id.String()), slog.Any("recipes", recipes), user_repo_source)
+
+	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
 		return err
 	}
 
 	models := make([]mongo.WriteModel, 0, len(recipes)*2)
-
 	for _, recipe := range recipes {
 		updateFilter := bson.D{
-			{Key: "_id", Value: objId},
+			{Key: "_id", Value: id.value},
 			{Key: "saved_recipes._id", Value: recipe.ID},
 		}
 		update := bson.D{
@@ -294,7 +389,7 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recip
 		models = append(models, updateModel)
 
 		addFilter := bson.D{
-			{Key: "_id", Value: objId},
+			{Key: "_id", Value: id.value},
 			{Key: "saved_recipes._id", Value: bson.M{"$ne": recipe.ID}},
 		}
 		addUpdate := bson.D{
@@ -316,57 +411,151 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id string, recip
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
 		slog.Int64("insertedCount", result.InsertedCount),
+		slog.String("Result", fmt.Sprintf("%+v", *result)),
 		user_repo_source)
 
 	return nil
 }
 
-func (m MongoUserRepository) DeleteUser(ctx context.Context, id string) error {
-	ctx, span := Tracer.Start(ctx, "DeleteUser")
+func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
+	ctx, span := Tracer.Start(ctx, "UpdateUserCarts")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Deleting a user", slog.String("ID", id), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
+	Logger.InfoContext(ctx, "Updating carts for user",
+		slog.String("userID", id.String()), slog.Any("carts", carts), user_repo_source)
+
+	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
 		return err
 	}
 
-	filter := bson.D{{Key: "_id", Value: objId}}
-	result, err := m.col.DeleteOne(ctx, filter)
+	models := make([]mongo.WriteModel, 0, len(carts)*2)
+	for _, cart := range carts {
+		updateFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "carts._id", Value: cart.ID},
+		}
+		update := bson.D{
+			{Key: "$set", Value: bson.M{"carts.$": cart}},
+		}
+		updateModel := mongo.NewUpdateOneModel().
+			SetFilter(updateFilter).
+			SetUpdate(update)
+		models = append(models, updateModel)
+
+		addFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "carts._id", Value: bson.M{"$ne": cart.ID}},
+		}
+		addUpdate := bson.D{
+			{Key: "$push", Value: bson.M{"carts": cart}},
+		}
+		addModel := mongo.NewUpdateOneModel().
+			SetFilter(addFilter).
+			SetUpdate(addUpdate)
+		models = append(models, addModel)
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Carts updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		user_repo_source)
+
+	return nil
+}
+
+func (m MongoUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+	ctx, span := Tracer.Start(ctx, "UpdateUserOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating orders for user",
+		slog.String("userID", id.String()), slog.Any("orders", orders), user_repo_source)
+
+	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
+		return err
+	}
+
+	models := make([]mongo.WriteModel, 0, len(orders)*2)
+	for _, order := range orders {
+		updateFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "orders._id", Value: order.ID},
+		}
+		update := bson.D{
+			{Key: "$set", Value: bson.M{"orders.$": order}},
+		}
+		updateModel := mongo.NewUpdateOneModel().
+			SetFilter(updateFilter).
+			SetUpdate(update)
+		models = append(models, updateModel)
+
+		addFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
+		}
+		addUpdate := bson.D{
+			{Key: "$push", Value: bson.M{"orders": order}},
+		}
+		addModel := mongo.NewUpdateOneModel().
+			SetFilter(addFilter).
+			SetUpdate(addUpdate)
+		models = append(models, addModel)
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Orders updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		user_repo_source)
+
+	return nil
+}
+
+func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteUser")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting a user", slog.String("ID", id.String()), user_repo_source)
+	result, err := m.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), user_repo_source)
 		return err
 	}
 
 	if result.DeletedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id)
 	}
 
-	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id), user_repo_source)
+	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id.String()), user_repo_source)
 	return nil
 }
 
-func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
+func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteRecipes")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Deleting recipes for user", slog.String("userID", id), slog.Any("recipeIDs", ids), user_repo_source)
-	objId, err := checkObjID(ctx, id)
-	if err != nil {
-		return err
-	}
+	Logger.InfoContext(ctx, "Deleting recipes for user",
+		slog.String("userID", id.String()), slog.Any("recipeIDs", ids), user_repo_source)
 
 	recipesObjIDs := make([]bson.ObjectID, len(ids))
 	for i, rid := range ids {
-		recipeObjId, err := bson.ObjectIDFromHex(rid)
-		if err != nil {
-			Logger.ErrorContext(ctx, "Recipe ID not valid", slog.String("recipeID", rid), slog.Any("error", err), user_repo_source)
-			return err
-		}
-		recipesObjIDs[i] = recipeObjId
+		recipesObjIDs[i] = rid.value
 	}
-	filter := bson.D{{Key: "_id", Value: objId}}
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
 	update := bson.D{
 		{Key: "$pull", Value: bson.M{
 			"saved_recipes": bson.M{
@@ -380,28 +569,60 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids [
 		Logger.ErrorContext(ctx, "Error deleting recipes", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
 	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id), user_repo_source)
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id)
 	}
-
 	if result.ModifiedCount == 0 {
-		Logger.InfoContext(ctx, "No recipes were deleted, they may not exist", slog.String("userID", id), user_repo_source)
-	} else {
-		Logger.InfoContext(ctx, "Recipes deleted successfully", slog.String("userID", id),
-			slog.Int("count", int(result.ModifiedCount)), user_repo_source)
+		Logger.InfoContext(ctx, "No recipes were deleted, they may not exist",
+			slog.String("userID", id.String()), user_repo_source)
 	}
+
+	Logger.InfoContext(ctx, "Recipes deleted successfully", slog.String("userID", id.String()),
+		slog.Int("count", int(result.ModifiedCount)), user_repo_source)
 
 	return nil
 }
 
-func newMongoOrderRepository(client *mongo.Client, dbName string) OrderRepository {
-	return &MongoOrderRepository{col: client.Database(dbName).Collection("order")}
-}
+func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteUserCarts")
+	defer span.End()
 
-func newMongoCartRepository(client *mongo.Client, dbName string) CartRepository {
-	return &MongoCartRepository{col: client.Database(dbName).Collection("cart")}
+	Logger.InfoContext(ctx, "Deleting carts for user",
+		slog.String("userID", id.String()), slog.Any("cartIDs", ids), user_repo_source)
+
+	cartsObjIDs := make([]bson.ObjectID, len(ids))
+	for i, cid := range ids {
+		cartsObjIDs[i] = cid.value
+	}
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$pull", Value: bson.M{
+			"carts": bson.M{
+				"_id": bson.M{"$in": cartsObjIDs},
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting carts", slog.Any("error", err), user_repo_source)
+		return err
+	}
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("user with ID %s not found", id)
+	}
+	if result.ModifiedCount == 0 {
+		Logger.InfoContext(ctx, "No carts were deleted, they may not exist",
+			slog.String("userID", id.String()), user_repo_source)
+	}
+
+	Logger.InfoContext(ctx, "Carts deleted successfully", slog.String("userID", id.String()),
+		slog.Int("count", int(result.ModifiedCount)), user_repo_source)
+
+	return nil
 }
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
@@ -420,13 +641,4 @@ func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bso
 		return fmt.Errorf("Document with ID %s not found", objID.Hex())
 	}
 	return nil
-}
-
-func checkObjID(ctx context.Context, id string) (objID bson.ObjectID, err error) {
-	objID, err = bson.ObjectIDFromHex(id)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Id not valid, unable to convert to bson.ObjectID", slog.Any("error", err), user_repo_source)
-		return
-	}
-	return
 }

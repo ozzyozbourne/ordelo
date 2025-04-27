@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -50,7 +49,7 @@ func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient 
 	return nil
 }
 
-func (s *authService) Register(ctx context.Context, user *User) (userID bson.ObjectID, err error) {
+func (s *authService) Register(ctx context.Context, user *User) (userID ID, err error) {
 	ctx, span := Tracer.Start(ctx, "RegisterUser")
 	defer span.End()
 
@@ -64,7 +63,7 @@ func (s *authService) Register(ctx context.Context, user *User) (userID bson.Obj
 	user.PasswordHash = string(hashedPassword)
 	switch user.Role {
 	case "user":
-		if userID, err = s.cachedRepo.User.CreateUser(ctx, user); err != nil {
+		if userID, err = s.cachedRepo.User.Create(ctx, user); err != nil {
 			return
 		}
 	case "vender":
@@ -81,6 +80,6 @@ func (s *authService) Register(ctx context.Context, user *User) (userID bson.Obj
 		return
 	}
 
-	Logger.InfoContext(ctx, "User registered successfully", slog.String("user_id", userID.Hex()), auth_source)
+	Logger.InfoContext(ctx, "User registered successfully", slog.String("user_id", userID.value.Hex()), auth_source)
 	return
 }
