@@ -24,8 +24,6 @@ var (
 
 type Repositories struct {
 	User   UserRepository
-	Order  OrderRepository
-	Cart   CartRepository
 	Vendor VendorRepository
 }
 
@@ -44,8 +42,6 @@ type UserRepository interface {
 	DeleteRecipes(context.Context, string, []string) error
 }
 
-type OrderRepository interface{}
-type CartRepository interface{}
 type VendorRepository interface{}
 
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
@@ -55,17 +51,12 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	}
 	mongoRepos := &Repositories{
 		User:   newMongoUserRepository(mongoClient, dbName),
-		Order:  newMongoOrderRepository(mongoClient, dbName),
-		Cart:   newMongoCartRepository(mongoClient, dbName),
 		Vendor: newMongoVendorRepository(mongoClient, dbName),
 	}
 	return mongoRepos, nil
 }
 
 type MongoUserRepository struct{ col *mongo.Collection }
-type MongoStoreRepository struct{ col *mongo.Collection }
-type MongoOrderRepository struct{ col *mongo.Collection }
-type MongoCartRepository struct{ col *mongo.Collection }
 type MongoVendorRepository struct{ col *mongo.Collection }
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
@@ -394,14 +385,6 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id string, ids [
 	}
 
 	return nil
-}
-
-func newMongoOrderRepository(client *mongo.Client, dbName string) OrderRepository {
-	return &MongoOrderRepository{col: client.Database(dbName).Collection("order")}
-}
-
-func newMongoCartRepository(client *mongo.Client, dbName string) CartRepository {
-	return &MongoCartRepository{col: client.Database(dbName).Collection("cart")}
 }
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {

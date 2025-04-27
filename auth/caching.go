@@ -18,36 +18,13 @@ type CachedUserRepository struct {
 	expiration time.Duration
 }
 
-type CachedOrderRepository struct {
-	redis      *redis.Client
-	orderRepo  OrderRepository
-	expiration time.Duration
-}
-
-type CachedCartRepository struct {
-	redis      *redis.Client
-	cartRepo   CartRepository
-	expiration time.Duration
-}
-
-type CachedVendorRepository struct {
-	redis      *redis.Client
-	vendorRepo VendorRepository
-	expiration time.Duration
-}
-
 func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client, mongoClient *mongo.Client, cacheTTL time.Duration) error {
 	mongoRepos, err := initMongoRepositories(mongoClient)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
 		return err
 	}
-
 	mongoRepos.User = NewCachedUserRepository(redisClient, mongoRepos.User, cacheTTL)
-	mongoRepos.Order = NewCachedOrderRepository(redisClient, mongoRepos.Order, cacheTTL)
-	mongoRepos.Cart = NewCachedCartRepository(redisClient, mongoRepos.Cart, cacheTTL)
-	mongoRepos.Vendor = NewCachedVendorRepository(redisClient, mongoRepos.Vendor, cacheTTL)
-
 	Repos = mongoRepos
 	return nil
 }
@@ -118,28 +95,4 @@ func (r CachedUserRepository) DeleteUser(ctx context.Context, id string) error {
 
 func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
 	return nil
-}
-
-func NewCachedOrderRepository(r *redis.Client, order OrderRepository, expiration time.Duration) OrderRepository {
-	return &CachedOrderRepository{
-		redis:      r,
-		orderRepo:  order,
-		expiration: expiration,
-	}
-}
-
-func NewCachedCartRepository(r *redis.Client, cart CartRepository, expiration time.Duration) CartRepository {
-	return &CachedCartRepository{
-		redis:      r,
-		cartRepo:   cart,
-		expiration: expiration,
-	}
-}
-
-func NewCachedVendorRepository(r *redis.Client, vendor VendorRepository, expiration time.Duration) VendorRepository {
-	return &CachedVendorRepository{
-		redis:      r,
-		vendorRepo: vendor,
-		expiration: expiration,
-	}
 }
