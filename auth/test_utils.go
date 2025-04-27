@@ -30,9 +30,8 @@ func generateCommon(role string) Common {
 }
 
 func generateUser(n, m int) *User {
-	common := generateCommon("user")
 	return &User{
-		Common:       common,
+		Common:       generateCommon("user"),
 		SavedRecipes: generateRecipesArray(n, m),
 		Carts:        generateCartsArray(n, m),
 		Orders:       generateUserOrdersArray(n, m),
@@ -40,9 +39,10 @@ func generateUser(n, m int) *User {
 }
 
 func generateVendor(n, m int) *Vendor {
-	common := generateCommon("vendor")
 	return &Vendor{
-		Common: common,
+		Common: generateCommon("vendor"),
+		Stores: generateStoresArray(n, m),
+		Orders: generateVendorOrderArray(n, m),
 	}
 }
 
@@ -324,6 +324,19 @@ func generateRandomUSLocation() *GeoJSON {
 		Type:        "Point",
 		Coordinates: []float64{longitude, latitude},
 	}
+}
+
+func generateVendorOrderArray(n, m int) []*VendorOrder {
+	orders := generateOrdersArray(n, m)
+	vendorOrder := make([]*VendorOrder, n)
+	for i := range n {
+		vendorOrder[i] = &VendorOrder{
+			Order:  *orders[i],
+			UserID: bson.NewObjectID(),
+		}
+	}
+	return vendorOrder
+
 }
 
 func checkUserStruct(in, out *User) error {
