@@ -116,13 +116,13 @@ func createUser(t *testing.T) *User {
 		Role:         "user",
 	}
 
-	id, err := r.User.CreateUser(context.TODO(), user_in)
+	id, err := r.User.Create(context.TODO(), user_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
 
-	t.Logf("Id -> %v\n", id)
-	user_in.ID = id
+	t.Logf("Id -> %+v\n", id)
+	user_in.ID = id.value
 	t.Logf("Sucess\n")
 	return user_in
 }
@@ -130,7 +130,7 @@ func createUser(t *testing.T) *User {
 func addRecipe(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Recipe to a user")
 	recipes_in := generateRecipesArray(3)
-	err := r.User.CreateUserRecipes(context.TODO(), user.ID.Hex(), recipes_in)
+	err := r.User.CreateRecipes(context.TODO(), user.ID.Hex(), recipes_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}

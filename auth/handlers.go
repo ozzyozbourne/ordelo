@@ -74,7 +74,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	okResponseMap := map[string]any{
 		"status":  true,
-		"user_id": userID.Hex(),
+		"user_id": userID.value.Hex(),
 	}
 	if err := sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)

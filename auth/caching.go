@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -37,24 +36,22 @@ func NewCachedUserRepository(r *redis.Client, user UserRepository, expiration ti
 	}
 }
 
-func (r CachedUserRepository) CreateUser(ctx context.Context, user *User) (userID bson.ObjectID, err error) {
+func (r CachedUserRepository) Create(ctx context.Context, user *User) (userID ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateUser Redis")
 	defer span.End()
 
-	if userID, err = r.userRepo.CreateUser(ctx, user); err != nil {
+	if userID, err = r.userRepo.Create(ctx, user); err != nil {
 		return
 	}
 
 	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("user", user), redis_source)
-	user.ID = userID
-
 	userData, err := json.Marshal(user)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in marshing the persisted user struct", slog.Any("user", user), redis_source)
 		return
 	}
 
-	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.Hex()), userData, r.expiration)
+	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.value.Hex()), userData, r.expiration)
 	if result.Err() != nil {
 		Logger.ErrorContext(ctx, "Unable to persist in Redis", slog.Any("error", err), slog.Any("Redis result", result), redis_source)
 		err = result.Err()
@@ -65,19 +62,35 @@ func (r CachedUserRepository) CreateUser(ctx context.Context, user *User) (userI
 	return
 }
 
-func (r CachedUserRepository) CreateUserRecipes(ctx context.Context, id string, recipes []*Recipe) error {
+func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
 	return nil
 }
 
-func (r CachedUserRepository) FindUserByID(ctx context.Context, id string) (*User, error) {
+func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) error {
+	return nil
+}
+
+func (r CachedUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+	return nil
+}
+
+func (r CachedUserRepository) FindByID(ctx context.Context, id ID) (*User, error) {
 	return nil, nil
 }
 
-func (r CachedUserRepository) FindUserByEmail(ctx context.Context, id string) (*User, error) {
+func (r CachedUserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	return nil, nil
 }
 
-func (r CachedUserRepository) FindRecipes(ctx context.Context, id string) ([]*Recipe, error) {
+func (r CachedUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe, error) {
+	return nil, nil
+}
+
+func (r CachedUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, error) {
+	return nil, nil
+}
+
+func (r CachedUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
 	return nil, nil
 }
 
@@ -85,14 +98,26 @@ func (r CachedUserRepository) UpdateUser(ctx context.Context, user *User) error 
 	return nil
 }
 
-func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id string, recipes []*Recipe) error {
+func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
 	return nil
 }
 
-func (r CachedUserRepository) DeleteUser(ctx context.Context, id string) error {
+func (r CachedUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
 	return nil
 }
 
-func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id string, ids []string) error {
+func (r CachedUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+	return nil
+}
+
+func (r CachedUserRepository) DeleteUser(ctx context.Context, id ID) error {
+	return nil
+}
+
+func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID) error {
+	return nil
+}
+
+func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) error {
 	return nil
 }

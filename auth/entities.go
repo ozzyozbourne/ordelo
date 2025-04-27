@@ -5,6 +5,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
+type ID struct {
+	value bson.ObjectID
+}
+
 type Claims struct {
 	UserID string `json:"user_id"`
 	Role   string `json:"role"`
