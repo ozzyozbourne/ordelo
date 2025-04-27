@@ -7,18 +7,17 @@ function SearchBar({ onSearch, suggestions = [] }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Create a debounced search function
+  // Create a debounced function to show suggestions after 3 seconds
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSearch = useCallback(
-    debounce((searchTerm) => {
-      if (searchTerm.trim().length > 0) {
-        onSearch(searchTerm);
-        setIsDropdownOpen(false);
-        setIsTyping(false);
+  const debouncedShowSuggestions = useCallback(
+    debounce(() => {
+      if (query.trim().length > 0) {
+        setIsDropdownOpen(true);
       }
-    }, 500),
-    [onSearch]
+    }, 3000), // 3 seconds delay for suggestions
+    []
   );
 
   const handleInputChange = (e) => {
@@ -27,11 +26,10 @@ function SearchBar({ onSearch, suggestions = [] }) {
     setIsTyping(true);
     
     if (value.length > 0) {
-      setIsDropdownOpen(true);
-      debouncedSearch(value);
+      // Start the debounced timer to show suggestions
+      debouncedShowSuggestions();
     } else {
       setIsDropdownOpen(false);
-      setIsTyping(false);
     }
   };
 
@@ -41,6 +39,8 @@ function SearchBar({ onSearch, suggestions = [] }) {
       onSearch(query);
       setIsDropdownOpen(false);
       setIsTyping(false);
+      // Remove focus from input after search
+      inputRef.current?.blur();
     }
   };
 
@@ -51,6 +51,13 @@ function SearchBar({ onSearch, suggestions = [] }) {
     setIsTyping(false);
   };
 
+  const handleKeyDown = (e) => {
+    // Only trigger search on Enter key
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
+  };
+  
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -77,11 +84,8 @@ function SearchBar({ onSearch, suggestions = [] }) {
           placeholder="Search for a recipe..."
           value={query}
           onChange={handleInputChange}
-          onFocus={() => {
-            if (query.length > 0 && suggestions.length > 0) {
-              setIsDropdownOpen(true);
-            }
-          }}
+          onKeyDown={handleKeyDown}
+          ref={inputRef}
         />
         <button type="submit" className="search-btn" aria-label="Search">
           {isTyping ? (

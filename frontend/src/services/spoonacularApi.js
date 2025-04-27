@@ -1,5 +1,4 @@
 // src/services/spoonacularApi.js
-// Optimized service for Spoonacular API calls
 
 import axios from 'axios';
 import { createOptimizedAxios, retryRequest } from '../utils/apiUtils';
@@ -14,297 +13,184 @@ import {
   isCacheOnlyMode, initApiTracker 
 } from './apiTracker';
 
-// Constants
 const API_BASE_URL = 'https://api.spoonacular.com';
-const SPOONACULAR_API_KEY = 'e5417c0a2e4c4fca8b644c983f8327ee';
+const API_KEYS = [
+  'e5417c0a2e4c4fca8b644c983f8327ee',
+  '5337e71f5d9743ffad0ad4307681f80c'
+];
 
-// Create a base axios instance for Spoonacular
-const spoonacularAxios = axios.create({
-  baseURL: API_BASE_URL,
-  params: {
-    apiKey: SPOONACULAR_API_KEY
-  }
-});
-
-// Create an optimized version with deduplication
-const api = createOptimizedAxios(spoonacularAxios);
-
-// Initialize API tracker
-initApiTracker();
-
-// Run cache cleanup once a day
-const initCacheCleanup = () => {
-  // Run immediately on startup
-  cleanupCache();
-  
-  // Run once per day
-  setInterval(cleanupCache, 24 * 60 * 60 * 1000);
+const createSpoonacularAxios = (apiKey) => {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    params: { apiKey }
+  });
 };
 
-// Initialize cache cleanup
-initCacheCleanup();
-
-// Fetch random recipes with caching
-export const fetchRandomRecipes = async (options = {}) => {
-  const params = {
-    number: options.number || 8,
-    ...options
-  };
-  
-  // Try to get from cache if in cache-only mode
-  if (isCacheOnlyMode()) {
+const tryApiCallWithFallback = async (apiCallFunction) => {
+  for (const apiKey of API_KEYS) {
     try {
-      // For random recipes in cache-only mode, we'll just return the 8 most recently cached recipes
-      const cachedRecipe = await getCachedRecipe('random');
-      if (cachedRecipe && cachedRecipe.results) {
-        console.log('Using cached random recipes (cache-only mode)');
-        return cachedRecipe.results;
-      }
-    } catch (err) {
-      console.error('Error getting cached random recipes:', err);
+      const spoonacularAxios = createSpoonacularAxios(apiKey);
+      const optimizedAxios = createOptimizedAxios(spoonacularAxios);
+      const result = await apiCallFunction(optimizedAxios);
+      return result;
+    } catch (error) {
+      console.warn(`API call failed with key ${apiKey}:`, error.message);
+      continue;
     }
   }
-  
-  // If we can make an API call
+  throw new Error('All Spoonacular API keys have failed');
+};
+
+initApiTracker();
+initCacheCleanup();
+
+function initCacheCleanup() {
+  cleanupCache();
+  setInterval(cleanupCache, 24 * 60 * 60 * 1000);
+}
+
+// -----------------------------
+// OPTIMIZED API SERVICE METHODS
+// -----------------------------
+
+export const fetchRandomRecipes = async () => {
+  const params = {
+    number: 100,
+    addRecipeInformation: true,
+    fillIngredients: true
+  };
+
+  if (isCacheOnlyMode()) {
+    const cachedRecipe = await getCachedRecipe('random');
+    if (cachedRecipe?.results) {
+      console.log('Using cached random recipes (cache-only mode)');
+      return cachedRecipe.results;
+    }
+  }
+
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/random', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
-      
-      // Cache the results
-      const recipes = response.data.recipes;
-      
-      // Also cache each individual recipe
-      recipes.forEach(recipe => cacheRecipe(recipe));
-      
-      // Cache the random results too under a special key
-      await cacheRecipe({
-        id: 'random',
-        results: recipes,
-        timestamp: Date.now()
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/random', { params }));
+        incrementApiUsage();
+        return response.data.recipes;
       });
-      
+
+      await Promise.all(recipes.map(recipe => cacheRecipe(recipe)));
+      await cacheRecipe({ id: 'random', results: recipes, timestamp: Date.now() });
+
       return recipes;
     } catch (error) {
       console.error('Error fetching random recipes:', error);
       throw error;
     }
   } else {
-    console.warn('API limit reached: Using cached data for random recipes');
-    
-    // In a real app, you could show a notification to the user
-    // For now, just throw an error
-    throw new Error('Daily API limit reached. Please try again tomorrow or use cached recipes.');
+    throw new Error('Daily API limit reached.');
   }
 };
 
-// Search recipes with caching
-export const searchRecipes = async (query, options = {}) => {
+export const searchRecipes = async (query) => {
   if (!query) return [];
-  
+
   const searchQuery = query.toLowerCase().trim();
   const params = {
     query: searchQuery,
-    number: options.number || 12,
+    number: 100,
     addRecipeInformation: true,
-    fillIngredients: true,
-    ...options
+    fillIngredients: true
   };
-  
-  // First check the cache
-  try {
-    const cachedData = await getCachedSearchResults(searchQuery);
-    if (cachedData) {
-      console.log(`Using cached search results for "${searchQuery}"`);
-      
-      // If cache isn't stale, or we're in cache-only mode, return it directly
-      if (!cachedData.isStale || isCacheOnlyMode()) {
-        return cachedData.results;
-      }
-      
-      // If cache is stale but we're online, refresh in the background
-      if (cachedData.isStale && canMakeApiCall()) {
-        console.log(`Refreshing stale search results for "${searchQuery}" in background`);
-        
-        // Return the stale cache immediately
-        setTimeout(() => {
-          // Make the API call in the background to refresh the cache
-          api.get('/recipes/complexSearch', { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheSearchResults(searchQuery, response.data.results);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
-        }, 100);
-        
-        return cachedData.results;
-      }
-    }
-  } catch (err) {
-    console.error('Error getting cached search results:', err);
+
+  const cachedData = await getCachedSearchResults(searchQuery);
+  if (cachedData && (!cachedData.isStale || isCacheOnlyMode())) {
+    console.log(`Using cached search for "${searchQuery}"`);
+    return cachedData.results;
   }
-  
-  // If we got here, we need to make an API call
+
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
-      
-      // Cache the results
-      const recipes = response.data.results;
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
+        incrementApiUsage();
+        return response.data.results;
+      });
+
       await cacheSearchResults(searchQuery, recipes);
-      
       return recipes;
     } catch (error) {
-      console.error(`Error searching recipes for "${searchQuery}":`, error);
+      console.error('Error searching recipes:', error);
       throw error;
     }
   } else {
-    console.warn('API limit reached: Cannot make new search request');
-    throw new Error('Daily API limit reached. Please try again tomorrow or use previously viewed recipes.');
+    throw new Error('Daily API limit reached.');
   }
 };
 
-// Filter recipes by cuisine with caching
-export const filterRecipesByCuisine = async (cuisine, options = {}) => {
+export const filterRecipesByCuisine = async (cuisine) => {
   if (!cuisine) return [];
-  
+
   const cuisineKey = cuisine.toLowerCase();
   const params = {
     cuisine: cuisineKey,
-    number: options.number || 8,
-    addRecipeInformation: true,
-    ...options
+    number: 100,
+    addRecipeInformation: true
   };
-  
-  // First check the cache
-  try {
-    const cachedData = await getCachedCuisineResults(cuisineKey);
-    if (cachedData) {
-      console.log(`Using cached cuisine results for "${cuisineKey}"`);
-      
-      // If cache isn't stale, or we're in cache-only mode, return it directly
-      if (!cachedData.isStale || isCacheOnlyMode()) {
-        return cachedData.results;
-      }
-      
-      // If cache is stale but we're online, refresh in the background
-      if (cachedData.isStale && canMakeApiCall()) {
-        console.log(`Refreshing stale cuisine results for "${cuisineKey}" in background`);
-        
-        // Return the stale cache immediately
-        setTimeout(() => {
-          // Make the API call in the background to refresh the cache
-          api.get('/recipes/complexSearch', { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheCuisineResults(cuisineKey, response.data.results);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
-        }, 100);
-        
-        return cachedData.results;
-      }
-    }
-  } catch (err) {
-    console.error('Error getting cached cuisine results:', err);
+
+  const cachedData = await getCachedCuisineResults(cuisineKey);
+  if (cachedData && (!cachedData.isStale || isCacheOnlyMode())) {
+    console.log(`Using cached cuisine "${cuisineKey}"`);
+    return cachedData.results;
   }
-  
-  // If we got here, we need to make an API call
+
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
-      
-      // Cache the results
-      const recipes = response.data.results;
+      const recipes = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get('/recipes/complexSearch', { params }));
+        incrementApiUsage();
+        return response.data.results;
+      });
+
       await cacheCuisineResults(cuisineKey, recipes);
-      
       return recipes;
     } catch (error) {
-      console.error(`Error fetching ${cuisineKey} recipes:`, error);
+      console.error('Error filtering recipes by cuisine:', error);
       throw error;
     }
   } else {
-    console.warn('API limit reached: Cannot make new cuisine filter request');
-    throw new Error('Daily API limit reached. Please try again tomorrow or use previously viewed recipes.');
+    throw new Error('Daily API limit reached.');
   }
 };
 
-// Fetch recipe details with caching
-export const fetchRecipeById = async (id, options = {}) => {
+export const fetchRecipeById = async (id) => {
   if (!id) return null;
-  
-  // Convert to number if it's a string
+
   const recipeId = typeof id === 'string' ? parseInt(id) : id;
-  const params = {
-    includeNutrition: true,
-    ...options
-  };
-  
-  // First check the cache
-  try {
-    const cachedRecipe = await getCachedRecipe(recipeId);
-    if (cachedRecipe) {
-      console.log(`Using cached recipe for id ${recipeId}`);
-      
-      // If cache isn't stale, or we're in cache-only mode, return it directly
-      if (!cachedRecipe.isStale || isCacheOnlyMode()) {
-        return cachedRecipe;
-      }
-      
-      // If cache is stale but we're online, refresh in the background
-      if (cachedRecipe.isStale && canMakeApiCall()) {
-        console.log(`Refreshing stale recipe for id ${recipeId} in background`);
-        
-        // Return the stale cache immediately
-        setTimeout(() => {
-          // Make the API call in the background to refresh the cache
-          api.get(`/recipes/${recipeId}/information`, { params })
-            .then(response => {
-              incrementApiUsage();
-              cacheRecipe(response.data);
-            })
-            .catch(err => console.error('Background cache refresh failed:', err));
-        }, 100);
-        
-        return cachedRecipe;
-      }
-    }
-  } catch (err) {
-    console.error('Error getting cached recipe:', err);
+  const params = { includeNutrition: true };
+
+  const cachedRecipe = await getCachedRecipe(recipeId);
+  if (cachedRecipe && (!cachedRecipe.isStale || isCacheOnlyMode())) {
+    console.log(`Using cached recipe for id ${recipeId}`);
+    return cachedRecipe;
   }
-  
-  // If we got here, we need to make an API call
+
   if (canMakeApiCall()) {
     try {
-      const response = await retryRequest(() => api.get(`/recipes/${recipeId}/information`, { params }));
-      
-      // Increment API usage counter
-      incrementApiUsage();
-      
-      // Cache the recipe
-      const recipe = response.data;
+      const recipe = await tryApiCallWithFallback(async (api) => {
+        const response = await retryRequest(() => api.get(`/recipes/${recipeId}/information`, { params }));
+        incrementApiUsage();
+        return response.data;
+      });
+
       await cacheRecipe(recipe);
-      
       return recipe;
     } catch (error) {
-      console.error(`Error fetching recipe id ${recipeId}:`, error);
+      console.error('Error fetching recipe id:', error);
       throw error;
     }
   } else {
-    console.warn('API limit reached: Cannot make new recipe detail request');
-    throw new Error('Daily API limit reached. Please try again tomorrow or view previously accessed recipes.');
+    throw new Error('Daily API limit reached.');
   }
 };
 
-// Export API usage information for components that need it
 export const getApiUsageInfo = () => {
   return {
     isLimited: isCacheOnlyMode(),

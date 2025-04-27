@@ -1,4 +1,6 @@
+// src/components/Footer.jsx
 import { Link } from "react-router-dom";
+import ThemeToggle from './ThemeToggle';
 
 function Footer() {
   return (
@@ -7,7 +9,6 @@ function Footer() {
         <div className="footer-container">
           <div className="footer-section">
             <div className="footer-logo">Ordelo</div>
-            <p>Plan, Shop & Cook—All in One App. Explore endless recipes, build your shopping list instantly, and save on every order.</p>
             <div className="social-links">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <i className="fab fa-facebook-f"></i>
@@ -17,9 +18,6 @@ function Footer() {
               </a>
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <i className="fab fa-instagram"></i>
-              </a>
-              <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">
-                <i className="fab fa-pinterest-p"></i>
               </a>
             </div>
           </div>
@@ -31,34 +29,27 @@ function Footer() {
               <li><Link to="/saved-recipes">Saved Recipes</Link></li>
               <li><Link to="/shopping-list">Shopping List</Link></li>
               <li><Link to="/orders">Orders</Link></li>
-            </ul>
-          </div>
-
-          <div className="footer-section">
-            <h3>Categories</h3>
-            <ul className="footer-links">
-              <li><a href="/#cuisine-italian">Italian</a></li>
-              <li><a href="/#cuisine-indian">Indian</a></li>
-              <li><a href="/#cuisine-mediterranean">Mediterranean</a></li>
-              <li><a href="/#cuisine-mexican">Mexican</a></li>
-              <li><a href="/#cuisine-asian">Asian</a></li>
+              <ThemeToggle />
             </ul>
           </div>
 
           <div className="footer-section">
             <h3>Help & Support</h3>
             <ul className="footer-links">
-              <li><a href="#">FAQ</a></li>
-              <li><a href="#">Contact Us</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms of Service</a></li>
-              <li><a href="#">For Vendors</a></li>
+              <li><Link to="/help-support#faq">FAQ</Link></li>
+              <li><Link to="/help-support#contact">Contact Us</Link></li>
+              <li><Link to="/help-support#privacy">Privacy Policy</Link></li>
+              <li><Link to="/help-support#terms">Terms of Service</Link></li>
+              <li><Link to="/help-support#vendors">For Vendors</Link></li>
+              <li><Link to="/help-support#aboutus">About Us</Link></li>
             </ul>
           </div>
         </div>
 
-        <div className="copyright">
-          <p>&copy; {new Date().getFullYear()} Ordelo. All rights reserved.</p>
+        <div className="footer-bottom">
+          <div className="copyright">
+            <p>&copy; {new Date().getFullYear()} Ordelo. Built by students as an educational project. No commercial activity involved.</p>
+          </div>
         </div>
       </div>
     </footer>
