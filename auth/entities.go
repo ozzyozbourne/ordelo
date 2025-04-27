@@ -109,7 +109,7 @@ type Store struct {
 	ID        bson.ObjectID `bson:"_id,omitempty" json:"store_id"`
 	Name      string        `bson:"name" json:"name"`
 	StoreType string        `bson:"store_type" json:"store_type"`
-	Location  GeoJSON       `bson:"location" json:"location"`
+	Location  *GeoJSON      `bson:"location" json:"location"`
 	Items     []*Item       `bson:"items" json:"items"`
 }
 

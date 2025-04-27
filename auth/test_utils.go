@@ -302,6 +302,30 @@ func generateUserOrdersArray(n, m int) []*UserOrder {
 	return userOrders
 }
 
+func generateStoresArray(n, m int) []*Store {
+	res := make([]*Store, n)
+	for i := range n {
+		res[i] = &Store{
+			ID:        bson.NewObjectID(),
+			Name:      generateRandowName(),
+			StoreType: "Delivery",
+			Location:  generateRandomUSLocation(),
+			Items:     generateItemsArray(m),
+		}
+	}
+	return res
+}
+
+func generateRandomUSLocation() *GeoJSON {
+	longitude := -125.0 + rand.Float64()*58.0
+	latitude := 24.0 + rand.Float64()*25.0
+
+	return &GeoJSON{
+		Type:        "Point",
+		Coordinates: []float64{longitude, latitude},
+	}
+}
+
 func checkUserStruct(in, out *User) error {
 	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)
