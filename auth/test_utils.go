@@ -39,6 +39,13 @@ func generateUser(n, m int) *User {
 	}
 }
 
+func generateVendor(n, m int) *Vendor {
+	common := generateCommon("vendor")
+	return &Vendor{
+		Common: common,
+	}
+}
+
 func generateRandowName() string {
 	b := make([]byte, 5)
 	for i := range b {
