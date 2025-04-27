@@ -1,12 +1,18 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useRecipes } from "../context/RecipeContext";
+import { useNavigate } from "react-router-dom";  
 
 function RecipeCard({ recipe, onSave, isSaved }) {
   const [isHovered, setIsHovered] = useState(false);
   const { addToSelectedRecipes, selectedRecipes } = useRecipes();
+  const navigate = useNavigate(); 
   
   const isSelected = selectedRecipes.some(r => r.id === recipe.id);
+  
+  // Function to open external recipe URL
+  const openExternalRecipe = () => {
+    navigate(`/recipe/${recipe.id}`);
+  };
   
   return (
     <div 
@@ -22,15 +28,18 @@ function RecipeCard({ recipe, onSave, isSaved }) {
         />
         {isHovered && (
           <div className="recipe-card-overlay">
-            <Link to={`/recipe/${recipe.id}`} className="btn btn-primary view-recipe-btn">
-              <i className="fas fa-eye"></i> View
-            </Link>
+            <button 
+              onClick={openExternalRecipe} 
+              className="btn btn-primary view-recipe-btn"
+            >
+              <i className="fas fa-external-link-alt"></i> View Recipe
+            </button>
           </div>
         )}
       </div>
       
       <div className="recipe-content">
-        <h3 className="recipe-title">{recipe.title}</h3>
+        <h3 className="recipe-title" onClick={openExternalRecipe} >{recipe.title}</h3>
         
         <div className="recipe-meta">
           <span>

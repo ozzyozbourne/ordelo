@@ -119,7 +119,7 @@ function AddRecipe() {
       <div className="page-header">
         <div className="container">
           <h1 className="page-title">
-            <i className="fas fa-plus-circle"></i> Add Your Recipe
+            Add Your Recipe
           </h1>
           <p className="page-description">
             Share your culinary creation with the Ordelo community.

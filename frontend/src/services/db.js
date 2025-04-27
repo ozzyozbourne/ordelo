@@ -1,12 +1,10 @@
 // src/services/db.js
 // IndexedDB database setup and operations
-
 const DB_NAME = 'ordelo-recipe-cache';
 const DB_VERSION = 1;
 const RECIPES_STORE = 'recipes';
 const SEARCH_STORE = 'searches';
 const CUISINE_STORE = 'cuisines';
-
 // Open database connection
 export const openDB = () => {
   return new Promise((resolve, reject) => {
@@ -142,7 +140,6 @@ export const deleteOldItems = async (storeName, maxAgeMs) => {
     };
   });
 };
-
 // Export store names for easy access
 export const STORES = {
   RECIPES: RECIPES_STORE,
