@@ -221,17 +221,47 @@ func generateRandomAddress() string {
 		a.City, a.State, a.ZipCode, a.Country)
 }
 
-func generateRandomCartItems(n int) []*CartItem {
-	items := make([]CartItem, n)
-	for i := 0; i < n; i++ {
-		items[i] = CartItem{
-			IngredientID:   bson.NewObjectID(),
-			IngredientName: "Ingredient " + strconv.Itoa(i),
-			Quantity:       float64(i + 1),
-			Status:         "available",
+func generateCartArray(n int) []*Cart {
+	carts := make([]*Cart, n)
+	for i := range n {
+		carts[i] = &Cart{
+			ID:         bson.NewObjectID(),
+			VendorID:   bson.NewObjectID(),
+			StoreID:    bson.NewObjectID(),
+			TotalPrice: (rand.Float64() + 1) * 1000,
+			Ingredient: generateIngredientsArray(3),
 		}
 	}
-	return items
+	return carts
+}
+
+func generateUserOrdersArray(n int) []*UserOrder {
+	orders := make([]*UserOrder, n)
+	for i := range n {
+		orders[i] = &UserOrder{}
+	}
+	return orders
+}
+
+func generateOrderArray(n int) []*Order {
+	orderItems := generateIngredientsArray(n)
+	orders := make([]*Order, n)
+	for i := range n {
+
+	}
+	return orders
+}
+
+func generateRandomOrder() *Order {
+	return &Order{
+		ID:      bson.NewObjectID(),
+		StoreID: bson.NewObjectID(),
+	}
+}
+
+func generateRandomOrderItem() *OrderItem {
+	ing := generateIngredientsArray
+	return &OrderItem{}
 }
 
 func checkUserStruct(in, out *User) error {
