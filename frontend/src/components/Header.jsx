@@ -1,10 +1,14 @@
-import { Link, useLocation } from "react-router-dom";
+// src/components/Header.jsx
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Handle scroll effect
   useEffect(() => {
@@ -25,6 +29,12 @@ function Header() {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/'); // Navigate to home after logout
+  };
+
   return (
     <header className={`header ${isScrolled ? "scrolled" : ""}`}>
       <div className="container header-container">
@@ -38,16 +48,16 @@ function Header() {
             <i className="fas fa-home"></i> Recipes
           </Link>
           <Link 
-            to="/saved-recipes" 
-            className={location.pathname === "/saved-recipes" ? "active" : ""}
-          >
-            <i className="fas fa-heart"></i> Saved
-          </Link>
-          <Link 
             to="/shopping-list" 
             className={location.pathname === "/shopping-list" ? "active" : ""}
           >
             <i className="fas fa-shopping-basket"></i> Shopping List
+          </Link>
+          <Link 
+            to="/shopping" 
+            className={location.pathname === "/shopping" ? "active" : ""}
+          >
+            <i className="fas fa-store"></i> Shopping
           </Link>
           <Link 
             to="/orders" 
@@ -57,9 +67,28 @@ function Header() {
           </Link>
         </nav>
 
-        <button className="vendor-login">
-          <i className="fas fa-store"></i> Vendor Login
-        </button>
+        {/* Login/Account Button */}
+        {user ? (
+          <div className="account-dropdown">
+            <button className="account-btn">
+              <i className="fas fa-user"></i> My Account
+            </button>
+            <div className="dropdown-content">
+              <Link to="/profile">Profile</Link>
+              <Link to="/saved-recipes">Saved Recipes</Link>
+              {user.role === 'vendor' && (
+                <Link to="/vendordashboard">Vendor Dashboard</Link>
+              )}
+              <button onClick={handleLogout} className="logout-btn">
+                <i className="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+          </div>
+        ) : (
+          <Link to="/login" className="login-btn">
+            <i className="fas fa-sign-in-alt"></i> Login
+          </Link>
+        )}
 
         {/* Mobile Menu Button */}
         <button 
@@ -77,18 +106,37 @@ function Header() {
           <Link to="/">
             <i className="fas fa-home"></i> Recipes
           </Link>
-          <Link to="/saved-recipes">
-            <i className="fas fa-heart"></i> Saved Recipes
-          </Link>
           <Link to="/shopping-list">
             <i className="fas fa-shopping-basket"></i> Shopping List
+          </Link>
+          <Link to="/shopping">
+            <i className="fas fa-store"></i> Shopping
           </Link>
           <Link to="/orders">
             <i className="fas fa-box"></i> Orders
           </Link>
-          <button className="vendor-login-mobile">
-            <i className="fas fa-store"></i> Vendor Login
-          </button>
+          {user ? (
+            <>
+              <Link to="/profile">
+                <i className="fas fa-user"></i> Profile
+              </Link>
+              <Link to="/saved-recipes">
+                <i className="fas fa-heart"></i> Saved Recipes
+              </Link>
+              {user.role === 'vendor' && (
+                <Link to="/vendordashboard">
+                  <i className="fas fa-store-alt"></i> Vendor Dashboard
+                </Link>
+              )}
+              <button onClick={handleLogout} className="logout-btn-mobile">
+                <i className="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="login-btn-mobile">
+              <i className="fas fa-sign-in-alt"></i> Login
+            </Link>
+          )}
         </div>
       )}
     </header>

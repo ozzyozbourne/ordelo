@@ -3,8 +3,8 @@
 
 // Constants
 const STORAGE_KEY = 'spoonacular_api_usage';
-const DAILY_LIMIT = 145; // Set slightly below actual limit (150) for safety
-const CACHE_ONLY_THRESHOLD = 140; // Switch to cache-only mode at this threshold
+const DAILY_LIMIT = 500; // Set slightly below actual limit (150) for safety
+const CACHE_ONLY_THRESHOLD = 450; // Switch to cache-only mode at this threshold
 
 // Get the current date as a string (YYYY-MM-DD)
 const getCurrentDate = () => {
@@ -61,12 +61,10 @@ export const getApiUsage = () => {
     };
   }
 };
-
 // Set API usage
 export const setApiUsage = (usage) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
 };
-
 // Increment API usage counter
 export const incrementApiUsage = (count = 1) => {
   const usage = getApiUsage();
@@ -87,7 +85,6 @@ export const incrementApiUsage = (count = 1) => {
   // Update counter
   const newCount = usage.count + count;
   const cacheOnlyMode = newCount >= CACHE_ONLY_THRESHOLD;
-  
   // If we've moved into cache-only mode, log it
   if (cacheOnlyMode && !usage.cacheOnlyMode) {
     console.warn(`API daily limit approaching (${newCount}/${DAILY_LIMIT}). Switching to cache-only mode.`);

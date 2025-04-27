@@ -1,0 +1,292 @@
+/* Global styles using Open Props tokens */
+
+/* Base layout */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--surface-2);
+  color: var(--text-1);
+  line-height: var(--font-lineheight-3);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headings);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  color: var(--text-1);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings: 'opsz' 144;
+  font-weight: var(--font-weight-6); /* Explicit weight declaration */
+  letter-spacing: 0.05em; 
+}
+
+/* For bold weights */
+h1, h2 {
+  font-variation-settings: 'opsz' 144, 'wght' 700;
+  letter-spacing: 0.05em; 
+}
+
+/* For medium weights */
+h3, h4 {
+  font-variation-settings: 'opsz' 144, 'wght' 500;
+  letter-spacing: 0.06em; 
+}
+
+/* For regular weights */
+h5, h6 {
+  font-variation-settings: 'opsz' 144, 'wght' 200;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--space-md);
+}
+
+small {
+  font-size: var(--font-size-0);
+}
+
+/* Links */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-color-light);
+}
+
+/* Layout components */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.btn-secondary {
+  background-color: var(--surface-3);
+  color: var(--text-1);
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-1);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.btn-accent {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn-accent:hover {
+  background-color: var(--accent-color-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+/* Utilities */
+.text-gradient {
+  background-image: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) 0;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid var(--surface-3);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spinner 1s linear infinite;
+  margin-bottom: var(--space-md);
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error message */
+.error-message {
+  color: var(--red-7);
+  background-color: var(--red-2);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.error-message i {
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* Remove the fixed positioning and move to footer */
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-color: var(--surface-3);
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-2);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle:hover {
+  background-color: var(--surface-4);
+  transform: scale(1.1);
+}
+
+html.dark-theme .theme-toggle .moon-icon {
+  display: none;
+}
+
+html:not(.dark-theme) .theme-toggle .sun-icon {
+  display: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slidePage {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  h1 {
+    font-size: var(--font-size-5);
+  }
+  
+  h2 {
+    font-size: var(--font-size-4);
+  }
+  
+  .container {
+    padding: 0 var(--space-sm);
+  }
+}
+
+/* Global responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    padding: 0 var(--space-sm);
+  }
+  
+  .btn {
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-0);
+  }
+  
+  .section {
+    padding: var(--space-md) 0;
+  }
+  
+  .section-title {
+    font-size: var(--font-size-3);
+    margin-bottom: var(--space-md);
+    padding-left: var(--space-xs);
+  }
+  
+  /* Maintain white space */
+  p {
+    margin-bottom: var(--space-sm);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-sm);
+  }
+}

@@ -1,3 +1,5 @@
+// src/pages/Home.jsx
+
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
@@ -20,6 +22,8 @@ function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const resultsRef = useRef(null);
+
+  const [visibleRecipes, setVisibleRecipes] = useState(12); // NEW state for Load More
   
   const [searchSuggestions] = useState([
     "Pasta", "Pizza", "Curry", "Salad", "Smoothie", 
@@ -31,8 +35,8 @@ function Home() {
     setHasSearched(true);
     setSearchQuery(query);
     setActiveCuisine("all");
+    setVisibleRecipes(12); // Reset visible count on new search
     
-    // Scroll to results after search
     setTimeout(() => {
       if (resultsRef.current) {
         resultsRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -43,6 +47,7 @@ function Home() {
   const handleCuisineClick = (cuisine) => {
     setActiveCuisine(cuisine);
     setHasSearched(false);
+    setVisibleRecipes(12); // Reset visible count
     
     if (cuisine === "all") {
       fetchRandomRecipes();
@@ -54,6 +59,7 @@ function Home() {
   const clearSearch = () => {
     setHasSearched(false);
     setSearchQuery("");
+    setVisibleRecipes(12);
   };
 
   const isRecipeSaved = (id) => {
@@ -61,7 +67,6 @@ function Home() {
   };
 
   useEffect(() => {
-    // Fetch initial random recipes when component mounts
     if (recipes.length === 0) {
       fetchRandomRecipes();
     }
@@ -113,16 +118,26 @@ function Home() {
                 <p>Finding delicious recipes...</p>
               </div>
             ) : recipes.length > 0 ? (
-              <div className="recipes-grid">
-                {recipes.map(recipe => (
-                  <RecipeCard 
-                    key={recipe.id} 
-                    recipe={recipe} 
-                    onSave={toggleSaveRecipe}
-                    isSaved={isRecipeSaved(recipe.id)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="recipes-grid">
+                  {recipes.slice(0, visibleRecipes).map(recipe => (
+                    <RecipeCard 
+                      key={recipe.id} 
+                      recipe={recipe} 
+                      onSave={toggleSaveRecipe}
+                      isSaved={isRecipeSaved(recipe.id)}
+                    />
+                  ))}
+                </div>
+
+                {visibleRecipes < recipes.length && (
+                  <div className="load-more-container">
+                    <button className="btn btn-secondary" onClick={() => setVisibleRecipes(prev => prev + 12)}>
+                      Load More
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="no-recipes">
                 <i className="fas fa-search"></i>
@@ -133,7 +148,7 @@ function Home() {
         </section>
       )}
 
-      {/* Main Content (blurred when search results are showing) */}
+      {/* Main Content */}
       <div className={`main-content ${hasSearched ? 'blurred-background' : ''}`}>
         {/* Cuisine Categories */}
         <section className="section">
@@ -141,52 +156,29 @@ function Home() {
             <h2 className="section-title">Explore Cuisines</h2>
             
             <div className="cuisine-categories">
-              <button 
-                className={`cuisine-category ${activeCuisine === "all" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("all")}
-              >
-                All Cuisines
-              </button>
-              <button 
-                className={`cuisine-category ${activeCuisine === "italian" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("italian")}
-                id="cuisine-italian"
-              >
-                <i className="fas fa-pizza-slice"></i> Italian
-              </button>
-              <button 
-                className={`cuisine-category ${activeCuisine === "indian" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("indian")}
-                id="cuisine-indian"
-              >
-                <i className="fas fa-pepper-hot"></i> Indian
-              </button>
-              <button 
-                className={`cuisine-category ${activeCuisine === "mediterranean" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("mediterranean")}
-                id="cuisine-mediterranean"
-              >
-                <i className="fas fa-fish"></i> Mediterranean
-              </button>
-              <button 
-                className={`cuisine-category ${activeCuisine === "mexican" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("mexican")}
-                id="cuisine-mexican"
-              >
-                <i className="fas fa-drumstick-bite"></i> Mexican
-              </button>
-              <button 
-                className={`cuisine-category ${activeCuisine === "asian" ? "active" : ""}`}
-                onClick={() => handleCuisineClick("asian")}
-                id="cuisine-asian"
-              >
-                <i className="fas fa-utensils"></i> Asian
-              </button>
+              {["all", "italian", "indian", "mediterranean", "mexican", "asian"].map((cuisine) => (
+                <button
+                  key={cuisine}
+                  className={`cuisine-category ${activeCuisine === cuisine ? "active" : ""}`}
+                  onClick={() => handleCuisineClick(cuisine)}
+                >
+                  {cuisine === "all" ? "All Cuisines" : (
+                    <>
+                      {cuisine === "italian" && <i className="fas fa-pizza-slice"></i>}
+                      {cuisine === "indian" && <i className="fas fa-pepper-hot"></i>}
+                      {cuisine === "mediterranean" && <i className="fas fa-fish"></i>}
+                      {cuisine === "mexican" && <i className="fas fa-drumstick-bite"></i>}
+                      {cuisine === "asian" && <i className="fas fa-utensils"></i>}
+                      {cuisine.charAt(0).toUpperCase() + cuisine.slice(1)}
+                    </>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Recipe Results for Selected Cuisine */}
+        {/* Recipes for selected Cuisine */}
         <section className="section">
           <div className="container">
             <h2 className="section-title">
@@ -205,16 +197,26 @@ function Home() {
                 <p>Finding delicious recipes...</p>
               </div>
             ) : recipes.length > 0 && !hasSearched ? (
-              <div className="recipes-grid">
-                {recipes.map(recipe => (
-                  <RecipeCard 
-                    key={recipe.id} 
-                    recipe={recipe} 
-                    onSave={toggleSaveRecipe}
-                    isSaved={isRecipeSaved(recipe.id)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="recipes-grid">
+                  {recipes.slice(0, visibleRecipes).map(recipe => (
+                    <RecipeCard 
+                      key={recipe.id} 
+                      recipe={recipe} 
+                      onSave={toggleSaveRecipe}
+                      isSaved={isRecipeSaved(recipe.id)}
+                    />
+                  ))}
+                </div>
+
+                {visibleRecipes < recipes.length && (
+                  <div className="load-more-container">
+                    <button className="btn btn-secondary" onClick={() => setVisibleRecipes(prev => prev + 12)}>
+                      Load More
+                    </button>
+                  </div>
+                )}
+              </>
             ) : !hasSearched && (
               <div className="no-recipes">
                 <i className="fas fa-utensils"></i>
@@ -224,97 +226,28 @@ function Home() {
           </div>
         </section>
 
-        {/* Most Popular Ingredients Section */}
+        {/* Browse Ingredients */}
         <section className="section ingredients-section">
           <div className="container">
             <h2 className="section-title">Browse by Ingredients</h2>
-            
             <div className="ingredients-grid">
-              <div className="ingredient-card" onClick={() => handleSearch("chicken")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/chicken.jpg" alt="Chicken" className="ingredient-img" />
+              {[
+                { name: "chicken", img: "/src/assets/ingredients/chicken.png" },
+                { name: "vegetables", img: "/src/assets/ingredients/vegetable.png" },
+                { name: "seafood", img: "/src/assets/ingredients/seafood.png" },
+                { name: "beef", img: "/src/assets/ingredients/beef.png" },
+              ].map(({ name, img }) => (
+                <div key={name} className="ingredient-card" onClick={() => handleSearch(name)}>
+                  <div className="ingredient-img-container">
+                    <img src={img} alt={name} className="ingredient-img" />
+                  </div>
+                  <h3>{name.charAt(0).toUpperCase() + name.slice(1)}</h3>
                 </div>
-                <h3>Chicken</h3>
-              </div>
-              
-              <div className="ingredient-card" onClick={() => handleSearch("pasta")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/pasta.jpg" alt="Pasta" className="ingredient-img" />
-                </div>
-                <h3>Pasta</h3>
-              </div>
-              
-              <div className="ingredient-card" onClick={() => handleSearch("vegetables")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/vegetables.jpg" alt="Vegetables" className="ingredient-img" />
-                </div>
-                <h3>Vegetables</h3>
-              </div>
-              
-              <div className="ingredient-card" onClick={() => handleSearch("seafood")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/seafood.jpg" alt="Seafood" className="ingredient-img" />
-                </div>
-                <h3>Seafood</h3>
-              </div>
-              
-              <div className="ingredient-card" onClick={() => handleSearch("beef")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/beef.jpg" alt="Beef" className="ingredient-img" />
-                </div>
-                <h3>Beef</h3>
-              </div>
-              
-              <div className="ingredient-card" onClick={() => handleSearch("rice")}>
-                <div className="ingredient-img-container">
-                  <img src="/src/assets/ingredients/rice.jpg" alt="Rice" className="ingredient-img" />
-                </div>
-                <h3>Rice</h3>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* How It Works Section */}
-        <section className="section how-it-works-section">
-          <div className="container">
-            <h2 className="section-title">How Ordelo Works</h2>
-            
-            <div className="steps-container">
-              <div className="step">
-                <div className="step-icon">
-                  <i className="fas fa-search"></i>
-                </div>
-                <h3>Find Recipes</h3>
-                <p>Search for recipes or browse by cuisine to find dishes you love.</p>
-              </div>
-              
-              <div className="step">
-                <div className="step-icon">
-                  <i className="fas fa-heart"></i>
-                </div>
-                <h3>Save Favorites</h3>
-                <p>Save your favorite recipes to easily access them later.</p>
-              </div>
-              
-              <div className="step">
-                <div className="step-icon">
-                  <i className="fas fa-shopping-basket"></i>
-                </div>
-                <h3>Auto Shopping List</h3>
-                <p>Ingredients are automatically added to your shopping list.</p>
-              </div>
-              
-              <div className="step">
-                <div className="step-icon">
-                  <i className="fas fa-utensils"></i>
-                </div>
-                <h3>Cook & Enjoy</h3>
-                <p>Follow the recipe instructions and enjoy your meal!</p>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );

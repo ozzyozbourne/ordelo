@@ -1,5 +1,6 @@
 // src/utils/apiUtils.js
 // API request optimization utilities
+//zoha- definig funvtions, for optimizstion which wll be used in spoonacular api.js file
 
 // In-memory pending requests cache to prevent duplicate requests
 const pendingRequests = {};
@@ -86,7 +87,6 @@ export const createNetworkDetector = () => {
     onNetworkChange
   };
 };
-
 // Retry failed API requests with exponential backoff
 export const retryRequest = async (requestFunc, maxRetries = 3, delayMs = 1000) => {
   let lastError;
@@ -105,7 +105,6 @@ export const retryRequest = async (requestFunc, maxRetries = 3, delayMs = 1000) 
   
   throw lastError;
 };
-
 // Create an enhanced axios instance with all optimizations
 export const createOptimizedAxios = (axiosInstance) => {
   return {

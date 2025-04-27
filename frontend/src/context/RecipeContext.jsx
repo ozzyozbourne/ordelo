@@ -1,4 +1,10 @@
 // src/context/RecipeContext.jsx
+//Why Use RecipeContext.jsx?
+//Removes prop drilling – No need to pass props down multiple components.
+//Reusability – All recipe-related logic is centralized in one file.
+//Improves Performance – Only updates necessary components when data changes.
+// Offline Support – Uses localStorage to persist data when offline.
+
 import { createContext, useState, useEffect, useContext } from "react";
 import { 
   fetchRandomRecipes, 
@@ -62,7 +68,6 @@ export const RecipeProvider = ({ children }) => {
         showToast('Daily API limit reached. Using cached recipes only until tomorrow.', 'error');
       }
     };
-    
     updateApiStatus();
     const apiStatusInterval = setInterval(updateApiStatus, 5 * 60 * 1000); // Check every 5 minutes
     
@@ -193,7 +198,6 @@ export const RecipeProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
-
   const toggleSaveRecipe = (recipe) => {
     const isAlreadySaved = savedRecipes.some(savedRecipe => savedRecipe.id === recipe.id);
     
