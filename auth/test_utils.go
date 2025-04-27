@@ -221,6 +221,19 @@ func generateRandomAddress() string {
 		a.City, a.State, a.ZipCode, a.Country)
 }
 
+func generateRandomCartItems(n int) []*CartItem {
+	items := make([]CartItem, n)
+	for i := 0; i < n; i++ {
+		items[i] = CartItem{
+			IngredientID:   bson.NewObjectID(),
+			IngredientName: "Ingredient " + strconv.Itoa(i),
+			Quantity:       float64(i + 1),
+			Status:         "available",
+		}
+	}
+	return items
+}
+
 func checkUserStruct(in, out *User) error {
 	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)

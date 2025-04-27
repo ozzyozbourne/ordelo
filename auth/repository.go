@@ -428,14 +428,14 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 		return err
 	}
 
-	models := make([]mongo.WriteModel, 0, len(orders)*2)
-	for _, order := range orders {
+	models := make([]mongo.WriteModel, 0, len(carts)*2)
+	for _, cart := range carts {
 		updateFilter := bson.D{
 			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: order.ID},
+			{Key: "carts._id", Value: cart.ID},
 		}
 		update := bson.D{
-			{Key: "$set", Value: bson.M{"orders.$": order}},
+			{Key: "$set", Value: bson.M{"carts.$": cart}},
 		}
 		updateModel := mongo.NewUpdateOneModel().
 			SetFilter(updateFilter).
@@ -444,10 +444,10 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 
 		addFilter := bson.D{
 			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
+			{Key: "carts._id", Value: bson.M{"$ne": cart.ID}},
 		}
 		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"orders": order}},
+			{Key: "$push", Value: bson.M{"carts": cart}},
 		}
 		addModel := mongo.NewUpdateOneModel().
 			SetFilter(addFilter).
@@ -461,7 +461,7 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 		return err
 	}
 
-	Logger.InfoContext(ctx, "Orders updated successfully",
+	Logger.InfoContext(ctx, "Carts updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
 		slog.Int64("insertedCount", result.InsertedCount),
