@@ -339,15 +339,15 @@ func generateVendorOrderArray(n, m int) []*VendorOrder {
 
 }
 
-func checkUserStruct(in, out *User) error {
+func checkCommon(in, out Common) error {
 	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)
 	}
-	if in.UserName != out.UserName {
-		return fmt.Errorf("UserName mismatch: %s vs %s", in.UserName, out.UserName)
+	if in.Name != out.Name {
+		return fmt.Errorf("UserName mismatch: %s vs %s", in.Name, out.Name)
 	}
-	if in.UserAddress != out.UserAddress {
-		return fmt.Errorf("UserAddress mismatch -> \n%s\n%s", in.UserAddress, out.UserAddress)
+	if in.Address != out.Address {
+		return fmt.Errorf("UserAddress mismatch -> \n%s\n%s", in.Address, out.Address)
 	}
 	if in.Email != out.Email {
 		return fmt.Errorf("Email mismatch: %s vs %s", in.Email, out.Email)
@@ -358,20 +358,63 @@ func checkUserStruct(in, out *User) error {
 	if in.Role != out.Role {
 		return fmt.Errorf("Role mismatch: %s vs %s", in.Role, out.Role)
 	}
+	return nil
+}
 
-	inRecipeLen, outRecipeLen := len(in.SavedRecipes), len(out.SavedRecipes)
-	if inRecipeLen != outRecipeLen {
-		return fmt.Errorf("Recipe Length mismatch: %d vs %d", inRecipeLen, outRecipeLen)
+func checkUserStruct(in, out *User) error {
+	if err := checkCommon(in.Common, out.Common); err != nil {
+		return err
+	}
+	if err := checkRecipes(in.SavedRecipes, out.SavedRecipes); err != nil {
+		return err
+	}
+	return checkUserOrders(in.Orders, out.Orders)
+}
+
+func checkUserOrders(in, out []*UserOrder) error {
+
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("UserOrder Length mismatch: %d vs %d", inLen, outLen)
 	}
 
-	for i, inRecipe := range in.SavedRecipes {
-		outRecipe := out.SavedRecipes[i]
-		if err := checkRecipe(inRecipe, outRecipe); err != nil {
-			return errors.Join(fmt.Errorf("Error at recipes index -> %d", i), err)
+	for i, inUserOrder := range in {
+		outUserOrder := out[i]
+		if err := checkUserOrder(inUserOrder, outUserOrder); err != nil {
+			return errors.Join(fmt.Errorf("Error userOrder index -> %d", i), err)
 		}
 	}
-
 	return nil
+}
+
+func checkUserOrder(in, out *UserOrder) error {
+	if in.VendorID.Hex() != out.VendorID.Hex() {
+		return fmt.Errorf("VendorID Mismatch %v vs %v", in.ID, out.ID)
+	}
+	if in.PaymentStatus != out.PaymentStatus {
+		return fmt.Errorf("PaymentStatus mismatch: %s vs %s", in.PaymentStatus, out.PaymentStatus)
+	}
+	return checkOrder(in.Order, out.Order)
+
+}
+
+func checkOrder(in, out Order) error {
+	if in.ID.Hex() != out.ID.Hex() {
+		return fmt.Errorf("UserID Mismatch %v vs %v", in.ID, out.ID)
+	}
+	if in.StoreID.Hex() != out.StoreID.Hex() {
+		return fmt.Errorf("StoreID Mismatch %v vs %v", in.ID, out.ID)
+	}
+	if in.TotalPrice != out.TotalPrice {
+		return fmt.Errorf("TotalPrice mismatch: %f vs %f", in.TotalPrice, out.TotalPrice)
+	}
+	if in.OrderStatus != out.OrderStatus {
+		return fmt.Errorf("OrderStatus mismatch -> %s %s", in.OrderStatus, out.OrderStatus)
+	}
+	if in.DeliveryMethod != out.DeliveryMethod {
+		return fmt.Errorf("DeliveryMethod mismatch: %s vs %s", in.DeliveryMethod, out.DeliveryMethod)
+	}
+	return checkItems(in.Items, out.Items)
 }
 
 func checkRecipes(in, out []*Recipe) error {
@@ -384,6 +427,21 @@ func checkRecipes(in, out []*Recipe) error {
 	for i, inRecipe := range in {
 		outRecipe := out[i]
 		if err := checkRecipe(inRecipe, outRecipe); err != nil {
+			return errors.Join(fmt.Errorf("Error at recipes index -> %d", i), err)
+		}
+	}
+	return nil
+}
+
+func checkItems(in, out []*Item) error {
+
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("Item Length mismatch: %d vs %d", inLen, outLen)
+	}
+	for i, inItem := range in {
+		outItem := out[i]
+		if err := checkItem(inItem, outItem); err != nil {
 			return errors.Join(fmt.Errorf("Error at recipes index -> %d", i), err)
 		}
 	}
@@ -412,20 +470,7 @@ func checkRecipe(in, out *Recipe) error {
 	if in.ServingSize != out.ServingSize {
 		return fmt.Errorf("ServingSize mismatch: %d vs %d", in.ServingSize, out.ServingSize)
 	}
-
-	inIgLen, outIgLen := len(in.Ingredients), len(out.Ingredients)
-	if inIgLen != outIgLen {
-		return fmt.Errorf("Ingredients Length mismatch: %d vs %d", inIgLen, outIgLen)
-	}
-
-	for i, inIg := range in.Ingredients {
-		outIg := out.Ingredients[i]
-		if err := checkIngredient(inIg, outIg); err != nil {
-			return errors.Join(fmt.Errorf("Error at Ingredient index -> %d", i), err)
-		}
-	}
-
-	return nil
+	return checkItems(in.Items, out.Items)
 }
 
 func checkIngredient(in, out *Ingredient) error {
@@ -442,11 +487,18 @@ func checkIngredient(in, out *Ingredient) error {
 		return fmt.Errorf("Name mismatch: %s vs %s", in.Name, out.Name)
 	}
 
-	if in.Quantity != out.Quantity {
-		return fmt.Errorf("Quantity mismatch: %f vs %f", in.Quantity, out.Quantity)
+	if in.Price != out.Price {
+		return fmt.Errorf("Price mismatch: %f vs %f", in.Price, out.Price)
 	}
 	if in.Unit != out.Unit {
 		return fmt.Errorf("Unit mismatch: %s vs %s", in.Unit, out.Unit)
 	}
 	return nil
+}
+
+func checkItem(in, out *Item) error {
+	if in.Quantity != out.Quantity {
+		return fmt.Errorf("Quantity mismatch: %d vs %d", in.Quantity, out.Quantity)
+	}
+	return checkIngredient(&in.Ingredient, &out.Ingredient)
 }
