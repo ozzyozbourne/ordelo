@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -78,44 +77,35 @@ func ATestUserRepositoryPositve(t *testing.T) {
 	user_in := createUser(t)
 	user_in = addRecipe(t, user_in)
 
-	user_out := getUserByID(t, user_in.ID.Hex())
+	user_out := getUserByID(t, ID{user_in.ID})
 	compareUserStruct(t, user_in, user_out)
 
 	user_out = getUserByEmail(t, user_in.Email)
 	compareUserStruct(t, user_in, user_out)
 
-	recipes_out := getUserRecipes(t, user_in.ID.Hex())
+	recipes_out := getUserRecipes(t, ID{user_in.ID})
 	compareUserRecipes(t, user_in.SavedRecipes, recipes_out)
 
 	updateUser(t, user_in)
-	user_out = getUserByID(t, user_in.ID.Hex())
+	user_out = getUserByID(t, ID{user_in.ID})
 	compareUserStruct(t, user_in, user_out)
 
-	user_in.SavedRecipes = updateRecipes(t, user_in.ID, user_in.SavedRecipes)
-	user_out = getUserByID(t, user_in.ID.Hex())
+	user_in.SavedRecipes = updateRecipes(t, ID{user_in.ID}, user_in.SavedRecipes)
+	user_out = getUserByID(t, ID{user_in.ID})
 	compareUserStruct(t, user_in, user_out)
 
-	user_in.SavedRecipes = deleteRecipes(t, user_in.ID, user_in.SavedRecipes)
-	user_out = getUserByID(t, user_in.ID.Hex())
+	user_in.SavedRecipes = deleteRecipes(t, ID{user_in.ID}, user_in.SavedRecipes)
+	user_out = getUserByID(t, ID{user_in.ID})
 	compareUserStruct(t, user_in, user_out)
 
-	deleteUser(t, user_in.ID)
+	deleteUser(t, ID{user_in.ID})
 	t.Logf("Tested User Repo CRUD Successfully\n")
 }
 
 func createUser(t *testing.T) *User {
 	t.Logf("Testing Create User \n")
 
-	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
-	user_in := &User{
-		UserName:     generateRandowName(),
-		UserAddress:  generateRandomAddress(),
-		Email:        generateRandowEmails(),
-		PasswordHash: string(password),
-		SavedRecipes: []*Recipe{},
-		Role:         "user",
-	}
-
+	user_in := generateUser(3, 5)
 	id, err := r.User.Create(context.TODO(), user_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
@@ -129,19 +119,19 @@ func createUser(t *testing.T) *User {
 
 func addRecipe(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Recipe to a user")
-	recipes_in := generateRecipesArray(3)
-	err := r.User.CreateRecipes(context.TODO(), user.ID.Hex(), recipes_in)
-	if err != nil {
-		t.Fatalf("%v\n", err)
+
+	recipes_in := generateRecipesArray(4, 3)
+	if err := r.User.CreateRecipes(context.TODO(), ID{user.ID}, recipes_in); err != nil {
+		t.Fatal(err)
 	}
 	t.Logf("Recipes added successfull\n")
 	user.SavedRecipes = recipes_in
 	return user
 }
 
-func getUserByID(t *testing.T, id string) *User {
+func getUserByID(t *testing.T, id ID) *User {
 	t.Logf("Getting the by ID\n")
-	user, err := r.User.FindUserByID(context.TODO(), id)
+	user, err := r.User.FindByID(context.TODO(), id)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -151,7 +141,7 @@ func getUserByID(t *testing.T, id string) *User {
 
 func getUserByEmail(t *testing.T, email string) *User {
 	t.Logf("Getting the by email\n")
-	user, err := r.User.FindUserByEmail(context.TODO(), email)
+	user, err := r.User.FindByEmail(context.TODO(), email)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -159,7 +149,7 @@ func getUserByEmail(t *testing.T, email string) *User {
 	return user
 }
 
-func getUserRecipes(t *testing.T, id string) []*Recipe {
+func getUserRecipes(t *testing.T, id ID) []*Recipe {
 	t.Logf("Getting the user Recipes\n")
 	recipes, err := r.User.FindRecipes(context.TODO(), id)
 	if err != nil {
@@ -191,8 +181,8 @@ func updateUser(t *testing.T, user_in *User) {
 	t.Logf("Testing Update user Function")
 	password, _ := bcrypt.GenerateFromPassword([]byte("chinchecker"), bcrypt.DefaultCost)
 
-	user_in.UserName = generateRandowName()
-	user_in.UserAddress = generateRandomAddress()
+	user_in.Name = generateRandowName()
+	user_in.Address = generateRandomAddress()
 	user_in.Email = generateRandowEmails()
 	user_in.PasswordHash = string(password)
 
@@ -202,33 +192,34 @@ func updateUser(t *testing.T, user_in *User) {
 	t.Logf("Tested Update user Function Success!")
 }
 
-func updateRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
+func updateRecipes(t *testing.T, id ID, recipes []*Recipe) []*Recipe {
 	t.Logf("Testing Update Recipe Function")
 	recipes[0].Title = "Min"
 	recipes[0].ServingSize = 100
-	recipes = append(recipes, generateRecipesArray(1)[0])
+	recipes[0].Description = "Oga boga brute force software developer"
+	recipes = append(recipes, generateRecipesArray(1, 3)[0])
 
-	if err := r.User.UpdateRecipes(context.TODO(), id.Hex(), recipes); err != nil {
+	if err := r.User.UpdateRecipes(context.TODO(), id, recipes); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Tested Update recipe Function Success!")
 	return recipes
 }
 
-func deleteRecipes(t *testing.T, id bson.ObjectID, recipes []*Recipe) []*Recipe {
+func deleteRecipes(t *testing.T, id ID, recipes []*Recipe) []*Recipe {
 	t.Logf("Testing Delete Recipes Function")
-	ids := []string{recipes[0].ID.Hex(), recipes[1].ID.Hex()}
-	if err := r.User.DeleteRecipes(context.TODO(), id.Hex(), ids); err != nil {
+	ids := []*ID{{recipes[0].ID}, {recipes[1].ID}}
+	if err := r.User.DeleteRecipes(context.TODO(), id, ids); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Logf("Tested Delete Recipes Function Success!")
-	return []*Recipe{recipes[2], recipes[3]}
+	return recipes[2:]
 }
 
-func deleteUser(t *testing.T, id bson.ObjectID) {
+func deleteUser(t *testing.T, id ID) {
 	t.Logf("Testing Delete User Function")
-	if err := r.User.DeleteUser(context.TODO(), id.Hex()); err != nil {
+	if err := r.User.DeleteUser(context.TODO(), id); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Tested Delete User Function Success!")

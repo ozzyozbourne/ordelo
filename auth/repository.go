@@ -328,14 +328,14 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 		models = append(models, updateModel)
 	}
 
-	if user.UserName != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"user_name": user.UserName}}})
+	if user.Name != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"name": user.Name}}})
 	}
 	if user.Email != "" {
 		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": user.Email}}})
 	}
-	if user.UserAddress != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"user_address": user.UserAddress}}})
+	if user.Address != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"address": user.Address}}})
 	}
 	if user.PasswordHash != "" {
 		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": user.PasswordHash}}})

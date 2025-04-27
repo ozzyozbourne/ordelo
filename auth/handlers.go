@@ -45,7 +45,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
 	switch {
-	case user.UserName == "":
+	case user.Name == "":
 		sendFailure("Username is empty")
 		return
 	case user.Email == "":
@@ -54,7 +54,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	case user.PasswordHash == "":
 		sendFailure("Password is empty")
 		return
-	case user.UserAddress == "":
+	case user.Address == "":
 		sendFailure("Address is empty")
 		return
 	case user.Role == "":
