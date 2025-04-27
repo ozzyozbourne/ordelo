@@ -17,8 +17,6 @@ var (
 	Repos              *Repositories
 	defSessOpts        = options.Session().SetDefaultTransactionOptions(options.Transaction().SetWriteConcern(writeconcern.Majority()))
 	user_repo_source   = slog.Any("source", "UserRepository")
-	order_repo_source  = slog.Any("source", "OrderRepository")
-	cart_repo_source   = slog.Any("source", "CartRepository")
 	vendor_repo_source = slog.Any("source", "VendorRepository")
 )
 
@@ -54,7 +52,7 @@ type VendorRepository interface{}
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		return nil, errors.New("Env varible DB_NAME is empty!")
+		return nil, errors.New("env varible DB_NAME is empty")
 	}
 	mongoRepos := &Repositories{
 		User:   newMongoUserRepository(mongoClient, dbName),
@@ -115,7 +113,7 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id.String()),
@@ -145,7 +143,7 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "Carts added successfully", slog.String("userId", id.String()),
@@ -175,7 +173,7 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "Orders added successfully", slog.String("userId", id.String()),
@@ -349,7 +347,7 @@ func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 
 	if result.ModifiedCount == 0 {
 		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), user_repo_source)
-		return fmt.Errorf("No updates were mode for user %+v", user)
+		return fmt.Errorf("no updates were mode for user %+v", user)
 	}
 
 	Logger.InfoContext(
@@ -536,7 +534,7 @@ func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
 
 	if result.DeletedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id.String()), user_repo_source)
@@ -571,7 +569,7 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 	if result.ModifiedCount == 0 {
 		Logger.InfoContext(ctx, "No recipes were deleted, they may not exist",
@@ -612,7 +610,7 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id)
+		return fmt.Errorf("user with ID %s not found", id.String())
 	}
 	if result.ModifiedCount == 0 {
 		Logger.InfoContext(ctx, "No carts were deleted, they may not exist",
@@ -638,7 +636,7 @@ func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bso
 	}
 	if count == 0 {
 		Logger.ErrorContext(ctx, "Document not found", slog.String("ID", objID.Hex()), user_repo_source)
-		return fmt.Errorf("Document with ID %s not found", objID.Hex())
+		return fmt.Errorf("document with ID %s not found", objID.Hex())
 	}
 	return nil
 }

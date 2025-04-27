@@ -82,7 +82,7 @@ func initDB(c context.Context) (shutdown func(ctx context.Context) error, err er
 
 	db_uri := os.Getenv("DB_URI")
 	if db_uri == "" {
-		err = errors.New("Env variable DB_URI is empty!")
+		err = errors.New("env variable DB_URI is empty")
 		return
 	}
 	Logger.InfoContext(ctx, "Setting up connection to the mongodb", slog.String("URI", db_uri), mongo_source)

@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		log.Fatal(errors.New("Env varible DB_NAME is empty!"))
+		log.Fatal(errors.New("env varible DB_NAME is empty"))
 	}
 	otelShutDown, err := initOtelSDK(context.TODO())
 	if err != nil {
@@ -57,9 +57,9 @@ func TestMain(m *testing.M) {
 	log.Printf("All background tasks completed")
 
 	log.Printf("Cleaning up\n")
-	err = errors.Join(otelShutDown(context.TODO()))
-	err = errors.Join(mongoShutDown(context.TODO()))
-	err = errors.Join(redisShutDown(context.TODO()))
+	err = errors.Join(otelShutDown(context.TODO()), err)
+	err = errors.Join(mongoShutDown(context.TODO()), err)
+	err = errors.Join(redisShutDown(context.TODO()), err)
 
 	if err != nil {
 		log.Printf("Error in cleaning up resources -> %v\n", err)

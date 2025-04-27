@@ -32,10 +32,10 @@ func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient 
 
 	jwt_secret, refresh_secret := os.Getenv("JWT_SECRET"), os.Getenv("REFRESH_SECRET")
 	if jwt_secret == "" {
-		return errors.New("Env variable JWT_SECRET is empty!")
+		return errors.New("env variable JWT_SECRET is empty")
 	}
 	if refresh_secret == "" {
-		return errors.New("Env variable REFRESH_SECRET is empty!")
+		return errors.New("env variable REFRESH_SECRET is empty")
 	}
 
 	AuthService = &authService{

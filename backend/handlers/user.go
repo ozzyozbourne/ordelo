@@ -256,51 +256,8 @@ func SaveRecipe(w http.ResponseWriter, r *http.Request) {
 	sendResponse(w, http.StatusOK, "Recipe saved successfully", "")
 }
 
-// UnsaveRecipe removes a recipe from a user's saved recipes
-func UnsaveRecipe(w http.ResponseWriter, r *http.Request) {
-	// Extract user ID and recipe ID from URL
-	pathParts := strings.Split(r.URL.Path, "/")
-	recipeHex := pathParts[len(pathParts)-1]
-	userHex := pathParts[len(pathParts)-3]
-
-	userId, err := bson.ObjectIDFromHex(userHex)
-	if err != nil {
-		sendResponse(w, http.StatusBadRequest, "Invalid user ID format", "")
-		return
-	}
-
-	recipeId, err := bson.ObjectIDFromHex(recipeHex)
-	if err != nil {
-		sendResponse(w, http.StatusBadRequest, "Invalid recipe ID format", "")
-		return
-	}
-
-	// Remove recipe from user's saved recipes
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	result, err := db.UsersCollection.UpdateOne(
-		ctx,
-		bson.M{"_id": userId},
-		bson.M{"$pull": bson.M{"saved_recipes": recipeId}},
-	)
-
-	if err != nil {
-		log.Printf("Error removing saved recipe: %v\n", err)
-		sendResponse(w, http.StatusInternalServerError, "Error removing saved recipe", "")
-		return
-	}
-
-	if result.MatchedCount == 0 {
-		sendResponse(w, http.StatusNotFound, "User not found", "")
-		return
-	}
-
-	sendResponse(w, http.StatusOK, "Recipe removed from saved recipes", "")
-}
-
 // GetUserRecipes retrieves all saved recipes for a user
-func GetUserRecipes(w http.ResponseWriter, r *http.Request) {
+
 	// Extract user ID from URL
 	pathParts := strings.Split(r.URL.Path, "/")
 	userHex := pathParts[len(pathParts)-2]
