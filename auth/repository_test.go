@@ -75,11 +75,17 @@ func TestUserRepositoryPositve(t *testing.T) {
 	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
-	user_in = addRecipe(t, user_in)
+	id := ID{user_in.ID}
 
-	user_out := getUserByID(t, ID{user_in.ID})
+	user_in = addRecipe(t, user_in)
+	user_out := getUserByID(t, id)
 	compareUserStruct(t, user_in, user_out)
 
+	user_in = addCart(t, user_in)
+	user_out = getUserByEmail(t, user_in.Email)
+	compareUserStruct(t, user_in, user_out)
+
+	addOrders(t, user_in)
 	user_out = getUserByEmail(t, user_in.Email)
 	compareUserStruct(t, user_in, user_out)
 
@@ -126,6 +132,30 @@ func addRecipe(t *testing.T, user *User) *User {
 	}
 	t.Logf("Recipes added successfull\n")
 	user.SavedRecipes = append(user.SavedRecipes, recipes_in...)
+	return user
+}
+
+func addCart(t *testing.T, user *User) *User {
+	t.Logf("Testing Adding Cart to a user")
+
+	cart_in := generateCartsArray(4, 3)
+	if err := r.User.CreateCarts(context.TODO(), ID{user.ID}, cart_in); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Cart added successfull\n")
+	user.Carts = append(user.Carts, cart_in...)
+	return user
+}
+
+func addOrders(t *testing.T, user *User) *User {
+	t.Logf("Testing Adding Orders to a user")
+
+	orders_in := generateUserOrdersArray(4, 3)
+	if err := r.User.CreateOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Orders added successfull\n")
+	user.Orders = append(user.Orders, orders_in...)
 	return user
 }
 

@@ -47,7 +47,8 @@ type UserRepository interface {
 	DeleteCarts(context.Context, ID, []*ID) error
 }
 
-type VendorRepository interface{}
+type VendorRepository interface {
+}
 
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	dbName := os.Getenv("DB_NAME")

@@ -42,7 +42,7 @@ func getFromRedis[T userResult](t *testing.T, ctx context.Context, key string) T
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%s\n", data)
+	// t.Logf("%s\n", data)
 	var res T
 	if err := json.Unmarshal([]byte(data), &res); err != nil {
 		t.Fatal(err)
