@@ -37,17 +37,32 @@ type UserRepository interface {
 	FindCarts(context.Context, ID) ([]*Cart, error)
 	FindOrders(context.Context, ID) ([]*UserOrder, error)
 
-	UpdateUser(context.Context, *User) error
+	Update(context.Context, *User) error
 	UpdateRecipes(context.Context, ID, []*Recipe) error
 	UpdateCarts(context.Context, ID, []*Cart) error
 	UpdateOrders(context.Context, ID, []*UserOrder) error
 
-	DeleteUser(context.Context, ID) error
+	Delete(context.Context, ID) error
 	DeleteRecipes(context.Context, ID, []*ID) error
 	DeleteCarts(context.Context, ID, []*ID) error
 }
 
 type VendorRepository interface {
+	Create(context.Context, *Vendor) (ID, error)
+	CreateStores(context.Context, ID, []*Store) error
+	CreateOrders(context.Context, ID, []*VendorOrder) error
+
+	FindByID(context.Context, ID) (*Vendor, error)
+	FindByEmail(context.Context, string) (*Vendor, error)
+	FindStores(context.Context, ID) ([]*Store, error)
+	FindOrders(context.Context, ID) ([]*VendorOrder, error)
+
+	Update(context.Context, *Vendor) error
+	UpdateStores(context.Context, ID, []*Store) error
+	UpdateOrders(context.Context, ID, []*VendorOrder) error
+
+	Delete(context.Context, ID) error
+	DeleteStores(context.Context, ID, []*ID) error
 }
 
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
@@ -306,7 +321,7 @@ func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrde
 	return result.Orders, nil
 }
 
-func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (m MongoUserRepository) Update(ctx context.Context, user *User) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUser")
 	defer span.End()
 	Logger.InfoContext(ctx, "Updating user", slog.Any("user", user), user_repo_source)
@@ -522,7 +537,7 @@ func (m MongoUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*
 	return nil
 }
 
-func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
+func (m MongoUserRepository) Delete(ctx context.Context, id ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteUser")
 	defer span.End()
 
@@ -626,6 +641,53 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
+}
+
+func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (id ID, err error) {
+	return
+}
+
+func (m MongoVendorRepository) CreateStores(context.Context, ID, []*Store) error {
+	return nil
+}
+
+func (m MongoVendorRepository) CreateOrders(context.Context, ID, []*VendorOrder) error {
+	return nil
+}
+
+func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (*Vendor, error) {
+	return nil, nil
+}
+
+func (m MongoVendorRepository) FindByEmail(ctx context.Context, email string) (*Vendor, error) {
+	return nil, nil
+}
+
+func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store, error) {
+	return nil, nil
+}
+
+func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
+	return nil, nil
+}
+
+func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error {
+	return nil
+}
+
+func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores []*Store) error {
+	return nil
+}
+
+func (m MongoVendorRepository) UpdateOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
+	return nil
+}
+
+func (m MongoVendorRepository) Delete(ctx context.Context, id ID) error {
+	return nil
+}
+func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*ID) error {
+	return nil
 }
 
 func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bson.ObjectID) error {

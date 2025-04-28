@@ -96,7 +96,7 @@ func (r CachedUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrd
 	return nil, nil
 }
 
-func (r CachedUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (r CachedUserRepository) Update(ctx context.Context, user *User) error {
 	return nil
 }
 
@@ -112,7 +112,7 @@ func (r CachedUserRepository) UpdateOrders(ctx context.Context, id ID, orders []
 	return nil
 }
 
-func (r CachedUserRepository) DeleteUser(ctx context.Context, id ID) error {
+func (r CachedUserRepository) Delete(ctx context.Context, id ID) error {
 	return nil
 }
 

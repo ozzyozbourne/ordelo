@@ -77,11 +77,11 @@ func TestUserRepositoryPositve(t *testing.T) {
 	user_in := createUser(t)
 	id := ID{user_in.ID}
 
-	user_in = addRecipe(t, user_in)
+	addRecipe(t, user_in)
 	user_out := getUserByID(t, id)
 	compareUserStruct(t, user_in, user_out)
 
-	user_in = addCart(t, user_in)
+	addCart(t, user_in)
 	user_out = getUserByEmail(t, user_in.Email)
 	compareUserStruct(t, user_in, user_out)
 
@@ -216,7 +216,7 @@ func updateUser(t *testing.T, user_in *User) {
 	user_in.Email = generateRandowEmails()
 	user_in.PasswordHash = string(password)
 
-	if err := r.User.UpdateUser(context.TODO(), user_in); err != nil {
+	if err := r.User.Update(context.TODO(), user_in); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Tested Update user Function Success!")
@@ -249,7 +249,7 @@ func deleteRecipes(t *testing.T, id ID, recipes []*Recipe) []*Recipe {
 
 func deleteUser(t *testing.T, id ID) {
 	t.Logf("Testing Delete User Function")
-	if err := r.User.DeleteUser(context.TODO(), id); err != nil {
+	if err := r.User.Delete(context.TODO(), id); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Tested Delete User Function Success!")
