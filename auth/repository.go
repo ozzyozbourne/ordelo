@@ -95,13 +95,10 @@ func (m MongoUserRepository) Create(ctx context.Context, user *User) (res ID, er
 		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
 		return
 	}
-
-	id, ok := result.InsertedID.(bson.ObjectID)
-	if !ok {
-		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID",
-			slog.String("error", "Casting Error"), user_repo_source)
+	if res, err = convertToID(ctx, result); err != nil {
+		return
 	}
-	res.value = id
+
 	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
 		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
 	return
@@ -643,50 +640,404 @@ func newMongoVendorRepository(client *mongo.Client, dbName string) VendorReposit
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
 }
 
-func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (id ID, err error) {
+func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (res ID, err error) {
+	ctx, span := Tracer.Start(ctx, "CreateVendor")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Inserting in Vendors collection", slog.Any("vendor", vendor), vendor_repo_source)
+
+	result, err := m.col.InsertOne(ctx, vendor)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in inserting a vendor in DB", slog.Any("error", err), vendor_repo_source)
+		return
+	}
+	if res, err = convertToID(ctx, result); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
+		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
 	return
 }
 
-func (m MongoVendorRepository) CreateStores(context.Context, ID, []*Store) error {
+func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores []*Store) error {
+	ctx, span := Tracer.Start(ctx, "CreateVendorStores")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$push", Value: bson.M{
+			"stores": bson.M{
+				"$each": stores,
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating vendor stores", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
+		return fmt.Errorf("vendor with ID %s not found", id.String())
+	}
+
+	Logger.InfoContext(ctx, "Stores added successfully", slog.String("vendorId", id.String()),
+		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
+
 	return nil
 }
 
-func (m MongoVendorRepository) CreateOrders(context.Context, ID, []*VendorOrder) error {
+func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
+	ctx, span := Tracer.Start(ctx, "CreateVendorOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$push", Value: bson.M{
+			"orders": bson.M{
+				"$each": orders,
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating vendor orders", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
+		return fmt.Errorf("vendor with ID %s not found", id.String())
+	}
+
+	Logger.InfoContext(ctx, "Orders added successfully", slog.String("vendorId", id.String()),
+		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
+
 	return nil
 }
 
-func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (*Vendor, error) {
-	return nil, nil
+func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (vendor *Vendor, err error) {
+	ctx, span := Tracer.Start(ctx, "FindVendorID")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding Vendor by ID", slog.String("Id", id.String()), vendor_repo_source)
+
+	if err = m.col.FindOne(ctx, bson.D{{Key: "_id", Value: id.value}}).Decode(&vendor); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
+			return nil, fmt.Errorf("vendor with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding vendor by ID", slog.Any("error", err), vendor_repo_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Vendor found successfully", slog.String("ID", id.String()),
+		slog.String("Vendor", fmt.Sprintf("%+v", *vendor)), vendor_repo_source)
+	return
 }
 
-func (m MongoVendorRepository) FindByEmail(ctx context.Context, email string) (*Vendor, error) {
-	return nil, nil
+func (m MongoVendorRepository) FindByEmail(ctx context.Context, email string) (vendor *Vendor, err error) {
+	ctx, span := Tracer.Start(ctx, "FindVendorByEmail")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding Vendor by Email", slog.String("Email", email), vendor_repo_source)
+	filter := bson.D{{Key: "email", Value: email}}
+
+	if err = m.col.FindOne(ctx, filter).Decode(&vendor); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Vendor not found", slog.String("email", email), vendor_repo_source)
+			return nil, fmt.Errorf("vendor with email %s not found", email)
+		}
+		Logger.ErrorContext(ctx, "Error finding vendor by email", slog.Any("error", err), vendor_repo_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Vendor found successfully", slog.String("email", email),
+		slog.String("Vendor", fmt.Sprintf("%+v", *vendor)), vendor_repo_source)
+	return
 }
 
 func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "FindVendorStores")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding stores for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: "stores", Value: 1}, {Key: "_id", Value: 0}}
+
+	var result struct {
+		Stores []*Store `bson:"stores"`
+	}
+
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
+			return nil, fmt.Errorf("Vendor with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding stores", slog.Any("error", err), vendor_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Stores found successfully", slog.String("Stores",
+		fmt.Sprintf("%+v", result.Stores)), vendor_repo_source)
+	return result.Stores, nil
 }
 
 func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "FindVendorOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding orders for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: "orders", Value: 1}, {Key: "_id", Value: 0}}
+
+	var result struct {
+		Orders []*VendorOrder `bson:"orders"`
+	}
+
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
+			return nil, fmt.Errorf("Vendor with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding orders", slog.Any("error", err), vendor_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Orders found successfully", slog.Any("Orders",
+		fmt.Sprintf("%+v", result.Orders)), vendor_repo_source)
+	return result.Orders, nil
 }
 
 func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error {
+	ctx, span := Tracer.Start(ctx, "UpdateVendor")
+	defer span.End()
+	Logger.InfoContext(ctx, "Updating vendor", slog.Any("vendor", vendor), vendor_repo_source)
+
+	var objId bson.ObjectID
+	if objId = vendor.ID; objId == bson.NilObjectID {
+		Logger.ErrorContext(ctx, "The vendor struct has no ObjectID", slog.Any("error", "No ObjectID"), vendor_repo_source)
+		return fmt.Errorf("Vendor struct has no ObjectID")
+	}
+	if err := checkIfDocumentExists(ctx, m.col, objId); err != nil {
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objId}}
+	var models []mongo.WriteModel
+	updateModel := func(update bson.D) {
+		updateModel := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
+		models = append(models, updateModel)
+	}
+
+	if vendor.Name != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"name": vendor.Name}}})
+	}
+	if vendor.Email != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": vendor.Email}}})
+	}
+	if vendor.Address != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"address": vendor.Address}}})
+	}
+	if vendor.PasswordHash != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": vendor.PasswordHash}}})
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		Logger.ErrorContext(ctx, "No document was modified", slog.Any("Vendor update", vendor), slog.Any("Result", result), vendor_repo_source)
+		return fmt.Errorf("no updates were mode for vendor %+v", vendor)
+	}
+
+	Logger.InfoContext(
+		ctx, "Vendor updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		slog.String("Result", fmt.Sprintf("%+v", *result)),
+		vendor_repo_source,
+	)
 	return nil
 }
 
 func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores []*Store) error {
+	ctx, span := Tracer.Start(ctx, "UpdateVendorStores")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating stores for vendor",
+		slog.String("vendorID", id.String()), slog.Any("stores", stores), vendor_repo_source)
+
+	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
+		return err
+	}
+
+	models := make([]mongo.WriteModel, 0, len(stores)*2)
+	for _, store := range stores {
+		updateFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "stores._id", Value: store.ID},
+		}
+		update := bson.D{
+			{Key: "$set", Value: bson.M{"stores.$": store}},
+		}
+		updateModel := mongo.NewUpdateOneModel().
+			SetFilter(updateFilter).
+			SetUpdate(update)
+		models = append(models, updateModel)
+
+		addFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "stores._id", Value: bson.M{"$ne": store.ID}},
+		}
+		addUpdate := bson.D{
+			{Key: "$push", Value: bson.M{"stores": store}},
+		}
+		addModel := mongo.NewUpdateOneModel().
+			SetFilter(addFilter).
+			SetUpdate(addUpdate)
+		models = append(models, addModel)
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Stores updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		slog.String("Result", fmt.Sprintf("%+v", *result)),
+		vendor_repo_source)
+
 	return nil
 }
 
 func (m MongoVendorRepository) UpdateOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
+	ctx, span := Tracer.Start(ctx, "UpdateVendorOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating orders for vendor",
+		slog.String("vendorID", id.String()), slog.Any("orders", orders), vendor_repo_source)
+
+	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
+		return err
+	}
+
+	models := make([]mongo.WriteModel, 0, len(orders)*2)
+	for _, order := range orders {
+		updateFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "orders._id", Value: order.ID},
+		}
+		update := bson.D{
+			{Key: "$set", Value: bson.M{"orders.$": order}},
+		}
+		updateModel := mongo.NewUpdateOneModel().
+			SetFilter(updateFilter).
+			SetUpdate(update)
+		models = append(models, updateModel)
+
+		addFilter := bson.D{
+			{Key: "_id", Value: id.value},
+			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
+		}
+		addUpdate := bson.D{
+			{Key: "$push", Value: bson.M{"orders": order}},
+		}
+		addModel := mongo.NewUpdateOneModel().
+			SetFilter(addFilter).
+			SetUpdate(addUpdate)
+		models = append(models, addModel)
+	}
+
+	result, err := m.col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Orders updated successfully",
+		slog.Int64("matchedCount", result.MatchedCount),
+		slog.Int64("modifiedCount", result.ModifiedCount),
+		slog.Int64("insertedCount", result.InsertedCount),
+		vendor_repo_source)
+
 	return nil
 }
 
 func (m MongoVendorRepository) Delete(ctx context.Context, id ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteVendor")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting a vendor", slog.String("ID", id.String()), vendor_repo_source)
+	result, err := m.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting vendor", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("vendor with ID %s not found", id.String())
+	}
+
+	Logger.InfoContext(ctx, "Vendor deleted successfully", slog.String("ID", id.String()), vendor_repo_source)
 	return nil
 }
+
 func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteVendorStores")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting stores for vendor",
+		slog.String("vendorID", id.String()), slog.Any("storeIDs", ids), vendor_repo_source)
+
+	storesObjIDs := make([]bson.ObjectID, len(ids))
+	for i, sid := range ids {
+		storesObjIDs[i] = sid.value
+	}
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{
+		{Key: "$pull", Value: bson.M{
+			"stores": bson.M{
+				"_id": bson.M{"$in": storesObjIDs},
+			},
+		}},
+	}
+
+	result, err := m.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting stores", slog.Any("error", err), vendor_repo_source)
+		return err
+	}
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("vendor with ID %s not found", id.String())
+	}
+	if result.ModifiedCount == 0 {
+		Logger.InfoContext(ctx, "No stores were deleted, they may not exist",
+			slog.String("vendorID", id.String()), vendor_repo_source)
+	}
+
+	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()),
+		slog.Int("count", int(result.ModifiedCount)), vendor_repo_source)
+
 	return nil
 }
 
@@ -702,4 +1053,15 @@ func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bso
 		return fmt.Errorf("document with ID %s not found", objID.Hex())
 	}
 	return nil
+}
+
+func convertToID(ctx context.Context, result *mongo.InsertOneResult) (ID, error) {
+	res, ok := result.InsertedID.(bson.ObjectID)
+	if !ok {
+		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID",
+			slog.String("error", "Casting Error"), vendor_repo_source)
+		return ID{value: bson.NilObjectID}, fmt.Errorf("error unable to cast result.InsertedID to bson.ObjectID")
+	}
+	return ID{value: res}, nil
+
 }
