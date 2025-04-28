@@ -21,11 +21,11 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 
 	addr, password, db := os.Getenv("RD_PORT"), os.Getenv("RD_PASSWORD"), 0
 	if addr == "" {
-		err = errors.New("Env variable RD_PORT is empty!")
+		err = errors.New("env variable RD_PORT is empty")
 		return
 	}
 	if password == "" {
-		err = errors.New("Env variable RD_PASSWORD is empty!")
+		err = errors.New("env variable RD_PASSWORD is empty")
 		return
 	}
 	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.String("Addr", addr),
@@ -58,7 +58,7 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 	})
 	if RedisClient == nil {
 		Logger.ErrorContext(ctx, "New client function returned nil", slog.String("error", "client returned nil"), redis_source)
-		err = errors.New("New client function returned nil")
+		err = errors.New("new client function returned nil")
 		return
 	}
 

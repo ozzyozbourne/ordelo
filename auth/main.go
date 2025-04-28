@@ -67,7 +67,7 @@ func run() (err error) {
 	log.Printf("Starting Server\n")
 	port := os.Getenv("PORT")
 	if port == "" {
-		err = errors.New("Env varible PORT is empty!")
+		err = errors.New("env varible PORT is empty")
 		return
 	}
 	srv := &http.Server{

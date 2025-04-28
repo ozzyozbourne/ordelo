@@ -32,22 +32,22 @@ var (
 func initOtelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
 	interval := 5 * time.Second
 	if schema == "" {
-		err = errors.New("Env variable OTEL_SERVICE_NAME is empty!")
+		err = errors.New("env variable OTEL_SERVICE_NAME is empty")
 		return
 	}
 
 	lgtm_grpc_endpoint, honeycomb_grpc_endpoint, honeycomb_api_key :=
 		os.Getenv("LGTM_GRPC_ENDPOINT"), os.Getenv("HONEYCOMB_API_GRPC_ENDPOINT"), os.Getenv("HONEYCOMB_API_KEY")
 	if lgtm_grpc_endpoint == "" {
-		err = errors.New("Env variable LGTM_GRPC_ENDPOINT is empty!")
+		err = errors.New("env variable LGTM_GRPC_ENDPOINT is empty")
 		return
 	}
 	if honeycomb_grpc_endpoint == "" {
-		err = errors.New("Env variable HONEYCOMB_API_GRPC_ENDPOINT is empty!")
+		err = errors.New("env variable HONEYCOMB_API_GRPC_ENDPOINT is empty")
 		return
 	}
 	if honeycomb_api_key == "" {
-		err = errors.New("Env variable HONEYCOMB_API_KEY is empty!")
+		err = errors.New("env variable HONEYCOMB_API_KEY is empty")
 		return
 	}
 
