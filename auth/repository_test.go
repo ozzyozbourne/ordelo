@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func ATestUserRepositoryPositve(t *testing.T) {
+func TestUserRepositoryPositve(t *testing.T) {
 	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
@@ -125,7 +125,7 @@ func addRecipe(t *testing.T, user *User) *User {
 		t.Fatal(err)
 	}
 	t.Logf("Recipes added successfull\n")
-	user.SavedRecipes = recipes_in
+	user.SavedRecipes = append(user.SavedRecipes, recipes_in...)
 	return user
 }
 

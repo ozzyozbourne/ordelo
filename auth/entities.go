@@ -57,18 +57,18 @@ type Common struct {
 // ---------------------------Embedded-Types------------------------------
 
 type Item struct {
-	Ingredient
-	Quantity int `bson:"quantity" json:"quantity"`
+	Ingredient `bson:",inline"`
+	Quantity   int `bson:"quantity" json:"quantity"`
 }
 
 type UserOrder struct {
-	Order
+	Order         `bson:",inline"`
 	VendorID      bson.ObjectID `bson:"vendor_id" json:"vendor_id"`
 	PaymentStatus string        `bson:"payment_status" json:"payment_status"`
 }
 
 type VendorOrder struct {
-	Order
+	Order  `bson:",inline"`
 	UserID bson.ObjectID `bson:"user_id" json:"user_id"`
 }
 
@@ -76,14 +76,14 @@ type VendorOrder struct {
 //
 // -----------------------Composite-and-Embedded-Types-------------------
 type User struct {
-	Common
+	Common       `bson:",inline"`
 	SavedRecipes []*Recipe    `bson:"saved_recipes" json:"saved_recipes"`
 	Carts        []*Cart      `bson:"carts" json:"carts"`
 	Orders       []*UserOrder `bson:"orders" json:"orders"`
 }
 
 type Vendor struct {
-	Common
+	Common `bson:",inline"`
 	Stores []*Store       `bson:"stores" json:"stores"`
 	Orders []*VendorOrder `bson:"orders" json:"orders"`
 }

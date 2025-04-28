@@ -21,9 +21,11 @@ build-linux:
 build-all: build-mac build-windows build-linux
 
 test:
+	go clean -testcache
 	go -C $(BACKEND) test -v .
 
 test-race:
+	go clean -testcache
 	go -C $(BACKEND) test -race .
 
 test-coverage:
