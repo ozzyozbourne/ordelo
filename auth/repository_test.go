@@ -75,11 +75,17 @@ func TestUserRepositoryPositve(t *testing.T) {
 	t.Logf("Testing User Repo CRUD\n")
 
 	user_in := createUser(t)
-	user_in = addRecipe(t, user_in)
+	id := ID{user_in.ID}
 
-	user_out := getUserByID(t, ID{user_in.ID})
+	addRecipe(t, user_in)
+	user_out := getUserByID(t, id)
 	compareUserStruct(t, user_in, user_out)
 
+	addCart(t, user_in)
+	user_out = getUserByEmail(t, user_in.Email)
+	compareUserStruct(t, user_in, user_out)
+
+	addOrders(t, user_in)
 	user_out = getUserByEmail(t, user_in.Email)
 	compareUserStruct(t, user_in, user_out)
 
@@ -111,7 +117,7 @@ func createUser(t *testing.T) *User {
 		t.Fatalf("%v\n", err)
 	}
 
-	t.Logf("Id -> %+v\n", id)
+	t.Logf("Id -> %s\n", id.String())
 	user_in.ID = id.value
 	t.Logf("Sucess\n")
 	return user_in
@@ -126,6 +132,30 @@ func addRecipe(t *testing.T, user *User) *User {
 	}
 	t.Logf("Recipes added successfull\n")
 	user.SavedRecipes = append(user.SavedRecipes, recipes_in...)
+	return user
+}
+
+func addCart(t *testing.T, user *User) *User {
+	t.Logf("Testing Adding Cart to a user")
+
+	cart_in := generateCartsArray(4, 3)
+	if err := r.User.CreateCarts(context.TODO(), ID{user.ID}, cart_in); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Cart added successfull\n")
+	user.Carts = append(user.Carts, cart_in...)
+	return user
+}
+
+func addOrders(t *testing.T, user *User) *User {
+	t.Logf("Testing Adding Orders to a user")
+
+	orders_in := generateUserOrdersArray(4, 3)
+	if err := r.User.CreateOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Orders added successfull\n")
+	user.Orders = append(user.Orders, orders_in...)
 	return user
 }
 
@@ -186,7 +216,7 @@ func updateUser(t *testing.T, user_in *User) {
 	user_in.Email = generateRandowEmails()
 	user_in.PasswordHash = string(password)
 
-	if err := r.User.UpdateUser(context.TODO(), user_in); err != nil {
+	if err := r.User.Update(context.TODO(), user_in); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Tested Update user Function Success!")
@@ -219,7 +249,7 @@ func deleteRecipes(t *testing.T, id ID, recipes []*Recipe) []*Recipe {
 
 func deleteUser(t *testing.T, id ID) {
 	t.Logf("Testing Delete User Function")
-	if err := r.User.DeleteUser(context.TODO(), id); err != nil {
+	if err := r.User.Delete(context.TODO(), id); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Tested Delete User Function Success!")

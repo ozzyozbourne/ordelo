@@ -18,40 +18,42 @@ type CachedUserRepository struct {
 }
 
 func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client, mongoClient *mongo.Client, cacheTTL time.Duration) error {
+	ctx, span := Tracer.Start(ctx, "InitCachedMongoRepositories")
+	defer span.End()
+
 	mongoRepos, err := initMongoRepositories(mongoClient)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
 		return err
 	}
-	mongoRepos.User = NewCachedUserRepository(redisClient, mongoRepos.User, cacheTTL)
+	mongoRepos.User = &CachedUserRepository{
+		redis:      redisClient,
+		userRepo:   mongoRepos.User,
+		expiration: cacheTTL,
+	}
+
 	Repos = mongoRepos
 	return nil
 }
 
-func NewCachedUserRepository(r *redis.Client, user UserRepository, expiration time.Duration) UserRepository {
-	return &CachedUserRepository{
-		redis:      r,
-		userRepo:   user,
-		expiration: expiration,
-	}
-}
-
 func (r CachedUserRepository) Create(ctx context.Context, user *User) (userID ID, err error) {
-	ctx, span := Tracer.Start(ctx, "CreateUser Redis")
+	ctx, span := Tracer.Start(ctx, "CreateUserRedis")
 	defer span.End()
 
 	if userID, err = r.userRepo.Create(ctx, user); err != nil {
 		return
 	}
 
-	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("user", user), redis_source)
+	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("userId", userID.String()), redis_source)
+	user.ID = userID.value
+
 	userData, err := json.Marshal(user)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Error in marshing the persisted user struct", slog.Any("user", user), redis_source)
+		Logger.ErrorContext(ctx, "Error in marshing the persisted user struct", slog.Any("userId", userID.String()), redis_source)
 		return
 	}
 
-	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.value.Hex()), userData, r.expiration)
+	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.String()), userData, r.expiration)
 	if result.Err() != nil {
 		Logger.ErrorContext(ctx, "Unable to persist in Redis", slog.Any("error", err), slog.Any("Redis result", result), redis_source)
 		err = result.Err()
@@ -94,7 +96,7 @@ func (r CachedUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrd
 	return nil, nil
 }
 
-func (r CachedUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (r CachedUserRepository) Update(ctx context.Context, user *User) error {
 	return nil
 }
 
@@ -110,7 +112,7 @@ func (r CachedUserRepository) UpdateOrders(ctx context.Context, id ID, orders []
 	return nil
 }
 
-func (r CachedUserRepository) DeleteUser(ctx context.Context, id ID) error {
+func (r CachedUserRepository) Delete(ctx context.Context, id ID) error {
 	return nil
 }
 

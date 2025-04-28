@@ -20,7 +20,6 @@ func generateRandowEmails() string {
 func generateCommon(role string) Common {
 	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
 	return Common{
-		ID:           bson.NewObjectID(),
 		Name:         generateRandowName(),
 		Address:      generateRandomAddress(),
 		Email:        generateRandowEmails(),
