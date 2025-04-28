@@ -111,7 +111,7 @@ func createUser(t *testing.T) *User {
 		t.Fatalf("%v\n", err)
 	}
 
-	t.Logf("Id -> %+v\n", id)
+	t.Logf("Id -> %s\n", id.String())
 	user_in.ID = id.value
 	t.Logf("Sucess\n")
 	return user_in
