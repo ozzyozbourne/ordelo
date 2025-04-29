@@ -39,3 +39,6 @@ lint:
 
 clean:
 	rm -rf $(BACKEND)/$(BUILD)
+
+run:
+	./$(BACKEND)/$(BUILD)/./ordelo-darwin

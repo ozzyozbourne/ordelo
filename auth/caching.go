@@ -17,13 +17,15 @@ type CachedUserRepository struct {
 	expiration time.Duration
 }
 
+var cached_repo = slog.String("source", "cached_repo")
+
 func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client, mongoClient *mongo.Client, cacheTTL time.Duration) error {
 	ctx, span := Tracer.Start(ctx, "InitCachedMongoRepositories")
 	defer span.End()
 
 	mongoRepos, err := initMongoRepositories(mongoClient)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), slog.String("source", "repos"))
+		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), cached_repo)
 		return err
 	}
 	mongoRepos.User = &CachedUserRepository{
@@ -40,39 +42,27 @@ func (r CachedUserRepository) Create(ctx context.Context, user *User) (userID ID
 	ctx, span := Tracer.Start(ctx, "CreateUserRedis")
 	defer span.End()
 
-	if userID, err = r.userRepo.Create(ctx, user); err != nil {
-		return
-	}
-
-	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("userId", userID.String()), redis_source)
-	user.ID = userID.value
-
-	userData, err := json.Marshal(user)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in marshing the persisted user struct", slog.Any("userId", userID.String()), redis_source)
-		return
-	}
-
-	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.String()), userData, r.expiration)
-	if result.Err() != nil {
-		Logger.ErrorContext(ctx, "Unable to persist in Redis", slog.Any("error", err), slog.Any("Redis result", result), redis_source)
-		err = result.Err()
-		return
-	}
-
-	Logger.InfoContext(ctx, "Persisted Successfully", redis_source)
 	return
 }
 
 func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
+	ctx, span := Tracer.Start(ctx, "CreateRecipesRedis")
+	defer span.End()
+
 	return nil
 }
 
 func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) error {
+	ctx, span := Tracer.Start(ctx, "CreateCartsRedis")
+	defer span.End()
+
 	return nil
 }
 
 func (r CachedUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+	ctx, span := Tracer.Start(ctx, "CreateOrdersRedis")
+	defer span.End()
+
 	return nil
 }
 
@@ -121,5 +111,43 @@ func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*I
 }
 
 func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) error {
+	return nil
+}
+
+func (r CachedUserRepository) PersistInRedis(ctx context.Context, userID ID, userData []byte) error {
+	Logger.InfoContext(ctx, "Persisting user in redis", slog.Any("userId", userID.String()), cached_repo)
+
+	result := r.redis.Set(ctx, fmt.Sprintf("user:%s", userID.String()), userData, r.expiration)
+	if result.Err() != nil {
+		Logger.ErrorContext(ctx, "Unable to persist in Redis", slog.Any("error", result.Err()),
+			slog.Any("Redis result", result), cached_repo)
+		return result.Err()
+	}
+
+	Logger.InfoContext(ctx, "Persisted Successfully", cached_repo)
+	return nil
+}
+
+func (r CachedUserRepository) InvalidateIfExists(ctx context.Context, key string) error {
+	ctx, span := Tracer.Start(ctx, "InvalidateIfExists")
+	defer span.End()
+
+	exists, err := r.redis.Exists(ctx, key).Result()
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in checking a key existance in redis", slog.String("key", key), cached_repo)
+		return err
+	}
+
+	if exists > 0 {
+		Logger.InfoContext(ctx, "Invalidating existing cache", slog.String("key", key), cached_repo)
+		if err := r.redis.Del(ctx, key).Err(); err != nil {
+			Logger.ErrorContext(ctx, "Failed to invalidate cache", slog.Any("error", err), cached_repo)
+		} else {
+			Logger.InfoContext(ctx, "Cache invalidated successfully", slog.String("key", key), cached_repo)
+		}
+	} else {
+		Logger.InfoContext(ctx, "No cache found to invalidate", slog.String("key", key), cached_repo)
+	}
+
 	return nil
 }

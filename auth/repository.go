@@ -10,12 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
 var (
 	Repos              *Repositories
-	defSessOpts        = options.Session().SetDefaultTransactionOptions(options.Transaction().SetWriteConcern(writeconcern.Majority()))
 	user_repo_source   = slog.Any("source", "UserRepository")
 	vendor_repo_source = slog.Any("source", "VendorRepository")
 )
@@ -98,7 +96,11 @@ func (m MongoUserRepository) Create(ctx context.Context, user *User) (res ID, er
 	if res, err = convertToID(ctx, result); err != nil {
 		return
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), user_repo_source)
+		err = fmt.Errorf("Write concern returned false")
+		return
+	}
 	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
 		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
 	return
@@ -124,6 +126,10 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 		return err
 	}
 
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id.String())
@@ -154,6 +160,10 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 		return err
 	}
 
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id.String())
@@ -183,7 +193,10 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 		Logger.ErrorContext(ctx, "Error updating user orders", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id.String())
@@ -358,6 +371,10 @@ func (m MongoUserRepository) Update(ctx context.Context, user *User) error {
 		return err
 	}
 
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", user.ID.Hex()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.ModifiedCount == 0 {
 		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), user_repo_source)
 		return fmt.Errorf("no updates were mode for user %+v", user)
@@ -417,7 +434,10 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	Logger.InfoContext(ctx, "Recipes updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
@@ -471,7 +491,10 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	Logger.InfoContext(ctx, "Carts updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
@@ -524,7 +547,10 @@ func (m MongoUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	Logger.InfoContext(ctx, "Orders updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
@@ -544,7 +570,10 @@ func (m MongoUserRepository) Delete(ctx context.Context, id ID) error {
 		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), user_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.DeletedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id.String())
@@ -579,6 +608,10 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error deleting recipes", slog.Any("error", err), user_repo_source)
 		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
@@ -621,6 +654,10 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 		Logger.ErrorContext(ctx, "Error deleting carts", slog.Any("error", err), user_repo_source)
 		return err
 	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
 		return fmt.Errorf("user with ID %s not found", id.String())
@@ -654,7 +691,11 @@ func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (res 
 	if res, err = convertToID(ctx, result); err != nil {
 		return
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), vendor_repo_source)
+		err = fmt.Errorf("Write concern returned false")
+		return
+	}
 	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
 		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
 	return
@@ -679,7 +720,10 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 		Logger.ErrorContext(ctx, "Error updating vendor stores", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
 		return fmt.Errorf("vendor with ID %s not found", id.String())
@@ -709,6 +753,10 @@ func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders [
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error updating vendor orders", slog.Any("error", err), vendor_repo_source)
 		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
 	}
 
 	if result.MatchedCount == 0 {
@@ -856,7 +904,10 @@ func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", objId.Hex()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.ModifiedCount == 0 {
 		Logger.ErrorContext(ctx, "No document was modified", slog.Any("Vendor update", vendor), slog.Any("Result", result), vendor_repo_source)
 		return fmt.Errorf("no updates were mode for vendor %+v", vendor)
@@ -917,6 +968,10 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 		return err
 	}
 
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	Logger.InfoContext(ctx, "Stores updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
@@ -970,11 +1025,15 @@ func (m MongoVendorRepository) UpdateOrders(ctx context.Context, id ID, orders [
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	Logger.InfoContext(ctx, "Orders updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
 		slog.Int64("modifiedCount", result.ModifiedCount),
 		slog.Int64("insertedCount", result.InsertedCount),
+		slog.Bool("Acknowlegded", result.Acknowledged),
 		vendor_repo_source)
 
 	return nil
@@ -990,7 +1049,10 @@ func (m MongoVendorRepository) Delete(ctx context.Context, id ID) error {
 		Logger.ErrorContext(ctx, "Error deleting vendor", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
+	}
 	if result.DeletedCount == 0 {
 		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
 		return fmt.Errorf("vendor with ID %s not found", id.String())
@@ -1025,6 +1087,10 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error deleting stores", slog.Any("error", err), vendor_repo_source)
 		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
+		return fmt.Errorf("Write concern returned false")
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
