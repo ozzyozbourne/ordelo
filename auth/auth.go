@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -134,4 +135,27 @@ func (s *authService) Login(ctx context.Context, email, password, role string) (
 
 	Logger.InfoContext(ctx, "User login successful", slog.String("user_id", com.ID.Hex()), auth_source)
 	return
+}
+
+func (s *authService) GenerateAccessToken(ctx context.Context, userID, role string) (string, error) {
+	ctx, span := Tracer.Start(ctx, "AuthService.GenerateAccessToken")
+	defer span.End()
+
+	now := time.Now()
+	claims := &Claims{
+		UserID: userID,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    "app-auth-service",
+			Subject:   userID,
+		},
+	}
+}
+
+func (s *authService) GenerateRefreshToken(ctx context.Context, userID string) (string, error) {
+	ctx, span := Tracer.Start(ctx, "AuthService.GenerateRefreshToken")
+	defer span.End()
 }

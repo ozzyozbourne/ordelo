@@ -18,6 +18,7 @@ type containers interface {
 }
 
 type ItemWithID interface {
+	*Item
 	GetIngredientID() bson.ObjectID
 	SetIngredientID(id bson.ObjectID)
 }
@@ -25,6 +26,7 @@ type ItemWithID interface {
 type UserType interface{ *User | *Vendor | *Admin }
 
 type ContainerWithItems[T ItemWithID] interface {
+	*Recipe | *Cart | *UserOrder | *Store | *VendorOrder
 	GetID() bson.ObjectID
 	SetID(id bson.ObjectID)
 	GetItems() []T
