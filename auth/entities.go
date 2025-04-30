@@ -27,14 +27,6 @@ type GeoJSON struct {
 	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
 }
 
-type Admin struct {
-	ID           bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
-	Name         string        `bson:"name" json:"name"`
-	Email        string        `bson:"email" json:"email"`
-	PasswordHash string        `bson:"password_hash" json:"password_hash,omitempty"`
-	Role         string        `bson:"role" json:"role"`
-}
-
 // -----------------------------------------------------------------------
 //
 // ------------------------Embedding--------------------------------------
@@ -64,6 +56,10 @@ type Common struct {
 type Item struct {
 	Ingredient `bson:",inline"`
 	Quantity   int `bson:"quantity" json:"quantity"`
+}
+
+type Admin struct {
+	Common `bson:",inline"`
 }
 
 type UserOrder struct {

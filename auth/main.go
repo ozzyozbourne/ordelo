@@ -98,12 +98,12 @@ func run() (err error) {
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
-	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
+	_ = func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
 		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
 		mux.Handle(pattern, handler)
 	}
 
-	handleFunc("POST /register", CreateUser)
+	// handleFunc("POST /register", CreateUser)
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return handler

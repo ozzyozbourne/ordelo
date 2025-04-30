@@ -21,7 +21,7 @@ func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, me
 	return
 }
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+func Register(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "Create User Handler")
 	defer span.End()
 	source := slog.String("source", "HttpCreateUser")
@@ -36,7 +36,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user := &User{}
+	user := &Common{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a user struct", slog.Any("error", err), source)
 		sendFailure("Error in parsing Request body")
@@ -44,26 +44,24 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
-	switch {
-	case user.Name == "":
+	if user.Name == "" {
 		sendFailure("Username is empty")
 		return
-	case user.Email == "":
+	}
+	if user.Email == "" {
 		sendFailure("Email is empty")
 		return
-	case user.PasswordHash == "":
+	}
+	if user.PasswordHash == "" {
 		sendFailure("Password is empty")
 		return
-	case user.Address == "":
-		sendFailure("Address is empty")
-		return
-	case user.Role == "":
-		sendFailure("role is empty")
-		return
+	}
+	if user.Role == "" {
+		user.Role = "user"
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	userID, err := AuthService.Register(ctx, user)
+	userID, err := AuthService.Register(ctx, user.Name, user.Name, user.PasswordHash, user.Address, user.Role)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
 			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
