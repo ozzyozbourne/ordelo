@@ -127,7 +127,7 @@ func addRecipe(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Recipe to a user")
 
 	recipes_in := generateRecipesArray(4, 3)
-	if err := r.User.CreateRecipes(context.TODO(), ID{user.ID}, recipes_in); err != nil {
+	if _, err := r.User.CreateRecipes(context.TODO(), ID{user.ID}, recipes_in); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Recipes added successfull\n")
@@ -139,7 +139,7 @@ func addCart(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Cart to a user")
 
 	cart_in := generateCartsArray(4, 3)
-	if err := r.User.CreateCarts(context.TODO(), ID{user.ID}, cart_in); err != nil {
+	if _, err := r.User.CreateCarts(context.TODO(), ID{user.ID}, cart_in); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Cart added successfull\n")
@@ -151,7 +151,7 @@ func addOrders(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Orders to a user")
 
 	orders_in := generateUserOrdersArray(4, 3)
-	if err := r.User.CreateOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
+	if _, err := r.User.CreateOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Orders added successfull\n")

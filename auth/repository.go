@@ -146,41 +146,14 @@ func (m MongoUserRepository) FindByID(ctx context.Context, id ID) (user *User, e
 	ctx, span := Tracer.Start(ctx, "FindUserID")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id.String()), user_repo_source)
-
-	if err = m.col.FindOne(ctx, bson.D{{Key: "_id", Value: id.value}}).Decode(&user); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-			return nil, fmt.Errorf("user with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding user by ID", slog.Any("error", err), user_repo_source)
-		return
-	}
-
-	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id.String()),
-		slog.String("User", fmt.Sprintf("%+v", *user)), user_repo_source)
-	return
+	return findById[*User](ctx, m.col, id, user_repo_source)
 }
 
 func (m MongoUserRepository) FindByEmail(ctx context.Context, email string) (user *User, err error) {
 	ctx, span := Tracer.Start(ctx, "FindUserByEmail")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding User by Email", slog.String("Email", email), user_repo_source)
-	filter := bson.D{{Key: "email", Value: email}}
-
-	if err = m.col.FindOne(ctx, filter).Decode(&user); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("email", email), user_repo_source)
-			return nil, fmt.Errorf("user with email %s not found", email)
-		}
-		Logger.ErrorContext(ctx, "Error finding user by email", slog.Any("error", err), user_repo_source)
-		return
-	}
-
-	Logger.InfoContext(ctx, "User found successfully", slog.String("email", email),
-		slog.String("User", fmt.Sprintf("%+v", *user)), user_repo_source)
-	return
+	return findByEmail[*User](ctx, m.col, email, user_repo_source)
 }
 
 func (m MongoUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe, error) {
@@ -188,26 +161,7 @@ func (m MongoUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe,
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding recipies for user", slog.String("UserId", id.value.Hex()), user_repo_source)
-
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: "saved_recipes", Value: 1}, {Key: "_id", Value: 0}}
-
-	var result struct {
-		SavedRecipes []*Recipe `bson:"saved_recipes"`
-	}
-
-	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-			return nil, fmt.Errorf("User with ID %s not found", id.value.Hex())
-		}
-		Logger.ErrorContext(ctx, "Error finding recipes", slog.Any("error", err), user_repo_source)
-
-	}
-
-	Logger.InfoContext(ctx, "Recipes found successfully",
-		slog.String("Recipes", fmt.Sprintf("%+v", result.SavedRecipes)), user_repo_source)
-	return result.SavedRecipes, nil
+	return findContainer[[]*Recipe](ctx, m.col, id, "saved_recipes", user_repo_source)
 }
 
 func (m MongoUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, error) {
@@ -215,27 +169,7 @@ func (m MongoUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, err
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding carts for user", slog.String("UserId", id.String()), user_repo_source)
-
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: "carts", Value: 1}, {Key: "_id", Value: 0}}
-
-	var result struct {
-		Carts []*Cart `bson:"carts"`
-	}
-
-	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-			return nil, fmt.Errorf("User with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding carts", slog.Any("error", err), user_repo_source)
-		return nil, err
-	}
-
-	Logger.InfoContext(ctx, "Carts found successfully", slog.String("Carts",
-		fmt.Sprintf("%+v", result.Carts)), user_repo_source)
-	return result.Carts, nil
-
+	return findContainer[[]*Cart](ctx, m.col, id, "carts", user_repo_source)
 }
 
 func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
@@ -243,26 +177,7 @@ func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrde
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding orders for user", slog.String("UserId", id.String()), user_repo_source)
-
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: "orders", Value: 1}, {Key: "_id", Value: 0}}
-
-	var result struct {
-		Orders []*UserOrder `bson:"orders"`
-	}
-
-	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-			return nil, fmt.Errorf("User with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding orders", slog.Any("error", err), user_repo_source)
-		return nil, err
-	}
-
-	Logger.InfoContext(ctx, "Orders found successfully", slog.Any("Orders",
-		fmt.Sprintf("%+v", result.Orders)), user_repo_source)
-	return result.Orders, nil
+	return findContainer[[]*UserOrder](ctx, m.col, id, "orders", user_repo_source)
 }
 
 func (m MongoUserRepository) Update(ctx context.Context, user *User) error {
@@ -581,41 +496,15 @@ func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (vendor *Ven
 	ctx, span := Tracer.Start(ctx, "FindVendorID")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding Vendor by ID", slog.String("Id", id.String()), vendor_repo_source)
+	return findById[*Vendor](ctx, m.col, id, vendor_repo_source)
 
-	if err = m.col.FindOne(ctx, bson.D{{Key: "_id", Value: id.value}}).Decode(&vendor); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
-			return nil, fmt.Errorf("vendor with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding vendor by ID", slog.Any("error", err), vendor_repo_source)
-		return
-	}
-
-	Logger.InfoContext(ctx, "Vendor found successfully", slog.String("ID", id.String()),
-		slog.String("Vendor", fmt.Sprintf("%+v", *vendor)), vendor_repo_source)
-	return
 }
 
 func (m MongoVendorRepository) FindByEmail(ctx context.Context, email string) (vendor *Vendor, err error) {
 	ctx, span := Tracer.Start(ctx, "FindVendorByEmail")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Finding Vendor by Email", slog.String("Email", email), vendor_repo_source)
-	filter := bson.D{{Key: "email", Value: email}}
-
-	if err = m.col.FindOne(ctx, filter).Decode(&vendor); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "Vendor not found", slog.String("email", email), vendor_repo_source)
-			return nil, fmt.Errorf("vendor with email %s not found", email)
-		}
-		Logger.ErrorContext(ctx, "Error finding vendor by email", slog.Any("error", err), vendor_repo_source)
-		return
-	}
-
-	Logger.InfoContext(ctx, "Vendor found successfully", slog.String("email", email),
-		slog.String("Vendor", fmt.Sprintf("%+v", *vendor)), vendor_repo_source)
-	return
+	return findByEmail[*Vendor](ctx, m.col, email, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store, error) {
@@ -623,26 +512,7 @@ func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store,
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding stores for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
-
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: "stores", Value: 1}, {Key: "_id", Value: 0}}
-
-	var result struct {
-		Stores []*Store `bson:"stores"`
-	}
-
-	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
-			return nil, fmt.Errorf("Vendor with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding stores", slog.Any("error", err), vendor_repo_source)
-		return nil, err
-	}
-
-	Logger.InfoContext(ctx, "Stores found successfully", slog.String("Stores",
-		fmt.Sprintf("%+v", result.Stores)), vendor_repo_source)
-	return result.Stores, nil
+	return findContainer[[]*Store](ctx, m.col, id, "stores", vendor_repo_source)
 }
 
 func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
@@ -650,26 +520,8 @@ func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*Vendor
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding orders for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
+	return findContainer[[]*VendorOrder](ctx, m.col, id, "orders", vendor_repo_source)
 
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: "orders", Value: 1}, {Key: "_id", Value: 0}}
-
-	var result struct {
-		Orders []*VendorOrder `bson:"orders"`
-	}
-
-	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
-			return nil, fmt.Errorf("Vendor with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding orders", slog.Any("error", err), vendor_repo_source)
-		return nil, err
-	}
-
-	Logger.InfoContext(ctx, "Orders found successfully", slog.Any("Orders",
-		fmt.Sprintf("%+v", result.Orders)), vendor_repo_source)
-	return result.Orders, nil
 }
 
 func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error {

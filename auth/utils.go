@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type ID struct{ value bson.ObjectID }
@@ -243,4 +245,75 @@ func convertToID(ctx context.Context, result *mongo.InsertOneResult) (ID, error)
 	}
 	return ID{value: res}, nil
 
+}
+
+func findById[U UserType](ctx context.Context, col *mongo.Collection, id ID, source slog.Attr) (user U, err error) {
+	Logger.InfoContext(ctx, "Finding User by ID", slog.String("Id", id.String()), source)
+
+	if err = col.FindOne(ctx, bson.D{{Key: "_id", Value: id.value}}).Decode(&user); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
+			err = fmt.Errorf("user with ID %s not found", id.String())
+			return
+		}
+		Logger.ErrorContext(ctx, "Error finding user by ID", slog.Any("error", err), source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "User found successfully", slog.String("ID", id.String()), source)
+	return
+}
+
+func findByEmail[U UserType](ctx context.Context, col *mongo.Collection, email string, source slog.Attr) (user U, err error) {
+	Logger.InfoContext(ctx, "Finding user by Email", slog.String("Email", email), source)
+	filter := bson.D{{Key: "email", Value: email}}
+
+	if err = col.FindOne(ctx, filter).Decode(&user); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "user not found", slog.String("email", email), source)
+			err = fmt.Errorf("user with email %s not found", email)
+			return
+		}
+		Logger.ErrorContext(ctx, "Error finding user by email", slog.Any("error", err), source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Vendor found successfully", slog.String("email", email), source)
+	return
+}
+
+func findContainer[C containers](ctx context.Context, col *mongo.Collection, id ID, container string, source slog.Attr) (C, error) {
+	Logger.InfoContext(ctx, "Finding container array", slog.String("Array", container), source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: container, Value: 1}, {Key: "_id", Value: 0}}
+
+	res := col.FindOne(ctx, filter, options.FindOne().SetProjection(projection))
+	if err := res.Err(); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
+			return nil, fmt.Errorf("user with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding container", slog.String("Array", container), slog.Any("error", err), source)
+		return nil, err
+	}
+
+	var rawDoc bson.Raw
+	if err := res.Decode(&rawDoc); err != nil {
+		Logger.ErrorContext(ctx, "Error in decoding to raw document", slog.Any("error", err), source)
+		return nil, err
+	}
+
+	var containerArray C
+	rawValue := rawDoc.Lookup(container)
+	if rawValue.Type == bson.TypeNull {
+		Logger.ErrorContext(ctx, "Container not found in document", slog.String("Array", container), source)
+		return nil, fmt.Errorf("container %s not found in document", container)
+	}
+
+	if err := bson.Unmarshal(rawValue.Value, &containerArray); err != nil {
+		Logger.ErrorContext(ctx, "Error unmarshaling container data", slog.Any("error", err), source)
+		return nil, err
+	}
+	Logger.InfoContext(ctx, "Container found successfully", slog.Any("Array", fmt.Sprintf("%+v", containerArray)), source)
+	return containerArray, nil
 }
