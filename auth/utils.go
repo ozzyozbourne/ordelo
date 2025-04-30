@@ -94,26 +94,71 @@ func NewID(ctx context.Context, s string) (ID, error) {
 	return ID{objId}, nil
 }
 
-func create[T UserType](ctx context.Context, t T, col *mongo.Collection, userType string, source slog.Attr) (res ID, err error) {
+func create[T UserType](ctx context.Context, t T, col *mongo.Collection, source slog.Attr) (res ID, err error) {
 	result, err := col.InsertOne(ctx, t)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err),
-			slog.String("typeOfUser", userType), source)
+		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), source)
 		return
 	}
-
 	if res, err = convertToID(ctx, result); err != nil {
 		return
 	}
-
 	if result.Acknowledged == false {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), source)
 		err = fmt.Errorf("Write concern returned false")
 		return
 
 	}
-	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()), slog.String("typeOfUser", userType), source)
+	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()), source)
 	return
+}
+
+func update(ctx context.Context, user *Common, col *mongo.Collection, source slog.Attr) error {
+	Logger.InfoContext(ctx, "Updating user", source)
+
+	var objId bson.ObjectID
+	if objId = user.ID; objId == bson.NilObjectID {
+		Logger.ErrorContext(ctx, "The user struct has no ObjectID", slog.Any("error", "No ObjectID"), source)
+		return fmt.Errorf("User struct has no ObjectID")
+	}
+	if err := checkIfDocumentExists(ctx, col, objId); err != nil {
+		return err
+	}
+
+	filter := bson.D{{Key: "_id", Value: objId}}
+	var models []mongo.WriteModel
+	updateModel := func(update bson.D) {
+		models = append(models, mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update))
+	}
+
+	if user.Name != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"name": user.Name}}})
+	}
+	if user.Email != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": user.Email}}})
+	}
+	if user.Address != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"address": user.Address}}})
+	}
+	if user.PasswordHash != "" {
+		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": user.PasswordHash}}})
+	}
+
+	result, err := col.BulkWrite(ctx, models)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), source)
+		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", user.ID.Hex()), source)
+		return fmt.Errorf("Write concern returned false")
+	}
+	if result.ModifiedCount == 0 {
+		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), source)
+		return fmt.Errorf("no updates were mode for user %+v", user)
+	}
+	Logger.InfoContext(ctx, "User updated successfully", source)
+	return nil
 }
 
 func deletes(ctx context.Context, col *mongo.Collection, id ID, source slog.Attr) error {
@@ -173,4 +218,29 @@ func deleteContainers(ctx context.Context, col *mongo.Collection, id ID, fil, up
 		return fmt.Errorf("No container were deleted with userID: %s", id.String())
 	}
 	return nil
+}
+
+func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bson.ObjectID) error {
+	filter := bson.D{{Key: "_id", Value: objID}}
+	count, err := col.CountDocuments(ctx, filter)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in checking if document exists", slog.Any("error", err), user_repo_source)
+		return err
+	}
+	if count == 0 {
+		Logger.ErrorContext(ctx, "Document not found", slog.String("ID", objID.Hex()), user_repo_source)
+		return fmt.Errorf("document with ID %s not found", objID.Hex())
+	}
+	return nil
+}
+
+func convertToID(ctx context.Context, result *mongo.InsertOneResult) (ID, error) {
+	res, ok := result.InsertedID.(bson.ObjectID)
+	if !ok {
+		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID",
+			slog.String("error", "Casting Error"), vendor_repo_source)
+		return ID{value: bson.NilObjectID}, fmt.Errorf("error unable to cast result.InsertedID to bson.ObjectID")
+	}
+	return ID{value: res}, nil
+
 }

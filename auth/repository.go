@@ -86,7 +86,7 @@ func (m MongoUserRepository) Create(ctx context.Context, user *User) (ID, error)
 	ctx, span := Tracer.Start(ctx, "CreateUser")
 	defer span.End()
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
-	return create[*User](ctx, user, m.col, "User", user_repo_source)
+	return create[*User](ctx, user, m.col, user_repo_source)
 }
 
 func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) ([]*ID, error) {
@@ -268,60 +268,7 @@ func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrde
 func (m MongoUserRepository) Update(ctx context.Context, user *User) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUser")
 	defer span.End()
-	Logger.InfoContext(ctx, "Updating user", slog.Any("user", user), user_repo_source)
-
-	var objId bson.ObjectID
-	if objId = user.ID; objId == bson.NilObjectID {
-		Logger.ErrorContext(ctx, "The user struct has no ObjectID", slog.Any("error", "No ObjectID"), user_repo_source)
-		return fmt.Errorf("User struct has no ObjectID")
-	}
-	if err := checkIfDocumentExists(ctx, m.col, objId); err != nil {
-		return err
-	}
-
-	filter := bson.D{{Key: "_id", Value: objId}}
-	var models []mongo.WriteModel
-	updateModel := func(update bson.D) {
-		models = append(models, mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update))
-	}
-
-	if user.Name != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"name": user.Name}}})
-	}
-	if user.Email != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": user.Email}}})
-	}
-	if user.Address != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"address": user.Address}}})
-	}
-	if user.PasswordHash != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": user.PasswordHash}}})
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
-		return err
-	}
-
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", user.ID.Hex()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.ModifiedCount == 0 {
-		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), user_repo_source)
-		return fmt.Errorf("no updates were mode for user %+v", user)
-	}
-
-	Logger.InfoContext(
-		ctx, "User updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		slog.String("Result", fmt.Sprintf("%+v", *result)),
-		user_repo_source,
-	)
-	return nil
+	return update(ctx, &user.Common, m.col, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
@@ -591,7 +538,7 @@ func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (res 
 	ctx, span := Tracer.Start(ctx, "CreateVendor")
 	defer span.End()
 
-	return create[*Vendor](ctx, vendor, m.col, "Vendor", vendor_repo_source)
+	return create[*Vendor](ctx, vendor, m.col, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores []*Store) ([]*ID, error) {
@@ -728,60 +675,7 @@ func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*Vendor
 func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendor")
 	defer span.End()
-	Logger.InfoContext(ctx, "Updating vendor", slog.Any("vendor", vendor), vendor_repo_source)
-
-	var objId bson.ObjectID
-	if objId = vendor.ID; objId == bson.NilObjectID {
-		Logger.ErrorContext(ctx, "The vendor struct has no ObjectID", slog.Any("error", "No ObjectID"), vendor_repo_source)
-		return fmt.Errorf("Vendor struct has no ObjectID")
-	}
-	if err := checkIfDocumentExists(ctx, m.col, objId); err != nil {
-		return err
-	}
-
-	filter := bson.D{{Key: "_id", Value: objId}}
-	var models []mongo.WriteModel
-	updateModel := func(update bson.D) {
-		updateModel := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update)
-		models = append(models, updateModel)
-	}
-
-	if vendor.Name != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"name": vendor.Name}}})
-	}
-	if vendor.Email != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"email": vendor.Email}}})
-	}
-	if vendor.Address != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"address": vendor.Address}}})
-	}
-	if vendor.PasswordHash != "" {
-		updateModel(bson.D{{Key: "$set", Value: bson.M{"password_hash": vendor.PasswordHash}}})
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
-		return err
-	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", objId.Hex()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.ModifiedCount == 0 {
-		Logger.ErrorContext(ctx, "No document was modified", slog.Any("Vendor update", vendor), slog.Any("Result", result), vendor_repo_source)
-		return fmt.Errorf("no updates were mode for vendor %+v", vendor)
-	}
-
-	Logger.InfoContext(
-		ctx, "Vendor updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		slog.String("Result", fmt.Sprintf("%+v", *result)),
-		vendor_repo_source,
-	)
-	return nil
+	return update(ctx, &vendor.Common, m.col, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores []*Store) error {
@@ -923,29 +817,4 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 
 	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
 	return nil
-}
-
-func checkIfDocumentExists(ctx context.Context, col *mongo.Collection, objID bson.ObjectID) error {
-	filter := bson.D{{Key: "_id", Value: objID}}
-	count, err := col.CountDocuments(ctx, filter)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in checking if document exists", slog.Any("error", err), user_repo_source)
-		return err
-	}
-	if count == 0 {
-		Logger.ErrorContext(ctx, "Document not found", slog.String("ID", objID.Hex()), user_repo_source)
-		return fmt.Errorf("document with ID %s not found", objID.Hex())
-	}
-	return nil
-}
-
-func convertToID(ctx context.Context, result *mongo.InsertOneResult) (ID, error) {
-	res, ok := result.InsertedID.(bson.ObjectID)
-	if !ok {
-		Logger.ErrorContext(ctx, "Error in cast InsertedID interface to bson.ObjectID",
-			slog.String("error", "Casting Error"), vendor_repo_source)
-		return ID{value: bson.NilObjectID}, fmt.Errorf("error unable to cast result.InsertedID to bson.ObjectID")
-	}
-	return ID{value: res}, nil
-
 }
