@@ -61,7 +61,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	userID, err := AuthService.Register(ctx, user.Name, user.Name, user.PasswordHash, user.Address, user.Role)
+	userID, err := AuthService.Register(ctx, user)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
 			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {

@@ -20,7 +20,7 @@ var (
 type Repositories struct {
 	User   UserRepository
 	Vendor VendorRepository
-	Admin  VendorRepository
+	Admin  AdminRepository
 }
 
 type UserRepository interface {

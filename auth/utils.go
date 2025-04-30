@@ -22,7 +22,7 @@ type ItemWithID interface {
 	SetIngredientID(id bson.ObjectID)
 }
 
-type UserType interface{ *User | *Vendor }
+type UserType interface{ *User | *Vendor | *Admin }
 
 type ContainerWithItems[T ItemWithID] interface {
 	GetID() bson.ObjectID
@@ -55,7 +55,13 @@ func (o *VendorOrder) GetItems() []*Item      { return o.Items }
 func (i *Item) GetIngredientID() bson.ObjectID   { return i.IngredientID }
 func (i *Item) SetIngredientID(id bson.ObjectID) { i.IngredientID = id }
 
-func isValidRole(role string) bool { return role == "admin" || role == "user" || role == "vendor" }
+func isValidRole(role string) error {
+	if role == "admin" || role == "user" || role == "vendor" {
+		return nil
+	} else {
+		return errors.New("invalid role")
+	}
+}
 
 func AssignIDs[I ItemWithID, C ContainerWithItems[I]](containers []C) []*ID {
 	ids := make([]*ID, len(containers))
