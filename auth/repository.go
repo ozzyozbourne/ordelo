@@ -999,41 +999,14 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 	Logger.InfoContext(ctx, "Deleting stores for vendor",
 		slog.String("vendorID", id.String()), slog.Any("storeIDs", ids), vendor_repo_source)
 
-	storesObjIDs := make([]bson.ObjectID, len(ids))
-	for i, sid := range ids {
-		storesObjIDs[i] = sid.value
-	}
+	filter, update := getFilterDelete(id, "stores", ids)
 
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$pull", Value: bson.M{
-			"stores": bson.M{
-				"_id": bson.M{"$in": storesObjIDs},
-			},
-		}},
-	}
-
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
+	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error deleting stores", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("vendor with ID %s not found", id.String())
-	}
-	if result.ModifiedCount == 0 {
-		Logger.InfoContext(ctx, "No stores were deleted, they may not exist",
-			slog.String("vendorID", id.String()), vendor_repo_source)
-	}
 
-	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()),
-		slog.Int("count", int(result.ModifiedCount)), vendor_repo_source)
-
+	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
 	return nil
 }
 

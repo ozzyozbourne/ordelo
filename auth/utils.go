@@ -11,7 +11,7 @@ import (
 
 type ID struct{ value bson.ObjectID }
 
-type ToAdd interface {
+type containers interface {
 	[]*Recipe | []*Cart | []*UserOrder | []*Store | []*VendorOrder
 }
 
@@ -68,9 +68,19 @@ func AssignIDs[I ItemWithID, C ContainerWithItems[I]](containers []C) []*ID {
 	return ids
 }
 
-func getFilterUpdate[T ToAdd](id ID, key string, t T) (bson.D, bson.D) {
+func getFilterPush[T containers](id ID, key string, t T) (bson.D, bson.D) {
 	filter := bson.D{{Key: "_id", Value: id.value}}
 	update := bson.D{{Key: "$push", Value: bson.M{key: bson.M{"$each": t}}}}
+	return filter, update
+}
+
+func getFilterDelete(id ID, key string, ids []*ID) (bson.D, bson.D) {
+	ObjIDs := make([]bson.ObjectID, len(ids))
+	for i, sid := range ids {
+		ObjIDs[i] = sid.value
+	}
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{{Key: "$pull", Value: bson.M{key: bson.M{"_id": bson.M{"$in": ObjIDs}}}}}
 	return filter, update
 }
 
@@ -106,19 +116,42 @@ func create[T UserType](ctx context.Context, t T, col *mongo.Collection, userTyp
 	return
 }
 
-func createContainers[T ToAdd](ctx context.Context, col *mongo.Collection, id ID, ids []*ID, t T, fil, up bson.D) error {
+func createContainers[T containers](ctx context.Context, col *mongo.Collection, id ID,
+	ids []*ID, t T, fil, up bson.D, source slog.Attr) error {
 	result, err := col.UpdateOne(ctx, fil, up)
 	if err != nil {
-		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), user_repo_source)
+		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), source)
 		return err
 	}
 	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
 		return fmt.Errorf("Write concern returned false")
 	}
 	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
+		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), source)
 		return fmt.Errorf("user with ID %s not found", id.String())
+	}
+	return nil
+}
+
+func deleteContainers(ctx context.Context, col *mongo.Collection, id ID, fil, up bson.D, source slog.Attr) error {
+	result, err := col.UpdateOne(ctx, fil, up)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting containers", slog.Any("error", err), source)
+		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
+		return fmt.Errorf("Write concern returned false")
+	}
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
+		return fmt.Errorf("user with ID %s not found", id.String())
+	}
+	if result.ModifiedCount == 0 {
+		Logger.InfoContext(ctx, "No container were deleted, they may not exist",
+			slog.String("vendorID", id.String()), source)
+		return fmt.Errorf("No container were deleted with userID: %s", id.String())
 	}
 	return nil
 }
