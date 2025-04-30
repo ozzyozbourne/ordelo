@@ -4,8 +4,8 @@ STATICCHECK:=/Users/ozzy/go/bin/./staticcheck
 
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
-.DEFAULT_GOAL := build
-.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint help
+.DEFAULT_GOAL := run-mac
+.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac
 
 build: build-all
 
@@ -40,5 +40,5 @@ lint:
 clean:
 	rm -rf $(BACKEND)/$(BUILD)
 
-run:
+run-mac: build-mac
 	./$(BACKEND)/$(BUILD)/./ordelo-darwin

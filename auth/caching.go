@@ -42,6 +42,16 @@ func (r CachedUserRepository) Create(ctx context.Context, user *User) (userID ID
 	ctx, span := Tracer.Start(ctx, "CreateUserRedis")
 	defer span.End()
 
+	if userID, err = r.userRepo.Create(ctx, user); err != nil {
+		return
+	}
+	user.ID = userID.value
+	userData, err := json.Marshal(user)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in Marshalling user struct", slog.Any("error", err), cached_repo)
+		return
+	}
+	err = r.PersistInRedis(ctx, userID, userData)
 	return
 }
 
@@ -49,25 +59,36 @@ func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes 
 	ctx, span := Tracer.Start(ctx, "CreateRecipesRedis")
 	defer span.End()
 
-	return nil
+	if err := r.userRepo.CreateRecipes(ctx, id, recipes); err != nil {
+		return err
+	}
+	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:recipes", id.String()))
 }
 
 func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) error {
 	ctx, span := Tracer.Start(ctx, "CreateCartsRedis")
 	defer span.End()
 
-	return nil
+	if err := r.userRepo.CreateCarts(ctx, id, carts); err != nil {
+		return err
+	}
+	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:carts", id.String()))
 }
 
 func (r CachedUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
 	ctx, span := Tracer.Start(ctx, "CreateOrdersRedis")
 	defer span.End()
 
-	return nil
+	if err := r.userRepo.CreateOrders(ctx, id, orders); err != nil {
+		return err
+	}
+	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String()))
 }
 
 func (r CachedUserRepository) FindByID(ctx context.Context, id ID) (*User, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "FindUserByIDRedis")
+	defer span.End()
+
 }
 
 func (r CachedUserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
@@ -87,7 +108,13 @@ func (r CachedUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrd
 }
 
 func (r CachedUserRepository) Update(ctx context.Context, user *User) error {
-	return nil
+	ctx, span := Tracer.Start(ctx, "UpdateUserRedis")
+	defer span.End()
+
+	if err := r.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	return r.Invalidate(ctx, fmt.Sprintf("user:%s", user.ID.Hex()))
 }
 
 func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
@@ -128,26 +155,44 @@ func (r CachedUserRepository) PersistInRedis(ctx context.Context, userID ID, use
 	return nil
 }
 
-func (r CachedUserRepository) InvalidateIfExists(ctx context.Context, key string) error {
+func (r CachedUserRepository) Invalidate(ctx context.Context, keys ...string) error {
 	ctx, span := Tracer.Start(ctx, "InvalidateIfExists")
 	defer span.End()
 
-	exists, err := r.redis.Exists(ctx, key).Result()
+	if len(keys) == 0 {
+		return fmt.Errorf("keys cannot be empty")
+	}
+
+	exists, err := r.redis.Exists(ctx, keys...).Result()
 	if err != nil {
-		Logger.ErrorContext(ctx, "Error in checking a key existance in redis", slog.String("key", key), cached_repo)
+		Logger.ErrorContext(ctx, "Error in checking a key existance in redis", slog.Any("key", keys), cached_repo)
 		return err
 	}
 
 	if exists > 0 {
-		Logger.InfoContext(ctx, "Invalidating existing cache", slog.String("key", key), cached_repo)
-		if err := r.redis.Del(ctx, key).Err(); err != nil {
+		Logger.InfoContext(ctx, "Invalidating existing cache", slog.Any("key", keys), cached_repo)
+		if err := r.redis.Del(ctx, keys...).Err(); err != nil {
 			Logger.ErrorContext(ctx, "Failed to invalidate cache", slog.Any("error", err), cached_repo)
 		} else {
-			Logger.InfoContext(ctx, "Cache invalidated successfully", slog.String("key", key), cached_repo)
+			Logger.InfoContext(ctx, "Cache invalidated successfully", slog.Any("key", keys), cached_repo)
 		}
 	} else {
-		Logger.InfoContext(ctx, "No cache found to invalidate", slog.String("key", key), cached_repo)
+		Logger.InfoContext(ctx, "No cache found to invalidate", slog.Any("key", keys), cached_repo)
 	}
 
 	return nil
+}
+
+type result interface {
+	*User
+}
+
+func GetFromRedis[T result](ctx context.Context, r CachedUserRepository, key string) (t T, err error) {
+	if userData, err := r.redis.Get(ctx, key).Bytes(); err != nil {
+		Logger.InfoContext(ctx, "data not foung in redis", slog.String("key", key), cached_repo)
+		return nil, fmt.Errorf("Not in redis with key: %s")
+	} else {
+		userData
+	}
+
 }
