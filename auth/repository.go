@@ -95,10 +95,10 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 	ids := AssignIDs(recipes)
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	filter, update := getFilterUpdate[[]*Recipe](id, "saved_recipes", recipes)
+	filter, update := getFilterPush[[]*Recipe](id, "saved_recipes", recipes)
 
-	if err := createContainers[[]*Recipe](ctx, m.col, id, ids, recipes, filter, update); err != nil {
-		Logger.ErrorContext(ctx, "Error adding user recipes", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*Recipe](ctx, m.col, id, ids, recipes, filter, update, user_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error adding in user recipes", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -113,10 +113,10 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	ids := AssignIDs(carts)
 
 	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
-	filter, update := getFilterUpdate[[]*Cart](id, "carts", carts)
+	filter, update := getFilterPush[[]*Cart](id, "carts", carts)
 
-	if err := createContainers[[]*Cart](ctx, m.col, id, ids, carts, filter, update); err != nil {
-		Logger.ErrorContext(ctx, "Error adding user cart", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*Cart](ctx, m.col, id, ids, carts, filter, update, user_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in adding user cart", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -131,10 +131,10 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 	ids := AssignIDs(orders)
 
 	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
-	filter, update := getFilterUpdate[[]*UserOrder](id, "orders", orders)
+	filter, update := getFilterPush[[]*UserOrder](id, "orders", orders)
 
-	if err := createContainers[[]*UserOrder](ctx, m.col, id, ids, orders, filter, update); err != nil {
-		Logger.ErrorContext(ctx, "Error adding user orders", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*UserOrder](ctx, m.col, id, ids, orders, filter, update, user_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in adding user orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -570,41 +570,14 @@ func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID
 	Logger.InfoContext(ctx, "Deleting recipes for user",
 		slog.String("userID", id.String()), slog.Any("recipeIDs", ids), user_repo_source)
 
-	recipesObjIDs := make([]bson.ObjectID, len(ids))
-	for i, rid := range ids {
-		recipesObjIDs[i] = rid.value
-	}
+	filter, update := getFilterDelete(id, "saved_recipes", ids)
 
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$pull", Value: bson.M{
-			"saved_recipes": bson.M{
-				"_id": bson.M{"$in": recipesObjIDs},
-			},
-		}},
-	}
-
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error deleting recipes", slog.Any("error", err), user_repo_source)
+	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting recipes", slog.Any("error", err), user_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id.String())
-	}
-	if result.ModifiedCount == 0 {
-		Logger.InfoContext(ctx, "No recipes were deleted, they may not exist",
-			slog.String("userID", id.String()), user_repo_source)
-	}
 
-	Logger.InfoContext(ctx, "Recipes deleted successfully", slog.String("userID", id.String()),
-		slog.Int("count", int(result.ModifiedCount)), user_repo_source)
-
+	Logger.InfoContext(ctx, "Recipes deleted successfully", slog.String("userID", id.String()), user_repo_source)
 	return nil
 }
 
@@ -615,41 +588,13 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 	Logger.InfoContext(ctx, "Deleting carts for user",
 		slog.String("userID", id.String()), slog.Any("cartIDs", ids), user_repo_source)
 
-	cartsObjIDs := make([]bson.ObjectID, len(ids))
-	for i, cid := range ids {
-		cartsObjIDs[i] = cid.value
-	}
-
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$pull", Value: bson.M{
-			"carts": bson.M{
-				"_id": bson.M{"$in": cartsObjIDs},
-			},
-		}},
-	}
-
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error deleting carts", slog.Any("error", err), user_repo_source)
+	filter, update := getFilterDelete(id, "carts", ids)
+	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting carts", slog.Any("error", err), user_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id.String())
-	}
-	if result.ModifiedCount == 0 {
-		Logger.InfoContext(ctx, "No carts were deleted, they may not exist",
-			slog.String("userID", id.String()), user_repo_source)
-	}
 
-	Logger.InfoContext(ctx, "Carts deleted successfully", slog.String("userID", id.String()),
-		slog.Int("count", int(result.ModifiedCount)), user_repo_source)
-
+	Logger.InfoContext(ctx, "Carts deleted successfully", slog.String("userID", id.String()), user_repo_source)
 	return nil
 }
 
@@ -671,10 +616,10 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	ids := AssignIDs(stores)
 
 	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
-	filter, update := getFilterUpdate[[]*Store](id, "stores", stores)
+	filter, update := getFilterPush[[]*Store](id, "stores", stores)
 
-	if err := createContainers[[]*Store](ctx, m.col, id, ids, stores, filter, update); err != nil {
-		Logger.ErrorContext(ctx, "Error adding vendor stores", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*Store](ctx, m.col, id, ids, stores, filter, update, vendor_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in adding vendor stores", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -689,10 +634,10 @@ func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders [
 	ids := AssignIDs(orders)
 
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
-	filter, update := getFilterUpdate[[]*VendorOrder](id, "orders", orders)
+	filter, update := getFilterPush[[]*VendorOrder](id, "orders", orders)
 
-	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update); err != nil {
-		Logger.ErrorContext(ctx, "Error adding vendor orders", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in adding vendor orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
@@ -1002,7 +947,7 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 	filter, update := getFilterDelete(id, "stores", ids)
 
 	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
-		Logger.ErrorContext(ctx, "Error deleting stores", slog.Any("error", err), vendor_repo_source)
+		Logger.ErrorContext(ctx, "Error in deleting stores", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
 
