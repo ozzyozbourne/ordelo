@@ -116,6 +116,25 @@ func create[T UserType](ctx context.Context, t T, col *mongo.Collection, userTyp
 	return
 }
 
+func deletes(ctx context.Context, col *mongo.Collection, id ID, source slog.Attr) error {
+	result, err := col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), source)
+		return err
+	}
+	if result.Acknowledged == false {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
+		return fmt.Errorf("Write concern returned false")
+	}
+	if result.DeletedCount == 0 {
+		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
+		return fmt.Errorf("User with ID %s not found", id.String())
+	}
+
+	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id.String()), vendor_repo_source)
+	return nil
+}
+
 func createContainers[T containers](ctx context.Context, col *mongo.Collection, id ID,
 	ids []*ID, t T, fil, up bson.D, source slog.Attr) error {
 	result, err := col.UpdateOne(ctx, fil, up)

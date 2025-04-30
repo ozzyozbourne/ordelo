@@ -545,22 +545,7 @@ func (m MongoUserRepository) Delete(ctx context.Context, id ID) error {
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Deleting a user", slog.String("ID", id.String()), user_repo_source)
-	result, err := m.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), user_repo_source)
-		return err
-	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.DeletedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("user with ID %s not found", id.String())
-	}
-
-	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id.String()), user_repo_source)
-	return nil
+	return deletes(ctx, m.col, id, user_repo_source)
 }
 
 func (m MongoUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID) error {
@@ -919,22 +904,7 @@ func (m MongoVendorRepository) Delete(ctx context.Context, id ID) error {
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Deleting a vendor", slog.String("ID", id.String()), vendor_repo_source)
-	result, err := m.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error deleting vendor", slog.Any("error", err), vendor_repo_source)
-		return err
-	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
-	}
-	if result.DeletedCount == 0 {
-		Logger.ErrorContext(ctx, "Vendor not found", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("vendor with ID %s not found", id.String())
-	}
-
-	Logger.InfoContext(ctx, "Vendor deleted successfully", slog.String("ID", id.String()), vendor_repo_source)
-	return nil
+	return deletes(ctx, m.col, id, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*ID) error {
