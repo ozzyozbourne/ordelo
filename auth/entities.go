@@ -27,6 +27,14 @@ type GeoJSON struct {
 	Coordinates []float64 `bson:"coordinates" json:"coordinates"`
 }
 
+type Admin struct {
+	ID           bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	Name         string        `bson:"name" json:"name"`
+	Email        string        `bson:"email" json:"email"`
+	PasswordHash string        `bson:"password_hash" json:"password_hash,omitempty"`
+	Role         string        `bson:"role" json:"role"`
+}
+
 // -----------------------------------------------------------------------
 //
 // ------------------------Embedding--------------------------------------

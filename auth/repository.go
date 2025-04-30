@@ -9,7 +9,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
@@ -21,46 +20,63 @@ var (
 type Repositories struct {
 	User   UserRepository
 	Vendor VendorRepository
+	Admin  VendorRepository
 }
 
 type UserRepository interface {
-	Create(context.Context, *User) (ID, error)
+	CreateUser(context.Context, *User) (ID, error)
 	CreateRecipes(context.Context, ID, []*Recipe) ([]*ID, error)
 	CreateCarts(context.Context, ID, []*Cart) ([]*ID, error)
-	CreateOrders(context.Context, ID, []*UserOrder) ([]*ID, error)
+	CreateUserOrders(context.Context, ID, []*UserOrder) ([]*ID, error)
 
-	FindByID(context.Context, ID) (*User, error)
-	FindByEmail(context.Context, string) (*User, error)
+	FindUserByID(context.Context, ID) (*User, error)
+	FindUserByEmail(context.Context, string) (*User, error)
 	FindRecipes(context.Context, ID) ([]*Recipe, error)
 	FindCarts(context.Context, ID) ([]*Cart, error)
-	FindOrders(context.Context, ID) ([]*UserOrder, error)
+	FindUserOrders(context.Context, ID) ([]*UserOrder, error)
 
-	Update(context.Context, *User) error
+	UpdateUser(context.Context, *User) error
 	UpdateRecipes(context.Context, ID, []*Recipe) error
 	UpdateCarts(context.Context, ID, []*Cart) error
-	UpdateOrders(context.Context, ID, []*UserOrder) error
+	UpdateUserOrders(context.Context, ID, []*UserOrder) error
 
-	Delete(context.Context, ID) error
+	DeleteUser(context.Context, ID) error
 	DeleteRecipes(context.Context, ID, []*ID) error
 	DeleteCarts(context.Context, ID, []*ID) error
 }
 
 type VendorRepository interface {
-	Create(context.Context, *Vendor) (ID, error)
+	CreateVendor(context.Context, *Vendor) (ID, error)
 	CreateStores(context.Context, ID, []*Store) ([]*ID, error)
-	CreateOrders(context.Context, ID, []*VendorOrder) ([]*ID, error)
+	CreateVendorOrders(context.Context, ID, []*VendorOrder) ([]*ID, error)
 
-	FindByID(context.Context, ID) (*Vendor, error)
-	FindByEmail(context.Context, string) (*Vendor, error)
+	FindVendorByID(context.Context, ID) (*Vendor, error)
+	FindVendorByEmail(context.Context, string) (*Vendor, error)
 	FindStores(context.Context, ID) ([]*Store, error)
-	FindOrders(context.Context, ID) ([]*VendorOrder, error)
+	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
 
-	Update(context.Context, *Vendor) error
+	UpdateVendor(context.Context, *Vendor) error
 	UpdateStores(context.Context, ID, []*Store) error
-	UpdateOrders(context.Context, ID, []*VendorOrder) error
+	UpdateVendorOrders(context.Context, ID, []*VendorOrder) error
 
-	Delete(context.Context, ID) error
+	DeleteVendor(context.Context, ID) error
 	DeleteStores(context.Context, ID, []*ID) error
+}
+
+type AdminRepository interface {
+	UserRepository
+	VendorRepository
+	CreateAdmin(context.Context, *Admin) (ID, error)
+	CreateIngredients(context.Context, []*Ingredient) ([]*ID, error)
+
+	FindAdminByID(context.Context, ID) (*Admin, error)
+	FindAdminByEmail(context.Context, string) (*Admin, error)
+	FindIngredients(context.Context, ID) ([]*Ingredient, error)
+
+	UpdateAdmin(context.Context, *Admin) error
+	UpdateIngredients(context.Context, ID, []*Ingredient) error
+
+	DeleteIngredients(context.Context, ID, []*ID) error
 }
 
 func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
@@ -76,13 +92,24 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 }
 
 type MongoUserRepository struct{ col *mongo.Collection }
+
 type MongoVendorRepository struct{ col *mongo.Collection }
+
+type MongoAdminRepository struct {
+	*MongoUserRepository
+	*MongoVendorRepository
+	col *mongo.Collection
+}
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) Create(ctx context.Context, user *User) (ID, error) {
+func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
+	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
+}
+
+func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateUser")
 	defer span.End()
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
@@ -124,7 +151,7 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	return ids, nil
 }
 
-func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) ([]*ID, error) {
+func (m MongoUserRepository) CreateUserOrders(ctx context.Context, id ID, orders []*UserOrder) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateUserOrders")
 	defer span.End()
 
@@ -142,14 +169,14 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 	return ids, nil
 }
 
-func (m MongoUserRepository) FindByID(ctx context.Context, id ID) (user *User, err error) {
+func (m MongoUserRepository) FindUserByID(ctx context.Context, id ID) (user *User, err error) {
 	ctx, span := Tracer.Start(ctx, "FindUserID")
 	defer span.End()
 
 	return findById[*User](ctx, m.col, id, user_repo_source)
 }
 
-func (m MongoUserRepository) FindByEmail(ctx context.Context, email string) (user *User, err error) {
+func (m MongoUserRepository) FindUserByEmail(ctx context.Context, email string) (user *User, err error) {
 	ctx, span := Tracer.Start(ctx, "FindUserByEmail")
 	defer span.End()
 
@@ -172,7 +199,7 @@ func (m MongoUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, err
 	return findContainer[[]*Cart](ctx, m.col, id, "carts", user_repo_source)
 }
 
-func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
+func (m MongoUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
 	ctx, span := Tracer.Start(ctx, "FindUserOrders")
 	defer span.End()
 
@@ -180,7 +207,7 @@ func (m MongoUserRepository) FindOrders(ctx context.Context, id ID) ([]*UserOrde
 	return findContainer[[]*UserOrder](ctx, m.col, id, "orders", user_repo_source)
 }
 
-func (m MongoUserRepository) Update(ctx context.Context, user *User) error {
+func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUser")
 	defer span.End()
 	return update(ctx, &user.Common, m.col, user_repo_source)
@@ -346,7 +373,7 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 	return nil
 }
 
-func (m MongoUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders []*UserOrder) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUserOrders")
 	defer span.End()
 
@@ -402,7 +429,7 @@ func (m MongoUserRepository) UpdateOrders(ctx context.Context, id ID, orders []*
 	return nil
 }
 
-func (m MongoUserRepository) Delete(ctx context.Context, id ID) error {
+func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteUser")
 	defer span.End()
 
@@ -445,11 +472,7 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 	return nil
 }
 
-func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
-	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
-}
-
-func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (res ID, err error) {
+func (m MongoVendorRepository) CreateVendor(ctx context.Context, vendor *Vendor) (res ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateVendor")
 	defer span.End()
 
@@ -474,7 +497,7 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	return ids, nil
 }
 
-func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders []*VendorOrder) ([]*ID, error) {
+func (m MongoVendorRepository) CreateVendorOrders(ctx context.Context, id ID, orders []*VendorOrder) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateVendorOrders")
 	defer span.End()
 
@@ -492,7 +515,7 @@ func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders [
 	return ids, nil
 }
 
-func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (vendor *Vendor, err error) {
+func (m MongoVendorRepository) FindVendorByID(ctx context.Context, id ID) (vendor *Vendor, err error) {
 	ctx, span := Tracer.Start(ctx, "FindVendorID")
 	defer span.End()
 
@@ -500,7 +523,7 @@ func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (vendor *Ven
 
 }
 
-func (m MongoVendorRepository) FindByEmail(ctx context.Context, email string) (vendor *Vendor, err error) {
+func (m MongoVendorRepository) FindVendorByEmail(ctx context.Context, email string) (vendor *Vendor, err error) {
 	ctx, span := Tracer.Start(ctx, "FindVendorByEmail")
 	defer span.End()
 
@@ -515,7 +538,7 @@ func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store,
 	return findContainer[[]*Store](ctx, m.col, id, "stores", vendor_repo_source)
 }
 
-func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
+func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
 	ctx, span := Tracer.Start(ctx, "FindVendorOrders")
 	defer span.End()
 
@@ -524,7 +547,7 @@ func (m MongoVendorRepository) FindOrders(ctx context.Context, id ID) ([]*Vendor
 
 }
 
-func (m MongoVendorRepository) Update(ctx context.Context, vendor *Vendor) error {
+func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Vendor) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendor")
 	defer span.End()
 	return update(ctx, &vendor.Common, m.col, vendor_repo_source)
@@ -588,7 +611,7 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 	return nil
 }
 
-func (m MongoVendorRepository) UpdateOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
+func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendorOrders")
 	defer span.End()
 
@@ -645,7 +668,7 @@ func (m MongoVendorRepository) UpdateOrders(ctx context.Context, id ID, orders [
 	return nil
 }
 
-func (m MongoVendorRepository) Delete(ctx context.Context, id ID) error {
+func (m MongoVendorRepository) DeleteVendor(ctx context.Context, id ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteVendor")
 	defer span.End()
 

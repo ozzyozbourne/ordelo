@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,37 +50,23 @@ func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient 
 	return nil
 }
 
-func (s *authService) Register(ctx context.Context, user *User) (userID ID, err error) {
+func (s *authService) Register(ctx context.Context, username, email, password, address string, role string) (ID, error) {
 	ctx, span := Tracer.Start(ctx, "RegisterUser")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Registering a new user", slog.Any("User", user), auth_source)
+	Logger.InfoContext(ctx, "Registering a new user", slog.String("email",email), slog.String("role", role), auth_source)
+
+	if !isValidRole(role) {
+		return ID{bson.NilObjectID}, errors.New("invalid role")
+	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Failed to hash password", slog.Any("error", err), auth_source)
-		return
+		return ID{bson.NilObjectID}, err
 	}
 
 	user.PasswordHash = string(hashedPassword)
-	switch user.Role {
-	case "user":
-		if userID, err = s.cachedRepo.User.Create(ctx, user); err != nil {
-			return
-		}
-	case "vender":
-		// if userID, err = s.cachedRepo.Vendor.CreateUser(ctx, user); err != nil {
-		// 	return
-		// }
-	case "admin":
-		// if userID, err = s.cachedRepo.Vendor.CreateUser(ctx, user); err != nil {
-		// 	return
-		// }
-	default:
-		Logger.ErrorContext(ctx, "Invalid role", auth_source)
-		err = errors.New("invalid role")
-		return
-	}
 
 	Logger.InfoContext(ctx, "User registered successfully", slog.String("user_id", userID.value.Hex()), auth_source)
-	return
+	return , nil
 }

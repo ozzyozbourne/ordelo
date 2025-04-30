@@ -112,7 +112,7 @@ func createUser(t *testing.T) *User {
 	t.Logf("Testing Create User \n")
 
 	user_in := generateUser(3, 5)
-	id, err := r.User.Create(context.TODO(), user_in)
+	id, err := r.User.CreateUser(context.TODO(), user_in)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -151,7 +151,7 @@ func addOrders(t *testing.T, user *User) *User {
 	t.Logf("Testing Adding Orders to a user")
 
 	orders_in := generateUserOrdersArray(4, 3)
-	if _, err := r.User.CreateOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
+	if _, err := r.User.CreateUserOrders(context.TODO(), ID{user.ID}, orders_in); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Orders added successfull\n")
@@ -161,7 +161,7 @@ func addOrders(t *testing.T, user *User) *User {
 
 func getUserByID(t *testing.T, id ID) *User {
 	t.Logf("Getting the by ID\n")
-	user, err := r.User.FindByID(context.TODO(), id)
+	user, err := r.User.FindUserByID(context.TODO(), id)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -171,7 +171,7 @@ func getUserByID(t *testing.T, id ID) *User {
 
 func getUserByEmail(t *testing.T, email string) *User {
 	t.Logf("Getting the by email\n")
-	user, err := r.User.FindByEmail(context.TODO(), email)
+	user, err := r.User.FindUserByEmail(context.TODO(), email)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
@@ -216,7 +216,7 @@ func updateUser(t *testing.T, user_in *User) {
 	user_in.Email = generateRandowEmails()
 	user_in.PasswordHash = string(password)
 
-	if err := r.User.Update(context.TODO(), user_in); err != nil {
+	if err := r.User.UpdateUser(context.TODO(), user_in); err != nil {
 		t.Fatalf("%v\n", err)
 	}
 	t.Logf("Tested Update user Function Success!")
@@ -249,7 +249,7 @@ func deleteRecipes(t *testing.T, id ID, recipes []*Recipe) []*Recipe {
 
 func deleteUser(t *testing.T, id ID) {
 	t.Logf("Testing Delete User Function")
-	if err := r.User.Delete(context.TODO(), id); err != nil {
+	if err := r.User.DeleteUser(context.TODO(), id); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("Tested Delete User Function Success!")
