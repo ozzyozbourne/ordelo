@@ -110,24 +110,10 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 	ctx, span := Tracer.Start(ctx, "CreateUserRecipes")
 	defer span.End()
 
-	ids := make([]*ID, len(recipes))
-	for i, recipe := range recipes {
-		recipe.ID = bson.NewObjectID()
-		ids[i] = &ID{recipe.ID}
-		for _, item := range recipe.Items {
-			item.IngredientID = bson.NewObjectID()
-		}
-	}
+	ids := AssignIDs(recipes)
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$push", Value: bson.M{
-			"saved_recipes": bson.M{
-				"$each": recipes,
-			},
-		}},
-	}
+	filter, update := getFilterUpdate[[]*Recipe](id, "saved_recipes", recipes)
 
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -153,24 +139,10 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	ctx, span := Tracer.Start(ctx, "CreateUserCarts")
 	defer span.End()
 
-	ids := make([]*ID, len(carts))
-	for i, cart := range carts {
-		cart.ID = bson.NewObjectID()
-		ids[i] = &ID{cart.ID}
-		for _, item := range cart.Items {
-			item.IngredientID = bson.NewObjectID()
-		}
-	}
+	ids := AssignIDs(carts)
 
 	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$push", Value: bson.M{
-			"carts": bson.M{
-				"$each": carts,
-			},
-		}},
-	}
+	filter, update := getFilterUpdate[[]*Cart](id, "carts", carts)
 
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -196,24 +168,10 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 	ctx, span := Tracer.Start(ctx, "CreateUserOrders")
 	defer span.End()
 
-	ids := make([]*ID, len(orders))
-	for i, order := range orders {
-		order.ID = bson.NewObjectID()
-		ids[i] = &ID{order.ID}
-		for _, item := range order.Items {
-			item.IngredientID = bson.NewObjectID()
-		}
-	}
+	ids := AssignIDs(orders)
 
 	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$push", Value: bson.M{
-			"orders": bson.M{
-				"$each": orders,
-			},
-		}},
-	}
+	filter, update := getFilterUpdate[[]*UserOrder](id, "orders", orders)
 
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -430,7 +388,10 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 
 	var models []mongo.WriteModel
 	for _, recipe := range recipes {
-		updateFilter := bson.D{
+		if recipe.ID == bson.NilObjectID {
+			continue
+		}
+		updateRecipeFilter := bson.D{
 			{Key: "_id", Value: id.value},
 			{Key: "saved_recipes._id", Value: recipe.ID},
 		}
@@ -447,14 +408,54 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 		}
 
 		if len(recipe.Items) > 0 {
+			var itemsToInsert []interface{}
 			for _, item := range recipe.Items {
+				if item.IngredientID == bson.NilObjectID {
+					item.IngredientID = bson.NewObjectID()
+					itemsToInsert = append(itemsToInsert, item)
+				} else {
 
+					updateItemFilters := []interface{}{
+						bson.M{"r._id": recipe.ID},
+						bson.M{"i.ingredient_id": item.IngredientID},
+					}
+					itemFieldsToUpdate := bson.M{}
+
+					if item.Name != "" {
+						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].name"] = item.Name
+					}
+					if item.Quantity != 0 {
+						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].quantity"] = item.Quantity
+					}
+					if item.Unit != "" {
+						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].unit"] = item.Unit
+					}
+					if item.Price != 0 {
+						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].price"] = item.Price
+					}
+
+					if len(itemFieldsToUpdate) > 0 {
+						itemUpdate := bson.D{{Key: "$set", Value: itemFieldsToUpdate}}
+						models = append(models, mongo.NewUpdateOneModel().SetFilter(bson.D{{Key: "_id", Value: id.value}}).
+							SetUpdate(itemUpdate).SetArrayFilters(updateItemFilters))
+					}
+				}
+			}
+			if len(itemsToInsert) > 0 {
+				pushUpdate := bson.D{
+					{Key: "$push", Value: bson.M{
+						"saved_recipes.$.items": bson.M{"$each": itemsToInsert},
+					}},
+				}
+				models = append(models, mongo.NewUpdateOneModel().
+					SetFilter(updateRecipeFilter).
+					SetUpdate(pushUpdate))
 			}
 		}
 
 		if len(fieldsToUpdate) > 0 {
 			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
-			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateFilter).SetUpdate(update))
+			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateRecipeFilter).SetUpdate(update))
 		}
 	}
 
@@ -475,6 +476,7 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 		user_repo_source)
 
 	return nil
+
 }
 
 func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
@@ -734,85 +736,59 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	ctx, span := Tracer.Start(ctx, "CreateVendorStores")
 	defer span.End()
 
-	ids := make([]*ID, len(stores))
-	for i, store := range stores {
-		store.ID = bson.NewObjectID()
-		ids[i] = &ID{store.ID}
-		for _, item := range store.Items {
-			item.IngredientID = bson.NewObjectID()
-		}
-	}
+	ids := AssignIDs(stores)
+
 	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$push", Value: bson.M{
-			"stores": bson.M{
-				"$each": stores,
-			},
-		}},
-	}
+	filter, update := getFilterUpdate[[]*Store](id, "stores", stores)
 
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error updating vendor stores", slog.Any("error", err), vendor_repo_source)
-		return err
+		return nil, err
 	}
 	if result.Acknowledged == false {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return nil, fmt.Errorf("Write concern returned false")
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
-		return fmt.Errorf("vendor with ID %s not found", id.String())
+		return nil, fmt.Errorf("vendor with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "Stores added successfully", slog.String("vendorId", id.String()),
 		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
 
-	return nil
+	return ids, nil
 }
 
 func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders []*VendorOrder) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateVendorOrders")
 	defer span.End()
 
-	ids := make([]*ID, len(orders))
-	for i, order := range orders {
-		order.ID = bson.NewObjectID()
-		ids[i] = &ID{order.ID}
-		for _, item := range order.Items {
-			item.IngredientID = bson.NewObjectID()
-		}
-	}
+	ids := AssignIDs(orders)
+
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$push", Value: bson.M{
-			"orders": bson.M{
-				"$each": orders,
-			},
-		}},
-	}
+	filter, update := getFilterUpdate[[]*VendorOrder](id, "orders", orders)
 
 	result, err := m.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error updating vendor orders", slog.Any("error", err), vendor_repo_source)
-		return err
+		return nil, err
 	}
 	if result.Acknowledged == false {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return nil, fmt.Errorf("Write concern returned false")
 	}
 
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
-		return fmt.Errorf("vendor with ID %s not found", id.String())
+		return nil, fmt.Errorf("vendor with ID %s not found", id.String())
 	}
 
 	Logger.InfoContext(ctx, "Orders added successfully", slog.String("vendorId", id.String()),
 		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
 
-	return nil
+	return ids, nil
 }
 
 func (m MongoVendorRepository) FindByID(ctx context.Context, id ID) (vendor *Vendor, err error) {

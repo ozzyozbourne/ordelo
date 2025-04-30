@@ -55,40 +55,44 @@ func (r CachedUserRepository) Create(ctx context.Context, user *User) (userID ID
 	return
 }
 
-func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
+func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateRecipesRedis")
 	defer span.End()
 
-	if err := r.userRepo.CreateRecipes(ctx, id, recipes); err != nil {
-		return err
+	ids, err := r.userRepo.CreateRecipes(ctx, id, recipes)
+	if err != nil {
+		return nil, err
 	}
-	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:recipes", id.String()))
+	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:recipes", id.String()))
 }
 
-func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) error {
+func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateCartsRedis")
 	defer span.End()
 
-	if err := r.userRepo.CreateCarts(ctx, id, carts); err != nil {
-		return err
+	ids, err := r.userRepo.CreateCarts(ctx, id, carts)
+	if err != nil {
+		return nil, err
 	}
-	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:carts", id.String()))
+	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:carts", id.String()))
 }
 
-func (r CachedUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) error {
+func (r CachedUserRepository) CreateOrders(ctx context.Context, id ID, orders []*UserOrder) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateOrdersRedis")
 	defer span.End()
 
-	if err := r.userRepo.CreateOrders(ctx, id, orders); err != nil {
-		return err
+	ids, err := r.userRepo.CreateOrders(ctx, id, orders)
+	if err != nil {
+		return nil, err
 	}
-	return r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String()))
+	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String()))
 }
 
 func (r CachedUserRepository) FindByID(ctx context.Context, id ID) (*User, error) {
 	ctx, span := Tracer.Start(ctx, "FindUserByIDRedis")
 	defer span.End()
 
+	return nil, nil
 }
 
 func (r CachedUserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
@@ -187,12 +191,10 @@ type result interface {
 	*User
 }
 
-func GetFromRedis[T result](ctx context.Context, r CachedUserRepository, key string) (t T, err error) {
-	if userData, err := r.redis.Get(ctx, key).Bytes(); err != nil {
-		Logger.InfoContext(ctx, "data not foung in redis", slog.String("key", key), cached_repo)
-		return nil, fmt.Errorf("Not in redis with key: %s")
-	} else {
-		userData
-	}
-
-}
+// func GetFromRedis[T result](ctx context.Context, r CachedUserRepository, key string) (t T, err error) {
+// 	if userData, err := r.redis.Get(ctx, key).Bytes(); err != nil {
+// 		Logger.InfoContext(ctx, "data not foung in redis", slog.String("key", key), cached_repo)
+// 		return userData, fmt.Errorf("Not in redis with key: %s")
+// 	}
+// 	return userData, nil
+// }

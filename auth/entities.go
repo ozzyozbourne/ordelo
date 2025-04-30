@@ -8,9 +8,6 @@ import (
 // -----------------------------------------------------------------------
 //
 // ------------------------Basic types------------------------------------
-type ID struct {
-	value bson.ObjectID
-}
 
 type Claims struct {
 	UserID string `json:"user_id"`
