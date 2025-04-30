@@ -82,56 +82,27 @@ func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository 
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
 }
 
-func (m MongoUserRepository) Create(ctx context.Context, user *User) (res ID, err error) {
+func (m MongoUserRepository) Create(ctx context.Context, user *User) (ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateUser")
 	defer span.End()
-
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
-
-	result, err := m.col.InsertOne(ctx, user)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in inserting a user in DB", slog.Any("error", err), user_repo_source)
-		return
-	}
-	if res, err = convertToID(ctx, result); err != nil {
-		return
-	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), user_repo_source)
-		err = fmt.Errorf("Write concern returned false")
-		return
-	}
-	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
-		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
-	return
+	return create[*User](ctx, user, m.col, "User", user_repo_source)
 }
 
 func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) ([]*ID, error) {
 	ctx, span := Tracer.Start(ctx, "CreateUserRecipes")
 	defer span.End()
-
 	ids := AssignIDs(recipes)
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
 	filter, update := getFilterUpdate[[]*Recipe](id, "saved_recipes", recipes)
 
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating user recipes", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*Recipe](ctx, m.col, id, ids, recipes, filter, update); err != nil {
+		Logger.ErrorContext(ctx, "Error adding user recipes", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return nil, fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return nil, fmt.Errorf("user with ID %s not found", id.String())
-	}
-
-	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id.String()),
-		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
+	Logger.InfoContext(ctx, "Recipes added successfully", slog.String("userId", id.String()), user_repo_source)
 	return ids, nil
 }
 
@@ -144,23 +115,12 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
 	filter, update := getFilterUpdate[[]*Cart](id, "carts", carts)
 
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating user carts", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*Cart](ctx, m.col, id, ids, carts, filter, update); err != nil {
+		Logger.ErrorContext(ctx, "Error adding user cart", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
 
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return nil, fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return nil, fmt.Errorf("user with ID %s not found", id.String())
-	}
-
-	Logger.InfoContext(ctx, "Carts added successfully", slog.String("userId", id.String()),
-		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
+	Logger.InfoContext(ctx, "Carts added successfully", slog.String("userId", id.String()), user_repo_source)
 	return ids, nil
 }
 
@@ -173,23 +133,12 @@ func (m MongoUserRepository) CreateOrders(ctx context.Context, id ID, orders []*
 	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
 	filter, update := getFilterUpdate[[]*UserOrder](id, "orders", orders)
 
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating user orders", slog.Any("error", err), user_repo_source)
+	if err := createContainers[[]*UserOrder](ctx, m.col, id, ids, orders, filter, update); err != nil {
+		Logger.ErrorContext(ctx, "Error adding user orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return nil, fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), user_repo_source)
-		return nil, fmt.Errorf("user with ID %s not found", id.String())
-	}
 
-	Logger.InfoContext(ctx, "Orders added successfully", slog.String("userId", id.String()),
-		slog.String("Result", fmt.Sprintf("%+v", *result)), user_repo_source)
-
+	Logger.InfoContext(ctx, "Orders added successfully", slog.String("userId", id.String()), user_repo_source)
 	return ids, nil
 }
 
@@ -712,24 +661,7 @@ func (m MongoVendorRepository) Create(ctx context.Context, vendor *Vendor) (res 
 	ctx, span := Tracer.Start(ctx, "CreateVendor")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Inserting in Vendors collection", slog.Any("vendor", vendor), vendor_repo_source)
-
-	result, err := m.col.InsertOne(ctx, vendor)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in inserting a vendor in DB", slog.Any("error", err), vendor_repo_source)
-		return
-	}
-	if res, err = convertToID(ctx, result); err != nil {
-		return
-	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), vendor_repo_source)
-		err = fmt.Errorf("Write concern returned false")
-		return
-	}
-	Logger.InfoContext(ctx, "User Created Successfully", slog.String("ID", res.String()),
-		slog.String("Result", fmt.Sprintf("%+v", result)), user_repo_source)
-	return
+	return create[*Vendor](ctx, vendor, m.col, "Vendor", vendor_repo_source)
 }
 
 func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores []*Store) ([]*ID, error) {
@@ -741,23 +673,12 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
 	filter, update := getFilterUpdate[[]*Store](id, "stores", stores)
 
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating vendor stores", slog.Any("error", err), vendor_repo_source)
+	if err := createContainers[[]*Store](ctx, m.col, id, ids, stores, filter, update); err != nil {
+		Logger.ErrorContext(ctx, "Error adding vendor stores", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return nil, fmt.Errorf("Write concern returned false")
-	}
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
-		return nil, fmt.Errorf("vendor with ID %s not found", id.String())
-	}
 
-	Logger.InfoContext(ctx, "Stores added successfully", slog.String("vendorId", id.String()),
-		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
-
+	Logger.InfoContext(ctx, "Stores added successfully", slog.String("vendorId", id.String()), vendor_repo_source)
 	return ids, nil
 }
 
@@ -770,24 +691,12 @@ func (m MongoVendorRepository) CreateOrders(ctx context.Context, id ID, orders [
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
 	filter, update := getFilterUpdate[[]*VendorOrder](id, "orders", orders)
 
-	result, err := m.col.UpdateOne(ctx, filter, update)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error updating vendor orders", slog.Any("error", err), vendor_repo_source)
+	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update); err != nil {
+		Logger.ErrorContext(ctx, "Error adding vendor orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
-	if result.Acknowledged == false {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return nil, fmt.Errorf("Write concern returned false")
-	}
 
-	if result.MatchedCount == 0 {
-		Logger.ErrorContext(ctx, "Vendor not found", slog.String("_id", id.String()), vendor_repo_source)
-		return nil, fmt.Errorf("vendor with ID %s not found", id.String())
-	}
-
-	Logger.InfoContext(ctx, "Orders added successfully", slog.String("vendorId", id.String()),
-		slog.String("Result", fmt.Sprintf("%+v", *result)), vendor_repo_source)
-
+	Logger.InfoContext(ctx, "Orders added successfully", slog.String("vendorId", id.String()), vendor_repo_source)
 	return ids, nil
 }
 
