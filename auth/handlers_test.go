@@ -9,11 +9,13 @@ import (
 	"time"
 )
 
-const LOCAL_URL = "http://localhost:8080/register"
+const LOCAL_URL = "http://localhost:8080/"
 
 func TestCreateUser(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	loginUserFromAPI(t, createUserFromAPI(t))
+}
+
+func createUserFromAPI(t *testing.T) *Common {
 
 	com := generateCommon("user")
 	data, err := json.Marshal(com)
@@ -21,7 +23,35 @@ func TestCreateUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, LOCAL_URL, bytes.NewBuffer(data))
+	dispatch(t, data, http.StatusCreated, http.MethodPost, "register")
+
+	return &com
+}
+
+func loginUserFromAPI(t *testing.T, com *Common) {
+	login := &Login{
+		Email:    com.Email,
+		Password: com.PasswordHash,
+		Role:     com.Role,
+	}
+
+	data, err := json.Marshal(login)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("User -> %s\n", data)
+	dispatch(t, data, http.StatusOK, http.MethodPost, "login")
+
+}
+
+func dispatch(t *testing.T, data []byte, status int, httpMethod, endpoint string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	endpoint = LOCAL_URL + endpoint
+	t.Logf("Hitting endpoint -> %s\n", endpoint)
+
+	req, err := http.NewRequestWithContext(ctx, httpMethod, endpoint, bytes.NewBuffer(data))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,9 +71,8 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("Failed to parse response body: %v", err)
 	}
 
-	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("Expected status %d, got %d. Response: %v", http.StatusCreated, res.StatusCode, response)
+	if res.StatusCode != status {
+		t.Fatalf("Expected status %d, got %d. Response: %v", status, res.StatusCode, response)
 	}
-
 	t.Logf("Successful response: %v", response)
 }

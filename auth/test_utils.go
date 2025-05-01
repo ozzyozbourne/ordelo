@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 func generateRandowEmails() string {
@@ -17,12 +15,11 @@ func generateRandowEmails() string {
 }
 
 func generateCommon(role string) Common {
-	password, _ := bcrypt.GenerateFromPassword([]byte("nOTsOsAFEpaSSwORD"), bcrypt.DefaultCost)
 	return Common{
 		Name:         generateRandowName(),
 		Address:      generateRandomAddress(),
 		Email:        generateRandowEmails(),
-		PasswordHash: string(password),
+		PasswordHash: "nOTsOsAFEpaSSwORD",
 		Role:         role,
 	}
 }
