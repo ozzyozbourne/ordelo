@@ -22,9 +22,9 @@ func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, me
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "Create User Handler")
+	ctx, span := Tracer.Start(r.Context(), "Register")
 	defer span.End()
-	source := slog.String("source", "HttpCreateUser")
+	source := slog.String("source", "Register")
 
 	sendFailure := func(err string) {
 		errorResponseMap := map[string]any{
@@ -71,8 +71,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	okResponseMap := map[string]any{
-		"status":  true,
-		"user_id": userID.value.Hex(),
+		"status": true,
+		"id":     userID.String(),
 	}
 	if err := sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
