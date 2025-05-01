@@ -25,7 +25,7 @@ func createCachedUser(t *testing.T) *User {
 	t.Logf("Testing to see if on creating a new user its added to the cache\n")
 	user_in := generateUser(4, 3)
 
-	id, err := Repos.User.Create(context.TODO(), user_in)
+	id, err := Repos.User.CreateUser(context.TODO(), user_in)
 	if err != nil {
 		t.Fatal(err)
 	}

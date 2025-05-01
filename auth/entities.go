@@ -8,9 +8,6 @@ import (
 // -----------------------------------------------------------------------
 //
 // ------------------------Basic types------------------------------------
-type ID struct {
-	value bson.ObjectID
-}
 
 type Claims struct {
 	UserID string `json:"user_id"`
@@ -59,6 +56,10 @@ type Common struct {
 type Item struct {
 	Ingredient `bson:",inline"`
 	Quantity   int `bson:"quantity" json:"quantity"`
+}
+
+type Admin struct {
+	Common `bson:",inline"`
 }
 
 type UserOrder struct {

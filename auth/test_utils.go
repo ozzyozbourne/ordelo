@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -110,10 +109,9 @@ func generateIngredientsArray(n int) []*Ingredient {
 	res := make([]*Ingredient, n)
 	for i := range n {
 		res[i] = &Ingredient{
-			IngredientID: bson.NewObjectID(),
-			Name:         genRandIngredient(),
-			Unit:         []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
-			Price:        (rand.Float64() + 1) * 1000,
+			Name:  genRandIngredient(),
+			Unit:  []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
+			Price: (rand.Float64() + 1) * 1000,
 		}
 	}
 	return res
@@ -208,7 +206,6 @@ func generateRecipesArray(n, m int) []*Recipe {
 	res := make([]*Recipe, n)
 	for i := range n {
 		res[i] = &Recipe{
-			ID:              bson.NewObjectID(),
 			Title:           generateRandomTitle(),
 			Items:           generateItemsArray(m),
 			Description:     generateRandonDescription(),
@@ -263,9 +260,6 @@ func generateCartsArray(n, m int) []*Cart {
 	carts := make([]*Cart, n)
 	for i := range n {
 		carts[i] = &Cart{
-			ID:         bson.NewObjectID(),
-			VendorID:   bson.NewObjectID(),
-			StoreID:    bson.NewObjectID(),
 			TotalPrice: (rand.Float64() + 1) * 1000,
 			Items:      generateItemsArray(m),
 		}
@@ -277,8 +271,6 @@ func generateOrdersArray(n, m int) []*Order {
 	orders := make([]*Order, n)
 	for i := range n {
 		orders[i] = &Order{
-			ID:             bson.NewObjectID(),
-			StoreID:        bson.NewObjectID(),
 			DeliveryMethod: "Deliver",
 			OrderStatus:    "pending",
 			TotalPrice:     (rand.Float64() + 1) * 1000,
@@ -294,7 +286,6 @@ func generateUserOrdersArray(n, m int) []*UserOrder {
 	for i := range n {
 		userOrders[i] = &UserOrder{
 			Order:         *orders[i],
-			VendorID:      bson.NewObjectID(),
 			PaymentStatus: "success",
 		}
 	}
@@ -305,7 +296,6 @@ func generateStoresArray(n, m int) []*Store {
 	res := make([]*Store, n)
 	for i := range n {
 		res[i] = &Store{
-			ID:        bson.NewObjectID(),
 			Name:      generateRandowName(),
 			StoreType: "Delivery",
 			Location:  generateRandomUSLocation(),
@@ -330,8 +320,7 @@ func generateVendorOrderArray(n, m int) []*VendorOrder {
 	vendorOrder := make([]*VendorOrder, n)
 	for i := range n {
 		vendorOrder[i] = &VendorOrder{
-			Order:  *orders[i],
-			UserID: bson.NewObjectID(),
+			Order: *orders[i],
 		}
 	}
 	return vendorOrder
