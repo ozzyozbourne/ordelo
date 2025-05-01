@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -137,7 +138,7 @@ func (s *authService) Login(ctx context.Context, email, password, role string) (
 	return
 }
 
-func (s *authService) GenerateAccessToken(ctx context.Context, userID, role string) (string, error) {
+func (s *authService) GenerateAccessToken(ctx context.Context, userID, role string) (token string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.GenerateAccessToken")
 	defer span.End()
 
@@ -153,9 +154,106 @@ func (s *authService) GenerateAccessToken(ctx context.Context, userID, role stri
 			Subject:   userID,
 		},
 	}
+
+	if token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.jwtSecret); err != nil {
+		Logger.ErrorContext(ctx, "Failed to generate access token", slog.Any("error", err), auth_source)
+		return
+	}
+	Logger.InfoContext(ctx, "Access token generated", slog.String("userID", userID), slog.String("token", token), auth_source)
+	return
 }
 
-func (s *authService) GenerateRefreshToken(ctx context.Context, userID string) (string, error) {
+func (s *authService) GenerateRefreshToken(ctx context.Context, userID string) (token string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.GenerateRefreshToken")
 	defer span.End()
+
+	refreshClaims := &Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.refreshExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    "app-auth-service",
+			Subject:   userID,
+		},
+	}
+
+	if token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(s.refreshSecret); err != nil {
+		Logger.ErrorContext(ctx, "Failed to generate refresh token", slog.Any("error", err), auth_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Storing the refresh token in redis", slog.String("token", token), auth_source)
+	if err = s.redisClient.Set(ctx, fmt.Sprintf("refresh_token:%s", userID), token, s.refreshExpiry).Err(); err != nil {
+		Logger.ErrorContext(ctx, "Failed to store refresh token", slog.Any("error", err), auth_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Refresh token successfully generated and stored in redis", slog.String("userID", userID), auth_source)
+	return
+}
+
+func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
+	ctx, span := Tracer.Start(ctx, "AuthService.RefreshToken")
+	defer span.End()
+
+	token, err := jwt.ParseWithClaims(refreshToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return s.refreshSecret, nil
+	})
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to parse refresh token", slog.Any("error", err), auth_source)
+		return "", errors.New("invalid refresh token")
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		Logger.ErrorContext(ctx, "Invalid refresh token claims", slog.Any("error", err), auth_source)
+		return "", errors.New("invalid refresh token")
+	}
+
+	storedToken, err := s.redisClient.Get(ctx, fmt.Sprintf("refresh_token:%s", claims.UserID)).Result()
+	if err != nil || storedToken != refreshToken {
+		Logger.ErrorContext(ctx, "Refresh token not found or doesn't match", slog.Any("error", err), auth_source)
+		return "", errors.New("invalid refresh token")
+	}
+
+	id, err := NewID(ctx, claims.UserID)
+	if err != nil {
+		return "", err
+	}
+
+	var com *Common
+	switch claims.Role {
+	case "user":
+		var user *User
+		if user, err = Repos.User.FindUserByID(ctx, id); err != nil {
+			return "", err
+		}
+		com = &user.Common
+	case "vendor":
+		var user *Vendor
+		if user, err = Repos.Vendor.FindVendorByID(ctx, id); err != nil {
+			return "", err
+		}
+		com = &user.Common
+	default:
+		var user *Admin
+		if user, err = Repos.Admin.FindAdminByID(ctx, id); err != nil {
+			return "", err
+		}
+		com = &user.Common
+	}
+
+	accessToken, err := s.GenerateAccessToken(ctx, claims.UserID, com.Role)
+	if err != nil {
+		return "", err
+	}
+
+	Logger.InfoContext(ctx, "Token refreshed successfully", slog.String("user_id", claims.UserID), auth_source)
+	return accessToken, nil
+
 }
