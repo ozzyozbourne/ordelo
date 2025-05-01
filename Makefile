@@ -42,3 +42,7 @@ clean:
 
 run-mac: build-mac
 	./$(BACKEND)/$(BUILD)/./ordelo-darwin
+
+run-win: build-windows
+	./$(BACKEND)/$(BUILD)/ordelo-windows.exe
+

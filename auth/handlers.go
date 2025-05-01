@@ -21,10 +21,10 @@ func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, me
 	return
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "Create User Handler")
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "CreateUser")
 	defer span.End()
-	source := slog.String("source", "HttpCreateUser")
+	source := slog.String("source", "CreateUser")
 
 	sendFailure := func(err string) {
 		errorResponseMap := map[string]any{
@@ -44,24 +44,26 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
-	if user.Name == "" {
+	switch {
+	case user.Name == "":
 		sendFailure("Username is empty")
 		return
-	}
-	if user.Email == "" {
+
+	case user.Email == "":
 		sendFailure("Email is empty")
 		return
-	}
-	if user.PasswordHash == "" {
+
+	case user.PasswordHash == "":
 		sendFailure("Password is empty")
 		return
-	}
-	if user.Role == "" {
-		user.Role = "user"
+
+	case user.Role == "":
+		sendFailure("role is empty")
+		return
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	userID, err := AuthService.Register(ctx, user)
+	userID, err := AuthService.CreateUser(ctx, user)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
 			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
@@ -71,10 +73,76 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	okResponseMap := map[string]any{
-		"status":  true,
-		"user_id": userID.value.Hex(),
+		"status": true,
+		"id":     userID.String(),
 	}
 	if err := sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source); err != nil {
+		http.Error(w, "Oops!", http.StatusInternalServerError)
+	}
+}
+
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UserLogin")
+	defer span.End()
+	source := slog.String("source", "UserLogin")
+
+	sendFailure := func(err string) {
+		errorResponseMap := map[string]any{
+			"success": false,
+			"error":   err,
+		}
+		if err := sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source); err != nil {
+			http.Error(w, "Oops!", http.StatusInternalServerError)
+		}
+	}
+
+	var req *Login
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body to a Login struct", slog.Any("error", err), source)
+		sendFailure("Error in parsing Request body")
+		return
+	}
+
+	Logger.InfoContext(ctx, "Validating login struct fields", source)
+	switch {
+	case req.Email == "":
+		sendFailure("Email is empty")
+		return
+
+	case req.Password == "":
+		sendFailure("Password is empty")
+		return
+
+	case req.Role == "":
+		sendFailure("Role is empty")
+		return
+	}
+	Logger.InfoContext(ctx, "Validated Successfully", source)
+
+	accessToken, refreshToken, err := AuthService.Login(ctx, req)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error getting accessToken and refreshToken from auth service", slog.Any("error", err), source)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   60 * 60 * 24 * 7,
+	})
+
+	okResponseMap := map[string]any{
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"expires_in":   "900",
+	}
+
+	if err := sendResponse(ctx, w, http.StatusOK, &okResponseMap, source); err != nil {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }
