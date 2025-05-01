@@ -69,6 +69,7 @@ type AdminRepository interface {
 	CreateAdmin(context.Context, *Admin) (ID, error)
 	CreateIngredients(context.Context, []*Ingredient) ([]*ID, error)
 
+	FindAllUsers(context.Context, ID) ([]*ID, error)
 	FindAdminByID(context.Context, ID) (*Admin, error)
 	FindAdminByEmail(context.Context, string) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)

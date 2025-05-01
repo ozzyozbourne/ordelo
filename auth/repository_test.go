@@ -14,7 +14,7 @@ import (
 
 var r *Repositories
 
-func TestMain(m *testing.M) {
+func ATestMain(m *testing.M) {
 	var err error
 
 	dbName := os.Getenv("DB_NAME")

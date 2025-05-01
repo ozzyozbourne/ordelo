@@ -1,6 +1,7 @@
 BACKEND:=auth
 BUILD:=build
 STATICCHECK:=/Users/ozzy/go/bin/./staticcheck
+TEST_NAME:=TestCreateUser
 
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
@@ -31,6 +32,9 @@ test-race:
 test-coverage:
 	go -C $(BACKEND) test -coverprofile=$(BUILD)/coverage.out ./...
 	go -C $(BACKEND) tool cover -html=$(BUILD)/coverage.out -o $(BUILD)/coverage.html
+
+test-one:
+	go -C $(BACKEND) test -v -run $(TEST_NAME)
 
 lint:
 	go -C $(BACKEND) fmt ./...
