@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -255,5 +257,83 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (st
 
 	Logger.InfoContext(ctx, "Token refreshed successfully", slog.String("user_id", claims.UserID), auth_source)
 	return accessToken, nil
+}
 
+func (s *authService) Logout(ctx context.Context, userID string) (err error) {
+	ctx, span := Tracer.Start(ctx, "AuthService.Logout")
+	defer span.End()
+
+	if err = s.redisClient.Del(ctx, fmt.Sprintf("refresh_token:%s", userID)).Err(); err != nil {
+		Logger.ErrorContext(ctx, "Failed to delete refresh token", slog.Any("error", err), auth_source)
+		return
+	}
+	Logger.InfoContext(ctx, "User logged out successfully", slog.String("user_id", userID), auth_source)
+	return
+}
+
+func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+				return
+			}
+
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
+				return
+			}
+
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return jwtSecret, nil
+			})
+
+			if err != nil {
+				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				return
+			}
+
+			if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+				ctx := context.WithValue(r.Context(), "userID", claims.UserID)
+				ctx = context.WithValue(ctx, "userRole", claims.Role)
+
+				next.ServeHTTP(w, r.WithContext(ctx))
+			} else {
+				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			}
+		})
+	}
+}
+
+func RoleAuthMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role, ok := r.Context().Value("userRole").(string)
+			if !ok {
+				http.Error(w, "Unauthorized - missing role claim", http.StatusUnauthorized)
+				return
+			}
+
+			roleAllowed := false
+			for _, allowedRole := range allowedRoles {
+				if role == allowedRole {
+					roleAllowed = true
+					break
+				}
+			}
+
+			if !roleAllowed {
+				http.Error(w, "Forbidden - insufficient permissions", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
