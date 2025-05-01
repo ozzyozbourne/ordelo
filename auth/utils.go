@@ -326,11 +326,3 @@ func findContainer[C containers](ctx context.Context, col *mongo.Collection, id 
 	Logger.InfoContext(ctx, "Container found successfully", slog.Any("Array", fmt.Sprintf("%+v", containerArray)), source)
 	return containerArray, nil
 }
-
-func HashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
-}

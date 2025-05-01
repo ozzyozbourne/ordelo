@@ -12,7 +12,7 @@ import (
 type Login struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Role     string `json:"rolw"`
+	Role     string `json:"role"`
 }
 
 type Claims struct {
