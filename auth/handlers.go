@@ -80,3 +80,69 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }
+
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UserLogin")
+	defer span.End()
+	source := slog.String("source", "UserLogin")
+
+	sendFailure := func(err string) {
+		errorResponseMap := map[string]any{
+			"success": false,
+			"error":   err,
+		}
+		if err := sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source); err != nil {
+			http.Error(w, "Oops!", http.StatusInternalServerError)
+		}
+	}
+
+	var req *Login
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body to a Login struct", slog.Any("error", err), source)
+		sendFailure("Error in parsing Request body")
+		return
+	}
+
+	Logger.InfoContext(ctx, "Validating login struct fields", source)
+	switch {
+	case req.Email == "":
+		sendFailure("Email is empty")
+		return
+
+	case req.Password == "":
+		sendFailure("Password is empty")
+		return
+
+	case req.Role == "":
+		sendFailure("Role is empty")
+		return
+	}
+	Logger.InfoContext(ctx, "Validated Successfully", source)
+
+	accessToken, refreshToken, err := AuthService.Login(ctx, req)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error getting accessToken and refreshToken from auth service", slog.Any("error", err), source)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   60 * 60 * 24 * 7,
+	})
+
+	okResponseMap := map[string]any{
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"expires_in":   "900",
+	}
+
+	if err := sendResponse(ctx, w, http.StatusOK, &okResponseMap, source); err != nil {
+		http.Error(w, "Oops!", http.StatusInternalServerError)
+	}
+}

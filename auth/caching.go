@@ -85,7 +85,10 @@ func (r CachedUserRepository) CreateUserOrders(ctx context.Context, id ID, order
 	if err != nil {
 		return nil, err
 	}
-	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String()))
+	user, order := fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String())
+	recipe, cart := fmt.Sprintf("user:%s:recipes", id.String()), fmt.Sprintf("user:%s:carts", id.String())
+	keys := []string{user, recipe, cart, order}
+	return ids, r.Invalidate(ctx, keys...)
 }
 
 func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (*User, error) {

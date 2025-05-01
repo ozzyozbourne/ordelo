@@ -9,6 +9,12 @@ import (
 //
 // ------------------------Basic types------------------------------------
 
+type Login struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Role     string `json:"rolw"`
+}
+
 type Claims struct {
 	UserID string `json:"user_id"`
 	Role   string `json:"role"`

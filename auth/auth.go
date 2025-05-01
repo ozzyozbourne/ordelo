@@ -91,39 +91,41 @@ func (s *authService) CreateUser(ctx context.Context, com *Common) (id ID, err e
 	return
 }
 
-func (s *authService) Login(ctx context.Context, email, password, role string) (accessToken string, refreshToken string, err error) {
+func (s *authService) Login(ctx context.Context, login *Login) (accessToken string, refreshToken string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "User login attempt", slog.String("email", email), slog.String("role", role), auth_source)
-	if err = isValidRole(role); err != nil {
-		Logger.ErrorContext(ctx, "Invalid role", slog.String("role", role), slog.String("email", email), auth_source)
+	Logger.InfoContext(ctx, "User login attempt", slog.String("email", login.Email),
+		slog.String("role", login.Role), auth_source)
+	if err = isValidRole(login.Role); err != nil {
+		Logger.ErrorContext(ctx, "Invalid role", slog.String("role", login.Role),
+			slog.String("email", login.Email), auth_source)
 		return
 	}
 
 	var com *Common
-	switch role {
+	switch login.Role {
 	case "user":
 		var user *User
-		if user, err = Repos.User.FindUserByEmail(ctx, email); err != nil {
+		if user, err = Repos.User.FindUserByEmail(ctx, login.Email); err != nil {
 			return
 		}
 		com = &user.Common
 	case "vendor":
 		var user *Vendor
-		if user, err = Repos.Vendor.FindVendorByEmail(ctx, email); err != nil {
+		if user, err = Repos.Vendor.FindVendorByEmail(ctx, login.Email); err != nil {
 			return
 		}
 		com = &user.Common
 	default:
 		var user *Admin
-		if user, err = Repos.Admin.FindAdminByEmail(ctx, email); err != nil {
+		if user, err = Repos.Admin.FindAdminByEmail(ctx, login.Email); err != nil {
 			return
 		}
 		com = &user.Common
 	}
 
-	if err = bcrypt.CompareHashAndPassword([]byte(com.PasswordHash), []byte(password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(com.PasswordHash), []byte(login.Password)); err != nil {
 		Logger.ErrorContext(ctx, "Invalid password", slog.Any("error", err), auth_source)
 		err = errors.New("invalid credentials")
 		return

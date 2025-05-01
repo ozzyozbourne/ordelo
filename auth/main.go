@@ -104,6 +104,7 @@ func newHTTPHandler() http.Handler {
 	}
 
 	handleFunc("POST /register", CreateUser)
+	handleFunc("POST /login", CreateUser)
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return handler
