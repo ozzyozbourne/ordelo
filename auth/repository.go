@@ -302,9 +302,9 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	Logger.InfoContext(ctx, "Recipes updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
@@ -360,9 +360,9 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	Logger.InfoContext(ctx, "Carts updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
@@ -416,9 +416,9 @@ func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	Logger.InfoContext(ctx, "Orders updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
@@ -597,9 +597,9 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 		return err
 	}
 
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	Logger.InfoContext(ctx, "Stores updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),
@@ -654,9 +654,9 @@ func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, or
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	Logger.InfoContext(ctx, "Orders updated successfully",
 		slog.Int64("matchedCount", result.MatchedCount),

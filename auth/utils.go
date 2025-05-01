@@ -113,9 +113,9 @@ func create[T UserType](ctx context.Context, t T, col *mongo.Collection, source 
 	if res, err = convertToID(ctx, result); err != nil {
 		return
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", res.String()), source)
-		err = fmt.Errorf("Write concern returned false")
+		err = fmt.Errorf("write concern returned false")
 		return
 
 	}
@@ -159,9 +159,9 @@ func update(ctx context.Context, user *Common, col *mongo.Collection, source slo
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", user.ID.Hex()), source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	if result.ModifiedCount == 0 {
 		Logger.ErrorContext(ctx, "No document was modified", slog.Any("User update", user), slog.Any("Result", result), source)
@@ -177,9 +177,9 @@ func deletes(ctx context.Context, col *mongo.Collection, id ID, source slog.Attr
 		Logger.ErrorContext(ctx, "Error deleting user", slog.Any("error", err), source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	if result.DeletedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
@@ -197,9 +197,9 @@ func createContainers[T containers](ctx context.Context, col *mongo.Collection, 
 		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("_id", id.String()), source)
@@ -214,9 +214,9 @@ func deleteContainers(ctx context.Context, col *mongo.Collection, id ID, fil, up
 		Logger.ErrorContext(ctx, "Error in deleting containers", slog.Any("error", err), source)
 		return err
 	}
-	if result.Acknowledged == false {
+	if !result.Acknowledged {
 		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), source)
-		return fmt.Errorf("Write concern returned false")
+		return fmt.Errorf("write concern returned false")
 	}
 	if result.MatchedCount == 0 {
 		Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
@@ -225,7 +225,7 @@ func deleteContainers(ctx context.Context, col *mongo.Collection, id ID, fil, up
 	if result.ModifiedCount == 0 {
 		Logger.InfoContext(ctx, "No container were deleted, they may not exist",
 			slog.String("vendorID", id.String()), source)
-		return fmt.Errorf("No container were deleted with userID: %s", id.String())
+		return fmt.Errorf("no container were deleted with userID: %s", id.String())
 	}
 	return nil
 }
