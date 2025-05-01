@@ -21,10 +21,10 @@ func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, me
 	return
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "Register")
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "CreateUser")
 	defer span.End()
-	source := slog.String("source", "Register")
+	source := slog.String("source", "CreateUser")
 
 	sendFailure := func(err string) {
 		errorResponseMap := map[string]any{
@@ -44,24 +44,26 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
-	if user.Name == "" {
+	switch {
+	case user.Name == "":
 		sendFailure("Username is empty")
 		return
-	}
-	if user.Email == "" {
+
+	case user.Email == "":
 		sendFailure("Email is empty")
 		return
-	}
-	if user.PasswordHash == "" {
+
+	case user.PasswordHash == "":
 		sendFailure("Password is empty")
 		return
-	}
-	if user.Role == "" {
-		user.Role = "user"
+
+	case user.Role == "":
+		sendFailure("role is empty")
+		return
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	userID, err := AuthService.Register(ctx, user)
+	userID, err := AuthService.CreateUser(ctx, user)
 	if err != nil {
 		if err := sendResponse(ctx, w, http.StatusInternalServerError,
 			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {

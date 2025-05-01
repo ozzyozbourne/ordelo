@@ -53,7 +53,7 @@ func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient 
 	return nil
 }
 
-func (s *authService) Register(ctx context.Context, com *Common) (id ID, err error) {
+func (s *authService) CreateUser(ctx context.Context, com *Common) (id ID, err error) {
 	ctx, span := Tracer.Start(ctx, "RegisterUser")
 	defer span.End()
 
