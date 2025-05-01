@@ -103,6 +103,9 @@ func (s *authService) Login(ctx context.Context, login *Login) (accessToken stri
 		return
 	}
 
+	Logger.InfoContext(ctx, "Checking in db", slog.String("email", login.Email),
+		slog.String("role", login.Role), auth_source)
+
 	var com *Common
 	switch login.Role {
 	case "user":
@@ -124,6 +127,9 @@ func (s *authService) Login(ctx context.Context, login *Login) (accessToken stri
 		}
 		com = &user.Common
 	}
+
+	Logger.InfoContext(ctx, "Found in the db in db", slog.String("email", login.Email),
+		slog.String("role", login.Role), auth_source)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(com.PasswordHash), []byte(login.Password)); err != nil {
 		Logger.ErrorContext(ctx, "Invalid password", slog.Any("error", err), auth_source)

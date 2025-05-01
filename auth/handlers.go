@@ -97,7 +97,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req *Login
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a Login struct", slog.Any("error", err), source)
 		sendFailure("Error in parsing Request body")
 		return

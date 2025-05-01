@@ -99,7 +99,7 @@ func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (*User, e
 }
 
 func (r CachedUserRepository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
-	return nil, nil
+	return r.userRepo.FindUserByEmail(ctx, email)
 }
 
 func (r CachedUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe, error) {
