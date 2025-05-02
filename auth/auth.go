@@ -308,9 +308,13 @@ func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 				return
 			}
 
+			type contextKey string
+			const userIDKey contextKey = "userID"
+			const userRoleKey contextKey = "userRole"
+
 			if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-				ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-				ctx = context.WithValue(ctx, "userRole", claims.Role)
+				ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+				ctx = context.WithValue(ctx, userRoleKey, claims.Role)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {

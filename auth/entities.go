@@ -24,6 +24,7 @@ type Claims struct {
 type Ingredient struct {
 	IngredientID bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
 	Name         string        `bson:"name" json:"name"`
+	UnitQuantity int           `bson:"unit_quantity" json:"unit_quantity"`
 	Unit         string        `bson:"unit" json:"unit"`
 	Price        float64       `bson:"price" json:"price"`
 }

@@ -106,9 +106,10 @@ func generateIngredientsArray(n int) []*Ingredient {
 	res := make([]*Ingredient, n)
 	for i := range n {
 		res[i] = &Ingredient{
-			Name:  genRandIngredient(),
-			Unit:  []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
-			Price: (rand.Float64() + 1) * 1000,
+			Name:         genRandIngredient(),
+			UnitQuantity: (rand.Intn(1000) + 1),
+			Unit:         []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
+			Price:        (rand.Float64() + 1) * 1000,
 		}
 	}
 	return res

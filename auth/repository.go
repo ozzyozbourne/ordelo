@@ -246,51 +246,7 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 			fieldsToUpdate["saved_recipes.$.serving_size"] = recipe.ServingSize
 		}
 
-		if len(recipe.Items) > 0 {
-			var itemsToInsert []interface{}
-			for _, item := range recipe.Items {
-				if item.IngredientID == bson.NilObjectID {
-					item.IngredientID = bson.NewObjectID()
-					itemsToInsert = append(itemsToInsert, item)
-				} else {
-
-					updateItemFilters := []interface{}{
-						bson.M{"r._id": recipe.ID},
-						bson.M{"i.ingredient_id": item.IngredientID},
-					}
-					itemFieldsToUpdate := bson.M{}
-
-					if item.Name != "" {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].name"] = item.Name
-					}
-					if item.Quantity != 0 {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].quantity"] = item.Quantity
-					}
-					if item.Unit != "" {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].unit"] = item.Unit
-					}
-					if item.Price != 0 {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].price"] = item.Price
-					}
-
-					if len(itemFieldsToUpdate) > 0 {
-						itemUpdate := bson.D{{Key: "$set", Value: itemFieldsToUpdate}}
-						models = append(models, mongo.NewUpdateOneModel().SetFilter(bson.D{{Key: "_id", Value: id.value}}).
-							SetUpdate(itemUpdate).SetArrayFilters(updateItemFilters))
-					}
-				}
-			}
-			if len(itemsToInsert) > 0 {
-				pushUpdate := bson.D{
-					{Key: "$push", Value: bson.M{
-						"saved_recipes.$.items": bson.M{"$each": itemsToInsert},
-					}},
-				}
-				models = append(models, mongo.NewUpdateOneModel().
-					SetFilter(updateRecipeFilter).
-					SetUpdate(pushUpdate))
-			}
-		}
+		updateContainers("saved_recipes", recipe.Items, ID{recipe.ID}, id, models, updateRecipeFilter)
 
 		if len(fieldsToUpdate) > 0 {
 			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
@@ -329,31 +285,27 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 		return err
 	}
 
-	models := make([]mongo.WriteModel, 0, len(carts)*2)
+	var models []mongo.WriteModel
 	for _, cart := range carts {
-		updateFilter := bson.D{
+		if cart.ID == bson.NilObjectID {
+			continue
+		}
+		updateCartsFilter := bson.D{
 			{Key: "_id", Value: id.value},
 			{Key: "carts._id", Value: cart.ID},
 		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"carts.$": cart}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
 
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "carts._id", Value: bson.M{"$ne": cart.ID}},
+		fieldsToUpdate := bson.M{}
+		if cart.TotalPrice != 0 {
+			fieldsToUpdate["carts.$.total_price"] = cart.TotalPrice
 		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"carts": cart}},
+
+		updateContainers("carts", cart.Items, ID{cart.ID}, id, models, updateCartsFilter)
+
+		if len(fieldsToUpdate) > 0 {
+			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
+			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateCartsFilter).SetUpdate(update))
 		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
 	}
 
 	result, err := m.col.BulkWrite(ctx, models)
@@ -385,34 +337,12 @@ func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders
 		return err
 	}
 
-	models := make([]mongo.WriteModel, 0, len(orders)*2)
-	for _, order := range orders {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: order.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"orders.$": order}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"orders": order}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
+	ord := make([]*Order, len(orders))
+	for i, v := range orders {
+		ord[i] = &v.Order
 	}
+	result, err := m.col.BulkWrite(ctx, updateOrders(ord, id.value))
 
-	result, err := m.col.BulkWrite(ctx, models)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
 		return err
@@ -565,33 +495,24 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 		return err
 	}
 
-	models := make([]mongo.WriteModel, 0, len(stores)*2)
+	var models []mongo.WriteModel
 	for _, store := range stores {
-		updateFilter := bson.D{
+		if store.ID == bson.NilObjectID {
+			continue
+		}
+		updateStoreFilter := bson.D{
 			{Key: "_id", Value: id.value},
 			{Key: "stores._id", Value: store.ID},
 		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"stores.$": store}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
 
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "stores._id", Value: bson.M{"$ne": store.ID}},
+		fieldsToUpdate := bson.M{}
+		updateContainers("stores", store.Items, ID{store.ID}, id, models, updateStoreFilter)
+
+		if len(fieldsToUpdate) > 0 {
+			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
+			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateStoreFilter).SetUpdate(update))
 		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"stores": store}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
 	}
-
 	result, err := m.col.BulkWrite(ctx, models)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
@@ -623,34 +544,12 @@ func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, or
 		return err
 	}
 
-	models := make([]mongo.WriteModel, 0, len(orders)*2)
-	for _, order := range orders {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: order.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"orders.$": order}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"orders": order}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
+	ord := make([]*Order, len(orders))
+	for i, v := range orders {
+		ord[i] = &v.Order
 	}
+	result, err := m.col.BulkWrite(ctx, updateOrders(ord, id.value))
 
-	result, err := m.col.BulkWrite(ctx, models)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
 		return err

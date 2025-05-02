@@ -171,6 +171,81 @@ func update(ctx context.Context, user *Common, col *mongo.Collection, source slo
 	return nil
 }
 
+func updateContainers(c string, items []*Item, con, doc ID, models []mongo.WriteModel, updateFilter bson.D) []mongo.WriteModel {
+	if len(items) > 0 {
+		var itemsToInsert []any
+		for _, item := range items {
+			if item.IngredientID == bson.NilObjectID {
+				item.IngredientID = bson.NewObjectID()
+				itemsToInsert = append(itemsToInsert, item)
+			} else {
+				updateItemFilters := []any{
+					bson.M{"r._id": con.value},
+					bson.M{"i.ingredient_id": item.IngredientID},
+				}
+				itemFieldsToUpdate := bson.M{}
+
+				if item.Name != "" {
+					itemFieldsToUpdate[c+".$[r].items.$[i].name"] = item.Name
+				}
+				if item.Quantity != 0 {
+					itemFieldsToUpdate[c+".$[r].items.$[i].unit_quantity"] = item.UnitQuantity
+				}
+				if item.Unit != "" {
+					itemFieldsToUpdate[c+".$[r].items.$[i].unit"] = item.Unit
+				}
+				if item.Quantity != 0 {
+					itemFieldsToUpdate[c+".$[r].items.$[i].quantity"] = item.Unit
+				}
+				if item.Price != 0 {
+					itemFieldsToUpdate[c+".$[r].items.$[i].price"] = item.Price
+				}
+
+				if len(itemFieldsToUpdate) > 0 {
+					itemUpdate := bson.D{{Key: "$set", Value: itemFieldsToUpdate}}
+					models = append(models, mongo.NewUpdateOneModel().SetFilter(bson.D{{Key: "_id", Value: doc.value}}).
+						SetUpdate(itemUpdate).SetArrayFilters(updateItemFilters))
+				}
+			}
+		}
+		if len(itemsToInsert) > 0 {
+			pushUpdate := bson.D{
+				{Key: "$push", Value: bson.M{
+					c + ".$.items": bson.M{"$each": itemsToInsert},
+				}},
+			}
+			models = append(models, mongo.NewUpdateOneModel().
+				SetFilter(updateFilter).
+				SetUpdate(pushUpdate))
+		}
+	}
+	return models
+}
+
+func updateOrders(orders []*Order, con bson.ObjectID) []mongo.WriteModel {
+	var models []mongo.WriteModel
+	for _, order := range orders {
+		if order.ID == bson.NilObjectID {
+			continue
+		}
+		updateOrderFilter := bson.D{
+			{Key: "_id", Value: con},
+			{Key: "orders._id", Value: order.ID},
+		}
+
+		fieldsToUpdate := bson.M{}
+		if order.OrderStatus != "" {
+			fieldsToUpdate["orders.$.order_status"] = order.OrderStatus
+		}
+
+		if len(fieldsToUpdate) > 0 {
+			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
+			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateOrderFilter).SetUpdate(update))
+		}
+	}
+	return models
+}
+
 func deletes(ctx context.Context, col *mongo.Collection, id ID, source slog.Attr) error {
 	result, err := col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.value}})
 	if err != nil {
