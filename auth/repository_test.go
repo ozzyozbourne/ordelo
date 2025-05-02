@@ -119,3 +119,44 @@ func TestAdminCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUserDelete(t *testing.T) {
+	in := generateUser(3, 5)
+	id, err := r.User.CreateUser(context.TODO(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in.ID = id.value
+
+	err = r.User.DeleteUser(context.TODO(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVendorDelete(t *testing.T) {
+	in := generateVendor(3, 5)
+	id, err := r.Vendor.CreateVendor(context.TODO(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in.ID = id.value
+
+	err = r.Vendor.DeleteVendor(context.TODO(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAdminDelete(t *testing.T) {
+	in := generateAdmin(3)
+	id, err := r.Admin.CreateAdmin(context.TODO(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in.ID = id.value
+	err = r.Admin.Delete(context.TODO(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

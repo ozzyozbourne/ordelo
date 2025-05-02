@@ -606,7 +606,7 @@ func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id
 	ctx, span := Tracer.Start(ctx, "CreateAdmin")
 	defer span.End()
 	Logger.InfoContext(ctx, "Inserting in Admin collection", slog.Any("user", admin), admin_repo_source)
-	return create[*Admin](ctx, admin, v.col, user_repo_source)
+	return create[*Admin](ctx, admin, v.col, admin_repo_source)
 }
 
 func (v MongoAdminRepository) CreateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) ([]*ID, error) {
@@ -653,5 +653,9 @@ func (v MongoAdminRepository) Delete(ctx context.Context, id ID) error {
 }
 
 func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids []*ID) error {
-	return nil
+	ctx, span := Tracer.Start(ctx, "DeleteAdmin")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting a vendor", slog.String("ID", id.String()), admin_repo_source)
+	return deletes(ctx, v.col, id, admin_repo_source)
 }

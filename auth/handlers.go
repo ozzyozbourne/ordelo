@@ -119,7 +119,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
-	accessToken, refreshToken, err := AuthService.Login(ctx, req)
+	id, accessToken, refreshToken, err := AuthService.Login(ctx, req)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error getting accessToken and refreshToken from auth service", slog.Any("error", err), source)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -137,6 +137,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	okResponseMap := map[string]any{
+		"_id":          id.String(),
 		"access_token": accessToken,
 		"token_type":   "Bearer",
 		"expires_in":   "900",
