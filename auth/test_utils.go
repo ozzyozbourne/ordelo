@@ -24,20 +24,21 @@ func generateCommon(role string) Common {
 	}
 }
 
+func generateAdmin(n int) *Admin {
+	return &Admin{
+		Common: generateCommon("admin"),
+	}
+}
+
 func generateUser(n, m int) *User {
 	return &User{
-		Common:       generateCommon("user"),
-		SavedRecipes: generateRecipesArray(n, m),
-		Carts:        generateCartsArray(n, m),
-		Orders:       generateUserOrdersArray(n, m),
+		Common: generateCommon("user"),
 	}
 }
 
 func generateVendor(n, m int) *Vendor {
 	return &Vendor{
 		Common: generateCommon("vendor"),
-		Stores: generateStoresArray(n, m),
-		Orders: generateVendorOrderArray(n, m),
 	}
 }
 
@@ -473,7 +474,7 @@ func checkIngredient(in, out *Ingredient) error {
 		return fmt.Errorf("name mismatch: %s vs %s", in.Name, out.Name)
 	}
 	if in.UnitQuantity != out.UnitQuantity {
-		return fmt.Errorf("UnitQuantity mismatch: %d vs %d", in.Name, out.Name)
+		return fmt.Errorf("UnitQuantity mismatch: %d vs %d", in.UnitQuantity, out.UnitQuantity)
 	}
 	if in.Price != out.Price {
 		return fmt.Errorf("price mismatch: %f vs %f", in.Price, out.Price)
@@ -592,4 +593,29 @@ func checkVendorStruct(in, out *Vendor) error {
 		return err
 	}
 	return checkVendorOrders(in.Orders, out.Orders)
+}
+
+func checkAdminStruct(in, out *Admin) error {
+	if err := checkCommon(in.Common, out.Common); err != nil {
+		return err
+	}
+	if err := checkIngredients(in.Ingredients, out.Ingredients); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkIngredients(in, out []*Ingredient) error {
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("ingredients Length mismatch: %d vs %d", inLen, outLen)
+	}
+
+	for i, inIngredient := range in {
+		outIngredient := out[i]
+		if err := checkIngredient(inIngredient, outIngredient); err != nil {
+			return errors.Join(fmt.Errorf("error at ingredients index -> %d", i), err)
+		}
+	}
+	return nil
 }
