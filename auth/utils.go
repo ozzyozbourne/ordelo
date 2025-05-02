@@ -252,11 +252,13 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 		for i, v := range c {
 			ord[i] = &v.Order
 		}
+		updateOrders(ord, id.value)
 	case []*VendorOrder:
 		ord := make([]*Order, len(c))
 		for i, v := range c {
 			ord[i] = &v.Order
 		}
+		updateOrders(ord, id.value)
 	default:
 		Logger.ErrorContext(ctx, "Unknown type of container", source)
 		fmt.Errorf("unknown type of container")
