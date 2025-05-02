@@ -15,6 +15,17 @@ type Login struct {
 	Role     string `json:"role"`
 }
 
+type ReqIng struct {
+	Name         string `bson:"name" json:"name"`
+	UnitQuantity int    `bson:"unit_quantity" json:"unit_quantity"`
+	Unit         string `bson:"unit" json:"unit"`
+}
+
+type ResIng struct {
+	ID     bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	Stores []*Store      `bson:"stores" json:"stores"`
+}
+
 type Claims struct {
 	UserID string `json:"user_id"`
 	Role   string `json:"role"`
@@ -24,6 +35,7 @@ type Claims struct {
 type Ingredient struct {
 	IngredientID bson.ObjectID `bson:"ingredient_id" json:"ingredient_id"`
 	Name         string        `bson:"name" json:"name"`
+	UnitQuantity int           `bson:"unit_quantity" json:"unit_quantity"`
 	Unit         string        `bson:"unit" json:"unit"`
 	Price        float64       `bson:"price" json:"price"`
 }
@@ -65,7 +77,8 @@ type Item struct {
 }
 
 type Admin struct {
-	Common `bson:",inline"`
+	Common      `bson:",inline"`
+	Ingredients []*Ingredient `bson:"ingredients" json:"ingredients"`
 }
 
 type UserOrder struct {
@@ -92,7 +105,7 @@ type User struct {
 type Vendor struct {
 	Common `bson:",inline"`
 	Stores []*Store       `bson:"stores" json:"stores"`
-	Orders []*VendorOrder `bson:"orders" json:"orders"`
+	Orders []*VendorOrder `bson:"orders" json:"orders,omitempty"`
 }
 
 type Recipe struct {

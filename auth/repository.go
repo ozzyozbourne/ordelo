@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -15,6 +13,7 @@ var (
 	Repos              *Repositories
 	user_repo_source   = slog.Any("source", "UserRepository")
 	vendor_repo_source = slog.Any("source", "VendorRepository")
+	admin_repo_source  = slog.Any("source", "AdminRepository")
 )
 
 type Repositories struct {
@@ -54,6 +53,7 @@ type VendorRepository interface {
 	FindVendorByEmail(context.Context, string) (*Vendor, error)
 	FindStores(context.Context, ID) ([]*Store, error)
 	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
+	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
 
 	UpdateVendor(context.Context, *Vendor) error
 	UpdateStores(context.Context, ID, []*Store) error
@@ -64,19 +64,20 @@ type VendorRepository interface {
 }
 
 type AdminRepository interface {
-	UserRepository
-	VendorRepository
 	CreateAdmin(context.Context, *Admin) (ID, error)
-	CreateIngredients(context.Context, []*Ingredient) ([]*ID, error)
+	CreateIngredients(context.Context, ID, []*Ingredient) ([]*ID, error)
 
-	FindAllUsers(context.Context, ID) ([]*ID, error)
-	FindAdminByID(context.Context, ID) (*Admin, error)
+	FindUsers(context.Context, ID) ([]*Common, error)
+	FindVendors(context.Context, ID) ([]*Common, error)
+	FindStores(context.Context, ID) ([]*Vendor, error)
 	FindAdminByEmail(context.Context, string) (*Admin, error)
+	FindAdminByID(context.Context, ID) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)
 
 	UpdateAdmin(context.Context, *Admin) error
 	UpdateIngredients(context.Context, ID, []*Ingredient) error
 
+	Delete(context.Context, ID) error
 	DeleteIngredients(context.Context, ID, []*ID) error
 }
 
@@ -88,19 +89,14 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	mongoRepos := &Repositories{
 		User:   newMongoUserRepository(mongoClient, dbName),
 		Vendor: newMongoVendorRepository(mongoClient, dbName),
+		Admin:  newMongoAdminRepository(mongoClient, dbName),
 	}
 	return mongoRepos, nil
 }
 
 type MongoUserRepository struct{ col *mongo.Collection }
-
 type MongoVendorRepository struct{ col *mongo.Collection }
-
-type MongoAdminRepository struct {
-	*MongoUserRepository
-	*MongoVendorRepository
-	col *mongo.Collection
-}
+type MongoAdminRepository struct{ col *mongo.Collection }
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
@@ -108,6 +104,10 @@ func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository 
 
 func newMongoVendorRepository(client *mongo.Client, dbName string) VendorRepository {
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
+}
+
+func newMongoAdminRepository(client *mongo.Client, dbName string) AdminRepository {
+	return &MongoAdminRepository{col: client.Database(dbName).Collection("admin")}
 }
 
 func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (ID, error) {
@@ -171,7 +171,7 @@ func (m MongoUserRepository) CreateUserOrders(ctx context.Context, id ID, orders
 }
 
 func (m MongoUserRepository) FindUserByID(ctx context.Context, id ID) (user *User, err error) {
-	ctx, span := Tracer.Start(ctx, "FindUserID")
+	ctx, span := Tracer.Start(ctx, "FindUserByID")
 	defer span.End()
 
 	return findById[*User](ctx, m.col, id, user_repo_source)
@@ -218,216 +218,24 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 	ctx, span := Tracer.Start(ctx, "UpdateUserRecipes")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating recipes for user",
-		slog.String("userID", id.String()), slog.Any("recipes", recipes), user_repo_source)
-
-	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
-		return err
-	}
-
-	var models []mongo.WriteModel
-	for _, recipe := range recipes {
-		if recipe.ID == bson.NilObjectID {
-			continue
-		}
-		updateRecipeFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "saved_recipes._id", Value: recipe.ID},
-		}
-
-		fieldsToUpdate := bson.M{}
-		if recipe.Description != "" {
-			fieldsToUpdate["saved_recipes.$.description"] = recipe.Description
-		}
-		if recipe.PreparationTime != 0 {
-			fieldsToUpdate["saved_recipes.$.preparation_time"] = recipe.PreparationTime
-		}
-		if recipe.ServingSize != 0 {
-			fieldsToUpdate["saved_recipes.$.serving_size"] = recipe.ServingSize
-		}
-
-		if len(recipe.Items) > 0 {
-			var itemsToInsert []interface{}
-			for _, item := range recipe.Items {
-				if item.IngredientID == bson.NilObjectID {
-					item.IngredientID = bson.NewObjectID()
-					itemsToInsert = append(itemsToInsert, item)
-				} else {
-
-					updateItemFilters := []interface{}{
-						bson.M{"r._id": recipe.ID},
-						bson.M{"i.ingredient_id": item.IngredientID},
-					}
-					itemFieldsToUpdate := bson.M{}
-
-					if item.Name != "" {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].name"] = item.Name
-					}
-					if item.Quantity != 0 {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].quantity"] = item.Quantity
-					}
-					if item.Unit != "" {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].unit"] = item.Unit
-					}
-					if item.Price != 0 {
-						itemFieldsToUpdate["saved_recipes.$[r].items.$[i].price"] = item.Price
-					}
-
-					if len(itemFieldsToUpdate) > 0 {
-						itemUpdate := bson.D{{Key: "$set", Value: itemFieldsToUpdate}}
-						models = append(models, mongo.NewUpdateOneModel().SetFilter(bson.D{{Key: "_id", Value: id.value}}).
-							SetUpdate(itemUpdate).SetArrayFilters(updateItemFilters))
-					}
-				}
-			}
-			if len(itemsToInsert) > 0 {
-				pushUpdate := bson.D{
-					{Key: "$push", Value: bson.M{
-						"saved_recipes.$.items": bson.M{"$each": itemsToInsert},
-					}},
-				}
-				models = append(models, mongo.NewUpdateOneModel().
-					SetFilter(updateRecipeFilter).
-					SetUpdate(pushUpdate))
-			}
-		}
-
-		if len(fieldsToUpdate) > 0 {
-			update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
-			models = append(models, mongo.NewUpdateOneModel().SetFilter(updateRecipeFilter).SetUpdate(update))
-		}
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
-		return err
-	}
-	if !result.Acknowledged {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("write concern returned false")
-	}
-	Logger.InfoContext(ctx, "Recipes updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		slog.String("Result", fmt.Sprintf("%+v", *result)),
-		user_repo_source)
-
-	return nil
-
+	Logger.InfoContext(ctx, "Updating recipes for user", slog.String("userID", id.String()), user_repo_source)
+	return processContainers[[]*Recipe](ctx, m.col, id, recipes, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUserCarts")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating carts for user",
-		slog.String("userID", id.String()), slog.Any("carts", carts), user_repo_source)
-
-	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
-		return err
-	}
-
-	models := make([]mongo.WriteModel, 0, len(carts)*2)
-	for _, cart := range carts {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "carts._id", Value: cart.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"carts.$": cart}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "carts._id", Value: bson.M{"$ne": cart.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"carts": cart}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
-		return err
-	}
-	if !result.Acknowledged {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("write concern returned false")
-	}
-	Logger.InfoContext(ctx, "Carts updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		user_repo_source)
-
-	return nil
+	Logger.InfoContext(ctx, "Updating carts for user", slog.String("userID", id.String()), user_repo_source)
+	return processContainers[[]*Cart](ctx, m.col, id, carts, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders []*UserOrder) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUserOrders")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating orders for user",
-		slog.String("userID", id.String()), slog.Any("orders", orders), user_repo_source)
-
-	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
-		return err
-	}
-
-	models := make([]mongo.WriteModel, 0, len(orders)*2)
-	for _, order := range orders {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: order.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"orders.$": order}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"orders": order}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), user_repo_source)
-		return err
-	}
-	if !result.Acknowledged {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), user_repo_source)
-		return fmt.Errorf("write concern returned false")
-	}
-	Logger.InfoContext(ctx, "Orders updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		user_repo_source)
-
-	return nil
+	Logger.InfoContext(ctx, "Updating orders for user", slog.String("userID", id.String()), user_repo_source)
+	return processContainers[[]*UserOrder](ctx, m.col, id, orders, user_repo_source)
 }
 
 func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
@@ -548,6 +356,12 @@ func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*
 
 }
 
+func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*ReqIng) ([]*ResIng, error) {
+	ctx, span := Tracer.Start(ctx, "FindAllIngredients")
+	defer span.End()
+	return nil, nil
+}
+
 func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Vendor) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendor")
 	defer span.End()
@@ -558,115 +372,16 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 	ctx, span := Tracer.Start(ctx, "UpdateVendorStores")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating stores for vendor",
-		slog.String("vendorID", id.String()), slog.Any("stores", stores), vendor_repo_source)
-
-	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
-		return err
-	}
-
-	models := make([]mongo.WriteModel, 0, len(stores)*2)
-	for _, store := range stores {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "stores._id", Value: store.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"stores.$": store}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "stores._id", Value: bson.M{"$ne": store.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"stores": store}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
-		return err
-	}
-
-	if !result.Acknowledged {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("write concern returned false")
-	}
-	Logger.InfoContext(ctx, "Stores updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		slog.String("Result", fmt.Sprintf("%+v", *result)),
-		vendor_repo_source)
-
-	return nil
+	Logger.InfoContext(ctx, "Updating stores for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
+	return processContainers[[]*Store](ctx, m.col, id, stores, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendorOrders")
 	defer span.End()
 
-	Logger.InfoContext(ctx, "Updating orders for vendor",
-		slog.String("vendorID", id.String()), slog.Any("orders", orders), vendor_repo_source)
-
-	if err := checkIfDocumentExists(ctx, m.col, id.value); err != nil {
-		return err
-	}
-
-	models := make([]mongo.WriteModel, 0, len(orders)*2)
-	for _, order := range orders {
-		updateFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: order.ID},
-		}
-		update := bson.D{
-			{Key: "$set", Value: bson.M{"orders.$": order}},
-		}
-		updateModel := mongo.NewUpdateOneModel().
-			SetFilter(updateFilter).
-			SetUpdate(update)
-		models = append(models, updateModel)
-
-		addFilter := bson.D{
-			{Key: "_id", Value: id.value},
-			{Key: "orders._id", Value: bson.M{"$ne": order.ID}},
-		}
-		addUpdate := bson.D{
-			{Key: "$push", Value: bson.M{"orders": order}},
-		}
-		addModel := mongo.NewUpdateOneModel().
-			SetFilter(addFilter).
-			SetUpdate(addUpdate)
-		models = append(models, addModel)
-	}
-
-	result, err := m.col.BulkWrite(ctx, models)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), vendor_repo_source)
-		return err
-	}
-	if !result.Acknowledged {
-		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), vendor_repo_source)
-		return fmt.Errorf("write concern returned false")
-	}
-	Logger.InfoContext(ctx, "Orders updated successfully",
-		slog.Int64("matchedCount", result.MatchedCount),
-		slog.Int64("modifiedCount", result.ModifiedCount),
-		slog.Int64("insertedCount", result.InsertedCount),
-		slog.Bool("Acknowlegded", result.Acknowledged),
-		vendor_repo_source)
-
-	return nil
+	Logger.InfoContext(ctx, "Updating orders for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
+	return processContainers[[]*VendorOrder](ctx, m.col, id, orders, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) DeleteVendor(ctx context.Context, id ID) error {
@@ -685,12 +400,67 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 		slog.String("vendorID", id.String()), slog.Any("storeIDs", ids), vendor_repo_source)
 
 	filter, update := getFilterDelete(id, "stores", ids)
-
 	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
-		Logger.ErrorContext(ctx, "Error in deleting stores", slog.Any("error", err), vendor_repo_source)
 		return err
 	}
-
 	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
 	return nil
+}
+
+func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id ID, err error) {
+	ctx, span := Tracer.Start(ctx, "CreateAdmin")
+	defer span.End()
+	Logger.InfoContext(ctx, "Inserting in Admin collection", slog.Any("user", admin), admin_repo_source)
+	return create[*Admin](ctx, admin, v.col, admin_repo_source)
+}
+
+func (v MongoAdminRepository) CreateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) ([]*ID, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) FindUsers(ctx context.Context, id ID) ([]*Common, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) FindVendors(ctx context.Context, id ID) ([]*Common, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) ([]*Vendor, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) FindAdminByEmail(ctx context.Context, email string) (*Admin, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) FindAdminByID(ctx context.Context, id ID) (*Admin, error) {
+	ctx, span := Tracer.Start(ctx, "FindAdminByID")
+	defer span.End()
+
+	return findById[*Admin](ctx, v.col, id, admin_repo_source)
+}
+
+func (v MongoAdminRepository) FindIngredients(ctx context.Context, id ID) ([]*Ingredient, error) {
+	return nil, nil
+}
+
+func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) error {
+	return nil
+}
+
+func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) error {
+	return nil
+}
+
+func (v MongoAdminRepository) Delete(ctx context.Context, id ID) error {
+	return nil
+}
+
+func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteAdmin")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting an admin", slog.String("ID", id.String()), admin_repo_source)
+	return deletes(ctx, v.col, id, admin_repo_source)
 }

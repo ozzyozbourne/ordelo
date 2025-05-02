@@ -91,7 +91,7 @@ func (s *authService) CreateUser(ctx context.Context, com *Common) (id ID, err e
 	return
 }
 
-func (s *authService) Login(ctx context.Context, login *Login) (accessToken string, refreshToken string, err error) {
+func (s *authService) Login(ctx context.Context, login *Login) (id ID, accessToken, refreshToken string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 
@@ -130,6 +130,7 @@ func (s *authService) Login(ctx context.Context, login *Login) (accessToken stri
 
 	Logger.InfoContext(ctx, "Found in the db in db", slog.String("email", login.Email),
 		slog.String("role", login.Role), auth_source)
+	id = ID{com.ID}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(com.PasswordHash), []byte(login.Password)); err != nil {
 		Logger.ErrorContext(ctx, "Invalid password", slog.Any("error", err), auth_source)
@@ -308,9 +309,13 @@ func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 				return
 			}
 
+			type contextKey string
+			const userIDKey contextKey = "userID"
+			const userRoleKey contextKey = "userRole"
+
 			if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-				ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-				ctx = context.WithValue(ctx, "userRole", claims.Role)
+				ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+				ctx = context.WithValue(ctx, userRoleKey, claims.Role)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
