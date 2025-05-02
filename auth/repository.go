@@ -64,19 +64,19 @@ type VendorRepository interface {
 }
 
 type AdminRepository interface {
-	UserRepository
-	VendorRepository
 	CreateAdmin(context.Context, *Admin) (ID, error)
 	CreateIngredients(context.Context, []*Ingredient) ([]*ID, error)
 
-	FindAllUsers(context.Context, ID) ([]*ID, error)
-	FindAdminByID(context.Context, ID) (*Admin, error)
+	FindUsers(context.Context, ID) ([]*Common, error)
+	FindVendors(context.Context, ID) ([]*Common, error)
+	FindStores(context.Context, ID) ([]*Vendor, error)
 	FindAdminByEmail(context.Context, string) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)
 
 	UpdateAdmin(context.Context, *Admin) error
 	UpdateIngredients(context.Context, ID, []*Ingredient) error
 
+	Delete(context.Context, ID) error
 	DeleteIngredients(context.Context, ID, []*ID) error
 }
 

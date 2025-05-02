@@ -472,7 +472,9 @@ func checkIngredient(in, out *Ingredient) error {
 	if in.Name != out.Name {
 		return fmt.Errorf("name mismatch: %s vs %s", in.Name, out.Name)
 	}
-
+	if in.UnitQuantity != out.UnitQuantity {
+		return fmt.Errorf("UnitQuantity mismatch: %d vs %d", in.Name, out.Name)
+	}
 	if in.Price != out.Price {
 		return fmt.Errorf("price mismatch: %f vs %f", in.Price, out.Price)
 	}
@@ -487,4 +489,107 @@ func checkItem(in, out *Item) error {
 		return fmt.Errorf("quantity mismatch: %d vs %d", in.Quantity, out.Quantity)
 	}
 	return checkIngredient(&in.Ingredient, &out.Ingredient)
+}
+
+func checkLocation(in, out *GeoJSON) error {
+	if in == nil && out == nil {
+		return nil
+	}
+	if in == nil || out == nil {
+		return fmt.Errorf("location in nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
+	}
+	if in.Type != out.Type {
+		return fmt.Errorf("GeoJSON type mismatch: %s vs %s", in.Type, out.Type)
+	}
+	if len(in.Coordinates) != len(out.Coordinates) {
+		return fmt.Errorf("coordinates length mismatch: %d vs %d", len(in.Coordinates), len(out.Coordinates))
+	}
+	for i, inCoord := range in.Coordinates {
+		outCoord := out.Coordinates[i]
+		if inCoord != outCoord {
+			return fmt.Errorf("coordinate at index %d mismatch: %f vs %f", i, inCoord, outCoord)
+		}
+	}
+	return nil
+}
+
+func checkStore(in, out *Store) error {
+	if in == nil && out == nil {
+		return fmt.Errorf("both stores are nil")
+	}
+	if in == nil || out == nil {
+		return fmt.Errorf("in nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
+	}
+	if in.ID.Hex() != out.ID.Hex() {
+		return fmt.Errorf("store ID mismatch: %v vs %v", in.ID, out.ID)
+	}
+	if in.Name != out.Name {
+		return fmt.Errorf("store name mismatch: %s vs %s", in.Name, out.Name)
+	}
+	if in.StoreType != out.StoreType {
+		return fmt.Errorf("storeType mismatch: %s vs %s", in.StoreType, out.StoreType)
+	}
+	if err := checkLocation(in.Location, out.Location); err != nil {
+		return err
+	}
+	return checkItems(in.Items, out.Items)
+}
+
+func checkStores(in, out []*Store) error {
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("store Length mismatch: %d vs %d", inLen, outLen)
+	}
+
+	for i, inStore := range in {
+		outStore := out[i]
+		if err := checkStore(inStore, outStore); err != nil {
+			return errors.Join(fmt.Errorf("error at store index -> %d", i), err)
+		}
+	}
+	return nil
+}
+
+func checkVendorOrder(in, out *VendorOrder) error {
+	if in == nil && out == nil {
+		return fmt.Errorf("both vendorOrders are nil")
+	}
+	if in == nil || out == nil {
+		return fmt.Errorf("in nil ? -> %t Out nil ? -> %t", in == nil, out == nil)
+	}
+	if in.ID.Hex() != out.ID.Hex() {
+		return fmt.Errorf("VendorOrder ID mismatch: %v vs %v", in.ID, out.ID)
+	}
+	return checkOrder(in.Order, out.Order)
+}
+
+func checkVendorOrders(in, out []*VendorOrder) error {
+	inLen, outLen := len(in), len(out)
+	if inLen != outLen {
+		return fmt.Errorf("vendorOrder Length mismatch: %d vs %d", inLen, outLen)
+	}
+
+	for i, inVendorOrder := range in {
+		outVendorOrder := out[i]
+		if err := checkVendorOrder(inVendorOrder, outVendorOrder); err != nil {
+			return errors.Join(fmt.Errorf("error vendorOrder index -> %d", i), err)
+		}
+	}
+	return nil
+}
+
+func checkVendorStruct(in, out *Vendor) error {
+	if in.ID.Hex() != out.ID.Hex() {
+		return fmt.Errorf("Vendor ID mismatch: %v vs %v", in.ID, out.ID)
+	}
+	if err := checkVendorOrders(in.Orders, out.Orders); err != nil {
+		return err
+	}
+	if err := checkCommon(in.Common, out.Common); err != nil {
+		return err
+	}
+	if err := checkStores(in.Stores, out.Stores); err != nil {
+		return err
+	}
+	return checkVendorOrders(in.Orders, out.Orders)
 }

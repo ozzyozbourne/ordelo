@@ -93,7 +93,7 @@ type User struct {
 type Vendor struct {
 	Common `bson:",inline"`
 	Stores []*Store       `bson:"stores" json:"stores"`
-	Orders []*VendorOrder `bson:"orders" json:"orders"`
+	Orders []*VendorOrder `bson:"orders" json:"orders,omitempty"`
 }
 
 type Recipe struct {
