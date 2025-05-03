@@ -133,4 +133,11 @@ type Store struct {
 	Items     []*Item       `bson:"items" json:"items"`
 }
 
+type DeleteReq struct {
+	UserRole      string          `json:"user_role"`
+	UserID        string          `json:"user_id"`
+	ContainerName string          `json:"container_name"`
+	DeleteItemIDs []bson.ObjectID `json:"delete_items_ids"`
+}
+
 // ----------------------------------------------------------------------

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -347,6 +348,101 @@ func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store,
 	return findContainer[[]*Store](ctx, m.col, id, "stores", vendor_repo_source)
 }
 
+func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*ReqIng) ([]*ResIng, error) {
+	ctx, span := Tracer.Start(ctx, "FindAllIngredients")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding ingredients across all vendors", slog.Any("requirements", req), vendor_repo_source)
+
+	cursor, err := m.col.Find(ctx, bson.D{})
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error finding vendors", slog.Any("error", err), vendor_repo_source)
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []*ResIng
+
+	for cursor.Next(ctx) {
+		var vendor Vendor
+		if err := cursor.Decode(&vendor); err != nil {
+			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), vendor_repo_source)
+			continue
+		}
+
+		vendorResult := &ResIng{
+			ID:     vendor.ID,
+			Stores: []*Store{},
+		}
+
+		for _, store := range vendor.Stores {
+			storeMatch := &Store{
+				ID:        store.ID,
+				Name:      store.Name,
+				StoreType: store.StoreType,
+				Location:  store.Location,
+				Items:     []*Item{},
+			}
+
+			for _, reqIng := range req {
+				// For each required ingredient, find the best matching item
+				// with the closest ceiling UnitQuantity
+				var bestMatch *Item
+				var minDiff int = -1 // -1 indicates no match found yet
+
+				for _, item := range store.Items {
+					// Check for name and unit match
+					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity >= reqIng.UnitQuantity {
+						// Calculate how close this is to the ceiling
+						diff := item.UnitQuantity - reqIng.UnitQuantity
+
+						// If this is the first match or it's better than previous matches
+						if minDiff == -1 || diff < minDiff {
+							// Create a copy to avoid modifying the original
+							bestMatch = &Item{
+								Ingredient: Ingredient{
+									IngredientID: item.IngredientID,
+									Name:         item.Name,
+									UnitQuantity: item.UnitQuantity,
+									Unit:         item.Unit,
+									Price:        item.Price,
+								},
+								Quantity: item.Quantity,
+							}
+							minDiff = diff
+						}
+					}
+				}
+
+				// If we found a match for this ingredient
+				if bestMatch != nil {
+					storeMatch.Items = append(storeMatch.Items, bestMatch)
+				}
+			}
+
+			// If this store had any matching items
+			if len(storeMatch.Items) > 0 {
+				vendorResult.Stores = append(vendorResult.Stores, storeMatch)
+			}
+		}
+
+		// If this vendor had any matching stores
+		if len(vendorResult.Stores) > 0 {
+			results = append(results, vendorResult)
+		}
+	}
+
+	if err := cursor.Err(); err != nil {
+		Logger.ErrorContext(ctx, "Error iterating vendors", slog.Any("error", err), vendor_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Found matching ingredients",
+		slog.Int("vendorCount", len(results)), vendor_repo_source)
+
+	return results, nil
+}
+
 func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
 	ctx, span := Tracer.Start(ctx, "FindVendorOrders")
 	defer span.End()
@@ -354,12 +450,6 @@ func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*
 	Logger.InfoContext(ctx, "Finding orders for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
 	return findContainer[[]*VendorOrder](ctx, m.col, id, "orders", vendor_repo_source)
 
-}
-
-func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*ReqIng) ([]*ResIng, error) {
-	ctx, span := Tracer.Start(ctx, "FindAllIngredients")
-	defer span.End()
-	return nil, nil
 }
 
 func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Vendor) error {
@@ -431,7 +521,10 @@ func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) ([]*Vendor,
 }
 
 func (v MongoAdminRepository) FindAdminByEmail(ctx context.Context, email string) (*Admin, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "FindAdminByEmail")
+	defer span.End()
+
+	return findByEmail[*Admin](ctx, v.col, email, admin_repo_source)
 }
 
 func (v MongoAdminRepository) FindAdminByID(ctx context.Context, id ID) (*Admin, error) {
@@ -446,7 +539,10 @@ func (v MongoAdminRepository) FindIngredients(ctx context.Context, id ID) ([]*In
 }
 
 func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) error {
-	return nil
+	ctx, span := Tracer.Start(ctx, "UpdateAdmin")
+	defer span.End()
+
+	return update(ctx, &admin.Common, v.col, admin_repo_source)
 }
 
 func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) error {
@@ -454,13 +550,13 @@ func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingr
 }
 
 func (v MongoAdminRepository) Delete(ctx context.Context, id ID) error {
-	return nil
-}
-
-func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids []*ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteAdmin")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Deleting an admin", slog.String("ID", id.String()), admin_repo_source)
 	return deletes(ctx, v.col, id, admin_repo_source)
+}
+
+func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids []*ID) error {
+	return nil
 }

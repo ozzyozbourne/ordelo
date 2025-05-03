@@ -132,6 +132,9 @@ func TestUserDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := r.User.FindUserByID(context.TODO(), ID{in.ID}); err == nil {
+		t.Fatal(err)
+	}
 }
 
 func TestVendorDelete(t *testing.T) {
@@ -146,6 +149,9 @@ func TestVendorDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := r.Vendor.FindVendorByID(context.TODO(), ID{in.ID}); err == nil {
+		t.Fatal(err)
+	}
 }
 
 func TestAdminDelete(t *testing.T) {
@@ -157,6 +163,9 @@ func TestAdminDelete(t *testing.T) {
 	in.ID = id.value
 	err = r.Admin.Delete(context.TODO(), id)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Admin.FindAdminByID(context.TODO(), ID{in.ID}); err == nil {
 		t.Fatal(err)
 	}
 }
