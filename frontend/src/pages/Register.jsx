@@ -82,30 +82,42 @@ function Register() {
         setError(data.message || "Registration failed. Please try again.");
       }
       */
-      
+
       // For development - simulate successful registration
       console.log(`Registering ${type}:`, formData);
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (type === 'vendor') {
-        // For vendors - just show success message
-        setIsSubmitted(true);
+
+      // Real backend register
+      const endpoint = type === 'vendor' ? 'register-vendor' : 'register-user';
+      const response = await fetch(`http://localhost:7001/auth/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (type === 'vendor') {
+          setIsSubmitted(true);
+        } else {
+          login({
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
+            token: data.token,
+          });
+          navigate('/', { replace: true });
+        }
       } else {
-        // For regular users - simulate successful registration and auto-login
-        login({
-          id: `new-user-${Date.now()}`,
-          name: formData.name,
-          email: formData.email,
-          role: 'user',
-          token: "mock-jwt-token",
-        });
-        
-        // Redirect to home page
-        navigate('/', { replace: true });
+        setError(data.message || "Registration failed. Please try again.");
       }
-      
+
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
       console.error("Registration error:", error);
@@ -149,13 +161,13 @@ function Register() {
             {type === 'vendor' ? "Vendor Registration" : "Create Account"}
           </h1>
           <p className="auth-subtitle">
-            {type === 'vendor' 
-              ? "Join Ordelo as a vendor to sell your products" 
+            {type === 'vendor'
+              ? "Join Ordelo as a vendor to sell your products"
               : "Join Ordelo to save recipes, create shopping lists, and more"}
           </p>
-          
+
           {error && <div className="auth-error">{error}</div>}
-          
+
           <form onSubmit={handleSubmit} className="auth-form">
             {/* Common fields for both user and vendor */}
             <div className="form-grid">
@@ -171,7 +183,7 @@ function Register() {
                   placeholder="Enter your full name"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="email">Email</label>
                 <input
@@ -184,7 +196,7 @@ function Register() {
                   placeholder="Enter your email"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="phone">Phone Number</label>
                 <input
@@ -197,7 +209,7 @@ function Register() {
                   placeholder="Enter your phone number"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="password">Password</label>
                 <input
@@ -211,7 +223,7 @@ function Register() {
                   minLength="8"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="confirmPassword">Confirm Password</label>
                 <input
@@ -226,12 +238,12 @@ function Register() {
                 />
               </div>
             </div>
-            
+
             {/* Vendor-specific fields */}
             {type === 'vendor' && (
               <div className="vendor-fields">
                 <h3>Store Information</h3>
-                
+
                 <div className="form-group">
                   <label htmlFor="storeName">Store Name</label>
                   <input
@@ -244,7 +256,7 @@ function Register() {
                     placeholder="Enter your store name"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label htmlFor="storeAddress">Store Address</label>
                   <input
@@ -257,7 +269,7 @@ function Register() {
                     placeholder="Enter your store address"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label htmlFor="storeDescription">Store Description</label>
                   <textarea
@@ -271,10 +283,10 @@ function Register() {
                 </div>
               </div>
             )}
-            
+
             <div className="form-actions">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary auth-submit-btn"
                 disabled={isLoading}
               >
@@ -288,13 +300,13 @@ function Register() {
               </button>
             </div>
           </form>
-          
+
           <div className="auth-footer">
             <p>Already have an account?</p>
             <Link to="/login" className="login-link">
               <i className="fas fa-sign-in-alt"></i> Login
             </Link>
-            
+
             {/* Toggle between user and vendor registration */}
             {type === 'user' ? (
               <p className="toggle-registration">
@@ -307,7 +319,7 @@ function Register() {
             )}
           </div>
         </div>
-        
+
         <div className="auth-image">
           {/* This div will be styled with a background image */}
         </div>

@@ -13,7 +13,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  
+
   // Check if this is an admin login
   const isAdminLogin = location.pathname.startsWith("/admin");
 
@@ -43,53 +43,31 @@ function Login() {
           setError("Invalid admin credentials");
         }
       } else {
-        // Regular user/vendor login
-        // This would be replaced with actual API call by the API team
-        // Placeholder for API call:
-        /*
-        const response = await fetch('https://api.ordelo.com/login', {
+
+        // Real backend login
+        const response = await fetch('http://localhost:7001/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(userData),
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           login({
-            ...data.user,
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
             token: data.token,
           });
           navigate(from, { replace: true });
         } else {
           setError(data.message || "Login failed. Please try again.");
         }
-        */
-        
-        // Temporary mock login for development:
-        if (userData.email === "user@example.com" && userData.password === "password123") {
-          login({
-            id: "u1",
-            name: "Test User",
-            email: userData.email,
-            role: "user",
-            token: "mock-jwt-token",
-          });
-          navigate(from, { replace: true });
-        } else if (userData.email === "vendor@example.com" && userData.password === "password123") {
-          login({
-            id: "v1",
-            name: "Test Vendor",
-            email: userData.email,
-            role: "vendor",
-            token: "mock-jwt-token",
-          });
-          navigate(user?.role === 'vendor' ? '/vendordashboard' : '/');
-        } else {
-          setError("Invalid email or password");
-        }
+
       }
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
@@ -105,13 +83,13 @@ function Login() {
         <div className="auth-content">
           <h1 className="auth-title">{isAdminLogin ? "Admin Login" : "Welcome Back!"}</h1>
           <p className="auth-subtitle">
-            {isAdminLogin 
-              ? "Enter your credentials to access the admin panel" 
+            {isAdminLogin
+              ? "Enter your credentials to access the admin panel"
               : "Log in to access your recipes, shopping lists, and more"}
           </p>
-          
+
           {error && <div className="auth-error">{error}</div>}
-          
+
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
               <label htmlFor="email">Email</label>
@@ -125,7 +103,7 @@ function Login() {
                 placeholder="Enter your email"
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <input
@@ -143,9 +121,9 @@ function Login() {
                 </Link>
               )}
             </div>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn btn-primary auth-submit-btn"
               disabled={isLoading}
             >
@@ -158,7 +136,7 @@ function Login() {
               )}
             </button>
           </form>
-          
+
           {!isAdminLogin && (
             <div className="auth-footer">
               <p>Don't have an account?</p>
@@ -177,7 +155,7 @@ function Login() {
             </div>
           )}
         </div>
-        
+
         <div className="auth-image">
           {/* This div will be styled with a background image */}
         </div>

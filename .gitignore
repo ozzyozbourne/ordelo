@@ -49,3 +49,9 @@ go.work.sum
 ##############################
 ## Miscellaneous
 ##############################
+
+container/grafana/
+container/loki/
+
+# Ignore Prometheus runtime data
+container/prometheus/
