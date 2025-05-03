@@ -50,3 +50,6 @@ run-mac: build-mac
 run-win: build-windows
 	./$(BACKEND)/$(BUILD)/ordelo-windows.exe
 
+run-linux: build-linux
+	./$(BACKEND)/$(BUILD)/./ordelo-linux
+

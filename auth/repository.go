@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"math"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
@@ -97,7 +100,11 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 
 type MongoUserRepository struct{ col *mongo.Collection }
 type MongoVendorRepository struct{ col *mongo.Collection }
-type MongoAdminRepository struct{ col *mongo.Collection }
+type MongoAdminRepository struct {
+	col    *mongo.Collection
+	user   *mongo.Collection
+	vendor *mongo.Collection
+}
 
 func newMongoUserRepository(client *mongo.Client, dbName string) UserRepository {
 	return &MongoUserRepository{col: client.Database(dbName).Collection("user")}
@@ -108,7 +115,11 @@ func newMongoVendorRepository(client *mongo.Client, dbName string) VendorReposit
 }
 
 func newMongoAdminRepository(client *mongo.Client, dbName string) AdminRepository {
-	return &MongoAdminRepository{col: client.Database(dbName).Collection("admin")}
+	return &MongoAdminRepository{
+		col:    client.Database(dbName).Collection("admin"),
+		user:   client.Database(dbName).Collection("user"),
+		vendor: client.Database(dbName).Collection("vendor"),
+	}
 }
 
 func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (ID, error) {
@@ -362,7 +373,6 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 	defer cursor.Close(ctx)
 
 	var results []*ResIng
-
 	for cursor.Next(ctx) {
 		var vendor Vendor
 		if err := cursor.Decode(&vendor); err != nil {
@@ -383,22 +393,15 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 				Location:  store.Location,
 				Items:     []*Item{},
 			}
-
 			for _, reqIng := range req {
-				// For each required ingredient, find the best matching item
-				// with the closest ceiling UnitQuantity
 				var bestMatch *Item
-				var minDiff int = -1 // -1 indicates no match found yet
-
+				var minDiff int = math.MinInt32
 				for _, item := range store.Items {
-					// Check for name and unit match
+
 					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity >= reqIng.UnitQuantity {
-						// Calculate how close this is to the ceiling
 						diff := item.UnitQuantity - reqIng.UnitQuantity
 
-						// If this is the first match or it's better than previous matches
-						if minDiff == -1 || diff < minDiff {
-							// Create a copy to avoid modifying the original
+						if minDiff == math.MinInt32 || diff < minDiff {
 							bestMatch = &Item{
 								Ingredient: Ingredient{
 									IngredientID: item.IngredientID,
@@ -414,19 +417,16 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 					}
 				}
 
-				// If we found a match for this ingredient
 				if bestMatch != nil {
 					storeMatch.Items = append(storeMatch.Items, bestMatch)
 				}
 			}
 
-			// If this store had any matching items
 			if len(storeMatch.Items) > 0 {
 				vendorResult.Stores = append(vendorResult.Stores, storeMatch)
 			}
 		}
 
-		// If this vendor had any matching stores
 		if len(vendorResult.Stores) > 0 {
 			results = append(results, vendorResult)
 		}
@@ -437,9 +437,7 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 		return nil, err
 	}
 
-	Logger.InfoContext(ctx, "Found matching ingredients",
-		slog.Int("vendorCount", len(results)), vendor_repo_source)
-
+	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
 }
 
@@ -505,19 +503,140 @@ func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id
 }
 
 func (v MongoAdminRepository) CreateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) ([]*ID, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "CreateIngredients")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Adding ingredients to admin", slog.Any("ingredients", ingredients), admin_repo_source)
+
+	ids := make([]*ID, len(ingredients))
+	for i, ingredient := range ingredients {
+		if ingredient.IngredientID == bson.NilObjectID {
+			ingredient.IngredientID = bson.NewObjectID()
+		}
+		ids[i] = &ID{ingredient.IngredientID}
+	}
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{{Key: "$push", Value: bson.M{"ingredients": bson.M{"$each": ingredients}}}}
+
+	result, err := v.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error adding ingredients", slog.Any("error", err), admin_repo_source)
+		return nil, err
+	}
+
+	if !result.Acknowledged {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), admin_repo_source)
+		return nil, fmt.Errorf("write concern returned false")
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "Admin not found", slog.String("ID", id.String()), admin_repo_source)
+		return nil, fmt.Errorf("admin with ID %s not found", id.String())
+	}
+
+	Logger.InfoContext(ctx, "Ingredients added successfully", slog.String("adminId", id.String()), admin_repo_source)
+	return ids, nil
 }
 
-func (v MongoAdminRepository) FindUsers(ctx context.Context, id ID) ([]*Common, error) {
-	return nil, nil
+func (v MongoAdminRepository) FindUsers(ctx context.Context, id ID) (users []*Common, err error) {
+	ctx, span := Tracer.Start(ctx, "FindUsers")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Admin retrieving all users", slog.String("adminID", id.String()), admin_repo_source)
+	cursor, err := v.user.Find(ctx, bson.D{})
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error finding users", slog.Any("error", err), admin_repo_source)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var user User
+		if err := cursor.Decode(&user); err != nil {
+			Logger.ErrorContext(ctx, "Error decoding user", slog.Any("error", err), admin_repo_source)
+			continue
+		}
+		users = append(users, &user.Common)
+	}
+	if err = cursor.Err(); err != nil {
+		Logger.ErrorContext(ctx, "Error during cursor iteration", slog.Any("error", err), admin_repo_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Users found successfully", slog.Int("count", len(users)), admin_repo_source)
+	return
 }
 
-func (v MongoAdminRepository) FindVendors(ctx context.Context, id ID) ([]*Common, error) {
-	return nil, nil
+func (v MongoAdminRepository) FindVendors(ctx context.Context, id ID) (vendors []*Common, err error) {
+	ctx, span := Tracer.Start(ctx, "FindVendors")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Admin retrieving all vendors", slog.String("adminID", id.String()), admin_repo_source)
+	cursor, err := v.vendor.Find(ctx, bson.D{})
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error finding vendors", slog.Any("error", err), admin_repo_source)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var vendor Vendor
+		if err := cursor.Decode(&vendor); err != nil {
+			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), admin_repo_source)
+			continue
+		}
+		vendors = append(vendors, &vendor.Common)
+	}
+
+	if err = cursor.Err(); err != nil {
+		Logger.ErrorContext(ctx, "Error during cursor iteration", slog.Any("error", err), admin_repo_source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Vendors found successfully", slog.Int("count", len(vendors)), admin_repo_source)
+	return
 }
 
-func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) ([]*Vendor, error) {
-	return nil, nil
+func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) (vendors []*Vendor, err error) {
+	ctx, span := Tracer.Start(ctx, "FindStores")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Admin retrieving all stores", slog.String("adminID", id.String()), admin_repo_source)
+	projection := bson.D{
+		{Key: "_id", Value: 1},
+		{Key: "name", Value: 1},
+		{Key: "email", Value: 1},
+		{Key: "role", Value: 1},
+		{Key: "stores", Value: 1},
+	}
+
+	cursor, err := v.vendor.Find(ctx, bson.D{}, options.Find().SetProjection(projection))
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error finding vendors with stores", slog.Any("error", err), admin_repo_source)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var vendor Vendor
+		if err = cursor.Decode(&vendor); err != nil {
+			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), admin_repo_source)
+			continue
+		}
+
+		if len(vendor.Stores) > 0 {
+			vendors = append(vendors, &vendor)
+		}
+	}
+
+	if err = cursor.Err(); err != nil {
+		Logger.ErrorContext(ctx, "Error during cursor iteration", slog.Any("error", err), admin_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Stores found successfully", slog.Int("vendorCount", len(vendors)), admin_repo_source)
+	return vendors, nil
 }
 
 func (v MongoAdminRepository) FindAdminByEmail(ctx context.Context, email string) (*Admin, error) {
@@ -535,7 +654,29 @@ func (v MongoAdminRepository) FindAdminByID(ctx context.Context, id ID) (*Admin,
 }
 
 func (v MongoAdminRepository) FindIngredients(ctx context.Context, id ID) ([]*Ingredient, error) {
-	return nil, nil
+	ctx, span := Tracer.Start(ctx, "FindIngredients")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding ingredients for admin", slog.String("AdminId", id.String()), admin_repo_source)
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	projection := bson.D{{Key: "ingredients", Value: 1}, {Key: "_id", Value: 0}}
+
+	var result struct {
+		Ingredients []*Ingredient `bson:"ingredients"`
+	}
+
+	if err := v.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Admin not found", slog.String("ID", id.String()), admin_repo_source)
+			return nil, fmt.Errorf("admin with ID %s not found", id.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding ingredients", slog.Any("error", err), admin_repo_source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Ingredients found successfully",
+		slog.Int("count", len(result.Ingredients)), admin_repo_source)
+	return result.Ingredients, nil
 }
 
 func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) error {
@@ -546,6 +687,73 @@ func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) err
 }
 
 func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) error {
+	ctx, span := Tracer.Start(ctx, "UpdateIngredients")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating ingredients for admin", slog.String("adminID", id.String()), admin_repo_source)
+
+	if err := checkIfDocumentExists(ctx, v.col, id.value); err != nil {
+		return err
+	}
+
+	var models []mongo.WriteModel
+
+	for _, ingredient := range ingredients {
+		if ingredient.IngredientID == bson.NilObjectID {
+
+			ingredient.IngredientID = bson.NewObjectID()
+			pushModel := mongo.NewUpdateOneModel().
+				SetFilter(bson.D{{Key: "_id", Value: id.value}}).
+				SetUpdate(bson.D{{Key: "$push", Value: bson.M{"ingredients": ingredient}}})
+			models = append(models, pushModel)
+		} else {
+
+			filter := bson.D{
+				{Key: "_id", Value: id.value},
+				{Key: "ingredients.ingredient_id", Value: ingredient.IngredientID},
+			}
+
+			update := bson.D{{Key: "$set", Value: bson.M{}}}
+			setValue := update[0].Value.(bson.M)
+
+			if ingredient.Name != "" {
+				setValue["ingredients.$.name"] = ingredient.Name
+			}
+			if ingredient.UnitQuantity != 0 {
+				setValue["ingredients.$.unit_quantity"] = ingredient.UnitQuantity
+			}
+			if ingredient.Unit != "" {
+				setValue["ingredients.$.unit"] = ingredient.Unit
+			}
+			if ingredient.Price != 0 {
+				setValue["ingredients.$.price"] = ingredient.Price
+			}
+
+			if len(setValue) > 0 {
+				models = append(models, mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update))
+			}
+		}
+	}
+
+	if len(models) > 0 {
+		result, err := v.col.BulkWrite(ctx, models)
+		if err != nil {
+			Logger.ErrorContext(ctx, "Error in bulk update", slog.Any("error", err), admin_repo_source)
+			return err
+		}
+		if !result.Acknowledged {
+			Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), admin_repo_source)
+			return fmt.Errorf("write concern returned false")
+		}
+		Logger.InfoContext(ctx, "Ingredients updated successfully",
+			slog.Int64("matchedCount", result.MatchedCount),
+			slog.Int64("modifiedCount", result.ModifiedCount),
+			slog.Int64("insertedCount", result.InsertedCount),
+			admin_repo_source)
+	} else {
+		Logger.InfoContext(ctx, "No updates to perform", admin_repo_source)
+	}
+
 	return nil
 }
 
@@ -558,5 +766,44 @@ func (v MongoAdminRepository) Delete(ctx context.Context, id ID) error {
 }
 
 func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteIngredients")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting ingredients for admin",
+		slog.String("adminID", id.String()), slog.Any("ingredientIDs", ids), admin_repo_source)
+
+	objIDs := make([]bson.ObjectID, len(ids))
+	for i, ingID := range ids {
+		objIDs[i] = ingID.value
+	}
+
+	filter := bson.D{{Key: "_id", Value: id.value}}
+	update := bson.D{{Key: "$pull", Value: bson.M{
+		"ingredients": bson.M{"ingredient_id": bson.M{"$in": objIDs}},
+	}}}
+
+	result, err := v.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error deleting ingredients", slog.Any("error", err), admin_repo_source)
+		return err
+	}
+
+	if !result.Acknowledged {
+		Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", id.String()), admin_repo_source)
+		return fmt.Errorf("write concern returned false")
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "Admin not found", slog.String("ID", id.String()), admin_repo_source)
+		return fmt.Errorf("admin with ID %s not found", id.String())
+	}
+
+	if result.ModifiedCount == 0 {
+		Logger.ErrorContext(ctx, "No ingredients were deleted, they may not exist",
+			slog.String("adminID", id.String()), admin_repo_source)
+		return fmt.Errorf("no ingredients were deleted with adminID: %s", id.String())
+	}
+
+	Logger.InfoContext(ctx, "Ingredients deleted successfully", slog.String("adminID", id.String()), admin_repo_source)
 	return nil
 }

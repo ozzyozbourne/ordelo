@@ -29,6 +29,11 @@ type authService struct {
 	refreshSecret []byte
 }
 
+type contextKey string
+
+const userIDKey contextKey = "userID"
+const userRoleKey contextKey = "role"
+
 func InitAuthService(ctx context.Context, cachedRepo *Repositories, redisClient *redis.Client,
 	accessExpiry, refreshExpiry time.Duration) error {
 	_, span := Tracer.Start(ctx, "initAuthService")
@@ -280,7 +285,7 @@ func (s *authService) Logout(ctx context.Context, userID string) (err error) {
 	return
 }
 
-func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
+func (s *authService) JWTAuthMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -296,22 +301,18 @@ func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 			}
 
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
-				return jwtSecret, nil
+				return s.jwtSecret, nil
 			})
 
 			if err != nil {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
 				return
 			}
-
-			type contextKey string
-			const userIDKey contextKey = "userID"
-			const userRoleKey contextKey = "userRole"
 
 			if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 				ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
@@ -325,28 +326,21 @@ func JWTAuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 	}
 }
 
-func RoleAuthMiddleware(allowedRoles ...string) func(http.Handler) http.Handler {
+func RoleAuthMiddleware(allowedRole string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			role, ok := r.Context().Value("userRole").(string)
+			role, ok := r.Context().Value(userRoleKey).(string)
 			if !ok {
 				http.Error(w, "Unauthorized - missing role claim", http.StatusUnauthorized)
 				return
 			}
-
-			roleAllowed := false
-			for _, allowedRole := range allowedRoles {
-				if role == allowedRole {
-					roleAllowed = true
-					break
-				}
-			}
-
-			if !roleAllowed {
+			if role == allowedRole {
+				next.ServeHTTP(w, r)
+			} else {
 				http.Error(w, "Forbidden - insufficient permissions", http.StatusForbidden)
 				return
 			}
-			next.ServeHTTP(w, r)
+
 		})
 	}
 }
