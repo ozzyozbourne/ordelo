@@ -138,6 +138,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	okResponseMap := map[string]any{
 		"_id":          id.String(),
+		"role":         req.Role,
 		"access_token": accessToken,
 		"token_type":   "Bearer",
 		"expires_in":   "900",

@@ -172,6 +172,7 @@ func update(ctx context.Context, user *Common, col *mongo.Collection, source slo
 }
 
 func processContainers[C containers](ctx context.Context, col *mongo.Collection, id ID, T C, source slog.Attr) error {
+
 	if err := checkIfDocumentExists(ctx, col, id.value); err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 				fieldsToUpdate["saved_recipes.$.serving_size"] = recipe.ServingSize
 			}
 
-			updateContainers("saved_recipes", recipe.Items, ID{recipe.ID}, id, models, updateRecipeFilter)
+			models = updateContainers("saved_recipes", recipe.Items, ID{recipe.ID}, id, models, updateRecipeFilter)
 
 			if len(fieldsToUpdate) > 0 {
 				update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
@@ -207,7 +208,6 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 			}
 		}
 	case []*Cart:
-		var models []mongo.WriteModel
 		for _, cart := range c {
 			if cart.ID == bson.NilObjectID {
 				continue
@@ -222,7 +222,7 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 				fieldsToUpdate["carts.$.total_price"] = cart.TotalPrice
 			}
 
-			updateContainers("carts", cart.Items, ID{cart.ID}, id, models, updateCartsFilter)
+			models = updateContainers("carts", cart.Items, ID{cart.ID}, id, models, updateCartsFilter)
 
 			if len(fieldsToUpdate) > 0 {
 				update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
@@ -240,7 +240,7 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 			}
 
 			fieldsToUpdate := bson.M{}
-			updateContainers("stores", store.Items, ID{store.ID}, id, models, updateStoreFilter)
+			models = updateContainers("stores", store.Items, ID{store.ID}, id, models, updateStoreFilter)
 
 			if len(fieldsToUpdate) > 0 {
 				update := bson.D{{Key: "$set", Value: fieldsToUpdate}}
@@ -252,14 +252,16 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 		for i, v := range c {
 			ord[i] = &v.Order
 		}
+		models = updateOrders(ord, id.value)
 	case []*VendorOrder:
 		ord := make([]*Order, len(c))
 		for i, v := range c {
 			ord[i] = &v.Order
 		}
+		models = updateOrders(ord, id.value)
 	default:
 		Logger.ErrorContext(ctx, "Unknown type of container", source)
-		fmt.Errorf("unknown type of container")
+		return fmt.Errorf("unknown type of container")
 	}
 
 	result, err := col.BulkWrite(ctx, models)
@@ -277,6 +279,7 @@ func processContainers[C containers](ctx context.Context, col *mongo.Collection,
 }
 
 func updateContainers(c string, items []*Item, con, doc ID, models []mongo.WriteModel, updateFilter bson.D) []mongo.WriteModel {
+
 	if len(items) > 0 {
 		var itemsToInsert []any
 		for _, item := range items {
@@ -293,14 +296,14 @@ func updateContainers(c string, items []*Item, con, doc ID, models []mongo.Write
 				if item.Name != "" {
 					itemFieldsToUpdate[c+".$[r].items.$[i].name"] = item.Name
 				}
-				if item.Quantity != 0 {
+				if item.UnitQuantity != 0 {
 					itemFieldsToUpdate[c+".$[r].items.$[i].unit_quantity"] = item.UnitQuantity
 				}
 				if item.Unit != "" {
 					itemFieldsToUpdate[c+".$[r].items.$[i].unit"] = item.Unit
 				}
 				if item.Quantity != 0 {
-					itemFieldsToUpdate[c+".$[r].items.$[i].quantity"] = item.Unit
+					itemFieldsToUpdate[c+".$[r].items.$[i].quantity"] = item.Quantity
 				}
 				if item.Price != 0 {
 					itemFieldsToUpdate[c+".$[r].items.$[i].price"] = item.Price
@@ -367,6 +370,64 @@ func deletes(ctx context.Context, col *mongo.Collection, id ID, source slog.Attr
 	}
 
 	Logger.InfoContext(ctx, "User deleted successfully", slog.String("ID", id.String()), vendor_repo_source)
+	return nil
+}
+
+func processDeleteItems(ctx context.Context, col *mongo.Collection, doc, con ID, cname string, itemIDs []bson.ObjectID,
+	source slog.Attr) error {
+
+	var models []mongo.WriteModel
+	deleteItemsFromContainer := func(c string) {
+		filter := bson.D{
+			{Key: "_id", Value: doc.value},
+			{Key: c + "._id", Value: con.value},
+		}
+		update := bson.D{
+			{Key: "$pull", Value: bson.M{
+				c + ".$.items": bson.M{
+					"ingredient_id": bson.M{"$in": itemIDs},
+				},
+			}},
+		}
+		models = append(models, mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update))
+	}
+
+	switch cname {
+	case "saved_recipes":
+		deleteItemsFromContainer("saved_recipes")
+
+	case "carts":
+		deleteItemsFromContainer("carts")
+
+	case "stores":
+		deleteItemsFromContainer("stores")
+
+	default:
+		Logger.ErrorContext(ctx, "Unknown container name", slog.String("containerName", cname), source)
+		return fmt.Errorf("unknown container name: %s", cname)
+	}
+
+	if len(models) > 0 {
+		result, err := col.BulkWrite(ctx, models)
+		if err != nil {
+			Logger.ErrorContext(ctx, "Error in bulk delete", slog.Any("error", err), source)
+			return err
+		}
+
+		if !result.Acknowledged {
+			Logger.ErrorContext(ctx, "Write concern returned false", slog.String("ID", doc.String()), source)
+			return fmt.Errorf("write concern returned false")
+		}
+		if result.MatchedCount == 0 {
+			Logger.ErrorContext(ctx, "No ids Matched to delete", slog.String("ID", doc.String()), source)
+			return fmt.Errorf("No ids provided are a match")
+		}
+
+		Logger.InfoContext(ctx, "Items deleted successfully", slog.String("containerName", cname), source)
+	} else {
+		Logger.InfoContext(ctx, "No items to delete", slog.String("containerName", cname), source)
+		return fmt.Errorf("array len is empty")
+	}
 	return nil
 }
 
