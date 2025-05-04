@@ -196,6 +196,22 @@ func CreateRecipes(w http.ResponseWriter, r *http.Request) {
 	createCon(ctx, w, r, source, req.Recipes)
 }
 
+func AdminGetUsers(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func AdminGetVendors(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func AdminGetStores(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func AdminGetIngredients(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func GetCarts(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "GetCarts")
 	defer span.End()
@@ -518,7 +534,7 @@ func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Re
 		sendFailure(ctx, w, "Failed to fetch containers", source)
 		return
 	}
-	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.Attr) (v *req, err error) {
@@ -535,7 +551,7 @@ func getID(ctx context.Context, source slog.Attr) (ID, error) {
 	v, ok := ctx.Value(userIDKey).(string)
 	if !ok {
 		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
-		return ID{bson.NilObjectID}, errors.New("Unable to cast to string from ctx")
+		return ID{bson.NilObjectID}, errors.New("unable to cast to string from ctx")
 	}
 	return NewID(ctx, v)
 }
