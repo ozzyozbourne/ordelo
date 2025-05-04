@@ -7,18 +7,18 @@ import (
 	"net/http"
 )
 
-func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap *map[string]any, source slog.Attr) (err error) {
+func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap *map[string]any, source slog.Attr) {
 	ctx, span := Tracer.Start(ctx, "sendReponse")
 	defer span.End()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	if err = json.NewEncoder(w).Encode(messageMap); err != nil {
+	if err := json.NewEncoder(w).Encode(messageMap); err != nil {
 		Logger.ErrorContext(ctx, "Error in encoding the message map", slog.Any("error", err), source)
+		http.Error(w, "Oops!", http.StatusInternalServerError)
 		return
 	}
-	return
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -26,49 +26,36 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "CreateUser")
 
-	sendFailure := func(err string) {
-		errorResponseMap := map[string]any{
-			"success": false,
-			"error":   err,
-		}
-		if err := sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source); err != nil {
-			http.Error(w, "Oops!", http.StatusInternalServerError)
-		}
-	}
-
 	user := &Common{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a user struct", slog.Any("error", err), source)
-		sendFailure("Error in parsing Request body")
+		sendFailure(ctx, w, "Error in parsing Request body", source)
 		return
 	}
 
 	Logger.InfoContext(ctx, "Validating user struct fields", source)
 	switch {
 	case user.Name == "":
-		sendFailure("Username is empty")
+		sendFailure(ctx, w, "Username is empty", source)
 		return
 
 	case user.Email == "":
-		sendFailure("Email is empty")
+		sendFailure(ctx, w, "Email is empty", source)
 		return
 
 	case user.PasswordHash == "":
-		sendFailure("Password is empty")
+		sendFailure(ctx, w, "Password is empty", source)
 		return
 
 	case user.Role == "":
-		sendFailure("role is empty")
+		sendFailure(ctx, w, "role is empty", source)
 		return
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
 
 	userID, err := AuthService.CreateUser(ctx, user)
 	if err != nil {
-		if err := sendResponse(ctx, w, http.StatusInternalServerError,
-			&map[string]any{"success": false, "error": "Registration failed"}, source); err != nil {
-			http.Error(w, "Oops!", http.StatusInternalServerError)
-		}
+		sendResponse(ctx, w, http.StatusInternalServerError, &map[string]any{"success": false, "error": "Registration failed"}, source)
 		return
 	}
 
@@ -76,9 +63,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		"status": true,
 		"id":     userID.String(),
 	}
-	if err := sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source); err != nil {
-		http.Error(w, "Oops!", http.StatusInternalServerError)
-	}
+	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
@@ -86,35 +71,25 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "UserLogin")
 
-	sendFailure := func(err string) {
-		errorResponseMap := map[string]any{
-			"success": false,
-			"error":   err,
-		}
-		if err := sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source); err != nil {
-			http.Error(w, "Oops!", http.StatusInternalServerError)
-		}
-	}
-
 	var req *Login
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse the request body to a Login struct", slog.Any("error", err), source)
-		sendFailure("Error in parsing Request body")
+		sendFailure(ctx, w, "Error in parsing Request body", source)
 		return
 	}
 
 	Logger.InfoContext(ctx, "Validating login struct fields", source)
 	switch {
 	case req.Email == "":
-		sendFailure("Email is empty")
+		sendFailure(ctx, w, "Email is empty", source)
 		return
 
 	case req.Password == "":
-		sendFailure("Password is empty")
+		sendFailure(ctx, w, "Password is empty", source)
 		return
 
 	case req.Role == "":
-		sendFailure("Role is empty")
+		sendFailure(ctx, w, "Role is empty", source)
 		return
 	}
 	Logger.InfoContext(ctx, "Validated Successfully", source)
@@ -144,19 +119,75 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		"expires_in":   "900",
 	}
 
-	if err := sendResponse(ctx, w, http.StatusOK, &okResponseMap, source); err != nil {
-		http.Error(w, "Oops!", http.StatusInternalServerError)
-	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteAdmin")
+	defer span.End()
+	source := slog.String("source", "DeleteAdmin")
+
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Admin.Delete(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "Admin deleted successfully"}, source)
 
 }
 
 func DeleteVendor(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteVendor")
+	defer span.End()
+	source := slog.String("source", "DeleteVendor")
+
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Vendor.DeleteVendor(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "Vendor deleted successfully"}, source)
 
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteUser")
+	defer span.End()
+	source := slog.String("source", "DeleteUser")
 
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.User.DeleteUser(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "User deleted successfully"}, source)
+}
+
+func sendFailure(ctx context.Context, w http.ResponseWriter, err string, source slog.Attr) {
+	ctx, span := Tracer.Start(ctx, "SendFailure")
+	defer span.End()
+
+	errorResponseMap := map[string]any{
+		"success": false,
+		"error":   err,
+	}
+	sendResponse(ctx, w, http.StatusBadRequest, &errorResponseMap, source)
 }

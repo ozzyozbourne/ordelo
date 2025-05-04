@@ -79,16 +79,31 @@ func (s *authService) CreateUser(ctx context.Context, com *Common) (id ID, err e
 	com.PasswordHash = string(hashedPassword)
 	switch com.Role {
 	case "user":
+		if _, err = Repos.User.FindUserByEmail(ctx, com.Email); err == nil {
+			Logger.ErrorContext(ctx, "User is already registered", slog.Any("error", err), auth_source)
+			err = errors.New("User is already registered")
+			return
+		}
 		if id, err = Repos.User.CreateUser(ctx, &User{Common: *com}); err != nil {
 			Logger.ErrorContext(ctx, "Failed to create user", slog.Any("error", err), auth_source)
 			return
 		}
 	case "vendor":
+		if _, err = Repos.Vendor.FindVendorByEmail(ctx, com.Email); err == nil {
+			Logger.ErrorContext(ctx, "Vendor is already registered", slog.Any("error", err), auth_source)
+			err = errors.New("Vendor is already registered")
+			return
+		}
 		if id, err = Repos.Vendor.CreateVendor(ctx, &Vendor{Common: *com}); err != nil {
 			Logger.ErrorContext(ctx, "Failed to create vendor", slog.Any("error", err), auth_source)
 			return
 		}
 	default:
+		if _, err = Repos.Admin.FindAdminByEmail(ctx, com.Email); err == nil {
+			Logger.ErrorContext(ctx, "Admin is already registered", slog.Any("error", err), auth_source)
+			err = errors.New("Admin is already registered")
+			return
+		}
 		if id, err = Repos.Admin.CreateAdmin(ctx, &Admin{Common: *com}); err != nil {
 			Logger.ErrorContext(ctx, "Failed to create admin", slog.Any("error", err), auth_source)
 			return
