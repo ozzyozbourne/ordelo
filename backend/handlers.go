@@ -356,6 +356,48 @@ func AdminUpdate(w http.ResponseWriter, r *http.Request) {
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
+func AdminCreateIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminCreateIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminCreateIngredients")
+
+	Logger.InfoContext(ctx, "Creating ingredients", source)
+	var req struct {
+		Ingredients []*Ingredient `json:"ingredients"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	if len(req.Ingredients) == 0 {
+		Logger.ErrorContext(ctx, "No ingredients provided", source)
+		sendFailure(ctx, w, "No ingredients provided", source)
+		return
+	}
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	ids, err := Repos.Admin.CreateIngredients(ctx, id, req.Ingredients)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to create ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to create ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"ids":     ids,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func AdminUpdateIngredients(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "AdminUpdateIngredients")
 	defer span.End()
