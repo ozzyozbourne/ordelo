@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap *map[string]any, source slog.Attr) {
@@ -135,7 +138,6 @@ func CreateCarts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Carts)
-	Logger.InfoContext(ctx, "Added Carts successfully", source)
 }
 
 func CreateUserOrders(w http.ResponseWriter, r *http.Request) {
@@ -150,8 +152,6 @@ func CreateUserOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Added UserOrders successfully", source)
-
 }
 
 func CreateVendorOrders(w http.ResponseWriter, r *http.Request) {
@@ -166,8 +166,6 @@ func CreateVendorOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Added VendorOrders successfully", source)
-
 }
 
 func CreateStores(w http.ResponseWriter, r *http.Request) {
@@ -182,8 +180,6 @@ func CreateStores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Stores)
-	Logger.InfoContext(ctx, "Added stores successfully", source)
-
 }
 
 func CreateRecipes(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +194,56 @@ func CreateRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Recipes)
-	Logger.InfoContext(ctx, "Added recipes successfully", source)
+}
+
+func GetCarts(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetCarts")
+	defer span.End()
+	source := slog.String("source", "GetCarts")
+
+	Logger.InfoContext(ctx, "Getting the Carts", source)
+	var carts []*Cart
+	getCon(ctx, w, r, carts, source)
+}
+
+func GetUserOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetUserOrders")
+	defer span.End()
+	source := slog.String("source", "GetUserOrders")
+
+	Logger.InfoContext(ctx, "Getting the UserOrders", source)
+	var userOrders []*UserOrder
+	getCon(ctx, w, r, userOrders, source)
+}
+
+func GetVendorOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetVendorOrders")
+	defer span.End()
+	source := slog.String("source", "GetVendorOrders")
+
+	Logger.InfoContext(ctx, "Getting the VendorOrders", source)
+	var vendorOrders []*VendorOrder
+	getCon(ctx, w, r, vendorOrders, source)
+}
+
+func GetStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetStores")
+	defer span.End()
+	source := slog.String("source", "GetStores")
+
+	Logger.InfoContext(ctx, "Getting the Stores", source)
+	var stores []*Store
+	getCon(ctx, w, r, stores, source)
+}
+
+func GetRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetRecipes")
+	defer span.End()
+	source := slog.String("source", "GetRecipes")
+
+	Logger.InfoContext(ctx, "Getting the Recipes", source)
+	var recipes []*Recipe
+	getCon(ctx, w, r, recipes, source)
 }
 
 func UpdateCarts(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +258,6 @@ func UpdateCarts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Carts)
-	Logger.InfoContext(ctx, "Updated Carts successfully", source)
 }
 
 func UpdateUserOrders(w http.ResponseWriter, r *http.Request) {
@@ -228,8 +272,6 @@ func UpdateUserOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Updated UserOrders successfully", source)
-
 }
 
 func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
@@ -244,8 +286,6 @@ func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Updated VendorOrders successfully", source)
-
 }
 
 func UpdateStores(w http.ResponseWriter, r *http.Request) {
@@ -260,8 +300,6 @@ func UpdateStores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateCon(ctx, w, r, source, req.Stores)
-	Logger.InfoContext(ctx, "Updated stores successfully", source)
-
 }
 
 func UpdateRecipes(w http.ResponseWriter, r *http.Request) {
@@ -276,7 +314,6 @@ func UpdateRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateCon(ctx, w, r, source, req.Recipes)
-	Logger.InfoContext(ctx, "Updated recipes successfully", source)
 }
 
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
@@ -353,16 +390,9 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	var err error
 	var ids []*ID
 
-	v, ok := r.Context().Value(userIDKey).(string)
-	if !ok {
-		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
-		sendFailure(ctx, w, "Oops", source)
-		return
-	}
-
-	id, err := NewID(ctx, v)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, err.Error(), source)
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -410,16 +440,9 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 func updateCon[C containers](ctx context.Context, w http.ResponseWriter, r *http.Request, source slog.Attr, con C) {
 	var err error
 
-	v, ok := r.Context().Value(userIDKey).(string)
-	if !ok {
-		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
-		sendFailure(ctx, w, "Oops", source)
-		return
-	}
-
-	id, err := NewID(ctx, v)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, err.Error(), source)
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -456,6 +479,48 @@ func updateCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
 }
 
+func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Request, t c, source slog.Attr) {
+	var err error
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Oops", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+	}
+
+	switch a := any(t).(type) {
+	case []*Recipe:
+		a, err = Repos.User.FindRecipes(ctx, id)
+		okResponseMap["value"] = a
+	case []*Cart:
+		a, err = Repos.User.FindCarts(ctx, id)
+		okResponseMap["value"] = a
+	case []*UserOrder:
+		a, err = Repos.User.FindUserOrders(ctx, id)
+		okResponseMap["value"] = a
+	case []*Store:
+		a, err = Repos.Vendor.FindStores(ctx, id)
+		okResponseMap["value"] = a
+	case []*VendorOrder:
+		a, err = Repos.Vendor.FindVendorOrders(ctx, id)
+		okResponseMap["value"] = a
+	default:
+		Logger.ErrorContext(ctx, "Unknown get container constant", source)
+		sendFailure(ctx, w, "unknown get container constant", source)
+		return
+	}
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch containers", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch containers", source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
+}
+
 func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.Attr) (v *req, err error) {
 	Logger.Info("Decode the body to struct", source)
 	if err := json.NewDecoder(r).Decode(&v); err != nil {
@@ -464,4 +529,13 @@ func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.A
 	}
 	Logger.Info("Decoded Successfully", source)
 	return
+}
+
+func getID(ctx context.Context, source slog.Attr) (ID, error) {
+	v, ok := ctx.Value(userIDKey).(string)
+	if !ok {
+		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
+		return ID{bson.NilObjectID}, errors.New("Unable to cast to string from ctx")
+	}
+	return NewID(ctx, v)
 }

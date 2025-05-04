@@ -122,8 +122,8 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
 
-	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
-	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
+	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
+	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
@@ -139,9 +139,9 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
 	handleFunc("POST /user/orders", mid(user(http.HandlerFunc(CreateUserOrders))))
 
-	handleFunc("GET /user/recipes", mid(user(http.HandlerFunc(CreateRecipes))))
-	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
-	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(CreateUserOrders))))
+	handleFunc("GET /user/recipes", mid(user(http.HandlerFunc(GetRecipes))))
+	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
+	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(GetUserOrders))))
 
 	handleFunc("PUT /user/recipes", mid(user(http.HandlerFunc(UpdateRecipes))))
 	handleFunc("PUT /user/carts", mid(user(http.HandlerFunc(UpdateCarts))))
