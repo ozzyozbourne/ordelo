@@ -71,7 +71,6 @@ func run() (err error) {
 		return
 	}
 
-	// ✅✅✅ CORRECT FIX → wrap handler with corsMiddleware at the top level (VERY IMPORTANT)
 	handler := corsMiddleware(newHTTPHandler())
 
 	srv := &http.Server{
@@ -79,7 +78,7 @@ func run() (err error) {
 		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Handler:      handler, // <<< CORRECTED here
+		Handler:      handler, 
 	}
 
 	srvErr := make(chan error, 1)
@@ -99,17 +98,15 @@ func run() (err error) {
 	return
 }
 
-// ------------------------------------
-// ✅ CORS middleware (global)
-// ------------------------------------
+
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Always add CORS headers
+
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Handle preflight
+
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -119,9 +116,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// ------------------------------------
-// ✅ Routes + mux + telemetry
-// ------------------------------------
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
@@ -133,6 +127,5 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /register", CreateUser)
 	handleFunc("POST /login", UserLogin)
 
-	// No need to wrap CORS here → handled globally now
 	return otelhttp.NewHandler(mux, "/")
 }
