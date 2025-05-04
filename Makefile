@@ -6,6 +6,7 @@ TEST_NAME:=TestCreateUser
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
 .DEFAULT_GOAL := run-linux
+
 .PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac
 
 build: build-all

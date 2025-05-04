@@ -54,12 +54,12 @@ function Register() {
 
       if (response.ok) {
         login({
-          id: data._id || null,            // ✅ Backend _id
-          name: formData.name,             // ✅ Form Data (Backend doesn't return name)
-          email: formData.email,           // ✅ Form Data (Backend doesn't return email)
-          role: data.role || "user",       // ✅ Backend role
-          token: data.access_token,        // ✅ Backend access_token
-          expires_in: data.expires_in || "900" // ✅ Added expires_in from backend
+          id: data._id || null,           
+          name: formData.name,             
+          email: formData.email,           
+          role: data.role || "user",       
+          token: data.access_token,        
+          expires_in: data.expires_in || "900" 
         });
         navigate('/', { replace: true });
       } else {

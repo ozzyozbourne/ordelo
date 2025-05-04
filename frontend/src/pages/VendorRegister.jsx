@@ -1,26 +1,25 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-function VendorRegister() {
-  const [vendorData, setVendorData] = useState({
+function Register() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
     name: "",
     address: "",
     email: "",
     password: "",
-    storeName: "",
-    storeType: "",
-    role: "vendor", // ✅ Automatically set role here
+    confirmPassword: ""
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
-
-  const API_URL = "http://localhost:8080/register"; // Adjust if needed
 
   const handleInputChange = (e) => {
-    setVendorData({
-      ...vendorData,
-      [e.target.name]: e.target.value,
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
     });
     if (error) setError(null);
   };
@@ -30,22 +29,41 @@ function VendorRegister() {
     setIsLoading(true);
     setError(null);
 
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
+      const response = await fetch("http://localhost:8080/register", {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(vendorData),
+        body: JSON.stringify({
+          name: formData.name,
+          address: formData.address,
+          email: formData.email,
+          password_hash: formData.password,
+          role: "vendor" 
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Redirect to Vendor Dashboard on successful registration
-        navigate("/vendor/dashboard");
+        login({
+          id: data._id || null,           
+          name: formData.name,             
+          email: formData.email,           
+          role: data.role || "vendor",     
+          token: data.access_token,        
+          expires_in: data.expires_in || "900" 
+        });
+        navigate('/vendor/dashboard', { replace: true });
       } else {
-        setError(data.error || data.message || "Registration failed. Please try again.");
+        setError(data.message || "Registration failed. Please try again.");
       }
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
@@ -59,103 +77,96 @@ function VendorRegister() {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-content">
-          <h1 className="auth-title">Vendor Registration</h1>
-          <p className="auth-subtitle">Register your store and start selling today!</p>
+          <h1 className="auth-title">Create Vendor Account</h1>
+          <p className="auth-subtitle">Register as a vendor to sell and manage your products</p>
 
           {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="name">Your Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={vendorData.name}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your full name"
-              />
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="name">Full Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your full name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="address">Address</label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your address"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Create a password"
+                  minLength="8"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Confirm your password"
+                  minLength="8"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="address">Address</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={vendorData.address}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your address"
-              />
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="btn btn-primary auth-submit-btn"
+                disabled={isLoading}
+              >
+                {isLoading ? <span className="button-loader"></span> : <>Create Account</>}
+              </button>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={vendorData.email}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={vendorData.password}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="storeName">Store Name</label>
-              <input
-                type="text"
-                id="storeName"
-                name="storeName"
-                value={vendorData.storeName}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your store name"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="storeType">Store Type</label>
-              <input
-                type="text"
-                id="storeType"
-                name="storeType"
-                value={vendorData.storeType}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter store type (Grocery)"
-              />
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary auth-submit-btn"
-              disabled={isLoading}
-            >
-              {isLoading ? <span className="button-loader"></span> : <>Register</>}
-            </button>
           </form>
 
           <div className="auth-footer">
-            <p>Already have an account?</p>
-            <Link to="/login" className="register-option">
-              <i className="fas fa-sign-in-alt"></i> Log In
+            <p>Already have a vendor account?</p>
+            <Link to="/vendor/login" className="login-link">
+              <i className="fas fa-sign-in-alt"></i> Login
             </Link>
           </div>
         </div>
@@ -164,4 +175,4 @@ function VendorRegister() {
   );
 }
 
-export default VendorRegister;
+export default Register;

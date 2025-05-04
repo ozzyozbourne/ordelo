@@ -43,7 +43,7 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Store ALL backend response fields
+  
         login({
           id: data._id,
           email: userData.email,

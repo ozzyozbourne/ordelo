@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function VendorLogin() {
+function Login() {
   const [userData, setUserData] = useState({
     email: "",
     password: "",
+    role: "vendor", 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,7 +14,9 @@ function VendorLogin() {
   const location = useLocation();
   const { login } = useAuth();
 
-  const from = location.state?.from || "/vendordashboard";
+  const from = location.state?.from || "/vendor/dashboard";
+
+  const API_URL = "http://localhost:8080/login";
 
   const handleInputChange = (e) => {
     setUserData({
@@ -29,7 +32,7 @@ function VendorLogin() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:7001/auth/login-vendor', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,16 +43,19 @@ function VendorLogin() {
       const data = await response.json();
 
       if (response.ok) {
+  
         login({
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: data.user.role,
-          token: data.token,
+          id: data._id,
+          email: userData.email,
+          role: data.role,
+          token: data.access_token,
+          tokenType: data.token_type,
+          expiresIn: data.expires_in,
         });
+
         navigate(from, { replace: true });
       } else {
-        setError(data.message || "Login failed. Please try again.");
+        setError(data.error || data.message || "Login failed. Please try again.");
       }
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
@@ -63,8 +69,8 @@ function VendorLogin() {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-content">
-          <h1 className="auth-title">Vendor Login</h1>
-          <p className="auth-subtitle">Log in to manage your vendor account and orders</p>
+          <h1 className="auth-title">Welcome Back!</h1>
+          <p className="auth-subtitle">Log in to access your recipes and shopping lists</p>
 
           {error && <div className="auth-error">{error}</div>}
 
@@ -105,9 +111,9 @@ function VendorLogin() {
           </form>
 
           <div className="auth-footer">
-            <p>Don't have a vendor account?</p>
-            <Link to="/vendor/register" className="register-option">
-              <i className="fas fa-user"></i> Register as Vendor
+            <p>Don't have an account?</p>
+            <Link to="/register" className="register-option">
+              <i className="fas fa-user"></i> Register
             </Link>
           </div>
         </div>
@@ -116,4 +122,4 @@ function VendorLogin() {
   );
 }
 
-export default VendorLogin;
+export default Login;

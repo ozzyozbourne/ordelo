@@ -36,35 +36,40 @@ function LoginPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          role: "admin" // Sending role as admin in the request body
+          role: "admin"
         }),
       });
 
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Login failed");
+      }
+
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(text || "Unexpected server response");
+      }
+
       const data = await response.json();
 
-      if (response.ok) {
-        // Save token and role in localStorage
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("role", data.role);
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("role", data.role);
 
-        // Call login and normalize data properly
-        login({
-          id: data._id || null,
-          name: formData.email,
-          email: formData.email,
-          role: data.role || "admin",
-          token: data.access_token,
-          token_type: data.token_type || '',
-          expires_in: data.expires_in || '',
-        });
+      login({
+        id: data._id || null,
+        email: formData.email,
+        role: data.role || "admin",
+        token: data.access_token,
+        token_type: data.token_type || '',
+        expires_in: data.expires_in || '',
+      });
 
-        navigate(from, { replace: true });
-      } else {
-        setError(data.message || "Login failed");
-      }
+      navigate(from, { replace: true });
     } catch (error) {
       console.error("Login error", error);
-      setError("An unexpected error occurred.");
+      setError(error.message || "An unexpected error occurred.");
     }
   };
 

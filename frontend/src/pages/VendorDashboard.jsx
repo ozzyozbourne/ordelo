@@ -18,18 +18,24 @@ function VendorDashboard() {
                     return;
                 }
 
-
-                const { data } = await axios.get("http://localhost:7001/auth", {
+                const response = await axios.get("http://localhost:8080/login", {
                     headers: {
                         "Authorization": `Bearer ${token}`,
-                        "Role": role 
+                        "Role": role
                     }
                 });
 
+                const data = response.data;
                 console.log("Backend verified:", data);
 
+                if (!data.role || data.role !== "vendor") {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("role");
+                    navigate("/vendor/login");
+                }
+
             } catch (error) {
-                console.log(error.response?.data || error.message);
+                console.error("Verification failed:", error.response?.data || error.message);
                 localStorage.removeItem("token");
                 localStorage.removeItem("role");
                 navigate("/vendor/login");

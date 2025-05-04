@@ -136,9 +136,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("DELETE /vendor", mid(vendor(http.HandlerFunc(DeleteAdmin))))
 	handleFunc("DELETE /user", mid(user(http.HandlerFunc(DeleteAdmin))))
 
-<<<<<<< HEAD:auth/main.go
-	return otelhttp.NewHandler(mux, "/")
-=======
+
 	handler := otelhttp.NewHandler(mux, "/")
 	return CORSMiddleware(handler)
 }
@@ -156,5 +154,4 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
->>>>>>> a2d08fcee5e62f30681fbf0aefcb866aa40fc499:backend/main.go
 }
