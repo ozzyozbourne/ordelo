@@ -162,7 +162,7 @@ func (s *authService) Login(ctx context.Context, login *Login) (id ID, accessTok
 		return
 	}
 
-	if accessToken, err = s.GenerateAccessToken(ctx, com.ID.Hex(), com.Role); err != nil {
+	if accessToken, err = s.GenerateAccessToken(ctx, com); err != nil {
 		return
 	}
 	if refreshToken, err = s.GenerateRefreshToken(ctx, com.ID.Hex()); err != nil {
@@ -173,20 +173,22 @@ func (s *authService) Login(ctx context.Context, login *Login) (id ID, accessTok
 	return
 }
 
-func (s *authService) GenerateAccessToken(ctx context.Context, userID, role string) (token string, err error) {
+func (s *authService) GenerateAccessToken(ctx context.Context, com *Common) (token string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.GenerateAccessToken")
 	defer span.End()
 
 	now := time.Now()
 	claims := &Claims{
-		UserID: userID,
-		Role:   role,
+		UserID:  com.ID.Hex(),
+		Role:    com.Role,
+		Address: com.Address,
+		Name:    com.Name,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    "app-auth-service",
-			Subject:   userID,
+			Subject:   com.ID.Hex(),
 		},
 	}
 
