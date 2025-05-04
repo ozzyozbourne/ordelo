@@ -133,7 +133,6 @@ function App() {
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/register" element={<VendorRegister />} />
 
-
               {/* Public Routes */}
               <Route path="/" element={
                 <>
