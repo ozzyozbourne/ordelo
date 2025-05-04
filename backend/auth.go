@@ -309,6 +309,7 @@ func (s *authService) JWTAuthMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx, span := Tracer.Start(r.Context(), "JWTAuthMiddleware")
 			defer span.End()
+			r = r.WithContext(ctx)
 
 			authHeader := r.Header.Get("Authorization")
 			span.SetAttributes(attribute.String("auth.header.present", strconv.FormatBool(authHeader != "")))
