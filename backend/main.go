@@ -108,11 +108,26 @@ func newHTTPHandler() http.Handler {
 	vendor := RoleAuthMiddleware("vendor")
 	user := RoleAuthMiddleware("user")
 
+	//-------------common-to-all-----------------------------
 	handleFunc("POST /register", http.HandlerFunc(CreateUser))
 	handleFunc("POST /login", http.HandlerFunc(UserLogin))
-
+	//-------------------------------------------------------
+	//
+	//-------------Admin-Specific-----------------------------
+	handleFunc("POST /admin/ingredients", mid(admin(http.HandlerFunc(DeleteAdmin))))
 	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	//--------------------------------------------------------
+	//
+	//-------------Vendor-Specific-----------------------------
+	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(DeleteVendor))))
 	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	//---------------------------------------------------------
+	//
+	//-------------User-Specific-------------------------------
+	handleFunc("POST /user/recipes", mid(user(http.HandlerFunc(DeleteUser))))
+	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(DeleteUser))))
+	handleFunc("POST /user/orders", mid(user(http.HandlerFunc(DeleteUser))))
 	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
 
 	handler := otelhttp.NewHandler(mux, "/")
