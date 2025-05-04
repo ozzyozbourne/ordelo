@@ -420,7 +420,7 @@ func processDeleteItems(ctx context.Context, col *mongo.Collection, doc, con ID,
 		}
 		if result.MatchedCount == 0 {
 			Logger.ErrorContext(ctx, "No ids Matched to delete", slog.String("ID", doc.String()), source)
-			return fmt.Errorf("No ids provided are a match")
+			return fmt.Errorf("no ids provided are a match")
 		}
 
 		Logger.InfoContext(ctx, "Items deleted successfully", slog.String("containerName", cname), source)
