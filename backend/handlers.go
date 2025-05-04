@@ -197,19 +197,112 @@ func CreateRecipes(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminGetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetUsers")
+	defer span.End()
+	source := slog.String("source", "AdminGetUsers")
+
+	Logger.InfoContext(ctx, "Admin retrieving all users", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	users, err := Repos.Admin.FindUsers(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch users", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch users", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"users":   users,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 
 }
 
 func AdminGetVendors(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetVendors")
+	defer span.End()
+	source := slog.String("source", "AdminGetVendors")
 
+	Logger.InfoContext(ctx, "Admin retrieving all vendors", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	vendors, err := Repos.Admin.FindVendors(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch vendors", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch vendors", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"vendors": vendors,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func AdminGetStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetStores")
+	defer span.End()
+	source := slog.String("source", "AdminGetStores")
 
+	Logger.InfoContext(ctx, "Admin retrieving all stores", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	vendors, err := Repos.Admin.FindStores(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch stores", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch stores", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"vendors": vendors,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func AdminGetIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminGetIngredients")
 
+	Logger.InfoContext(ctx, "Admin retrieving all ingredients", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	ingredients, err := Repos.Admin.FindIngredients(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success":     true,
+		"ingredients": ingredients,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func GetCarts(w http.ResponseWriter, r *http.Request) {
