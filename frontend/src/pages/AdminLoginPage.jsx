@@ -1,109 +1,88 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-function LoginPage() {
-  const { login } = useAuth();
+const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState(null);
-
-  const from = location.state?.from || '/admin/users';
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (error) setError(null);
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     setError(null);
 
     try {
       const response = await fetch("http://localhost:8080/login", {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          role: "admin"
+          ...formData,
+          role: "admin", 
         }),
       });
 
-      const contentType = response.headers.get("content-type") || "";
-
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Login failed");
-      }
-
-      if (!contentType.includes("application/json")) {
-        const text = await response.text();
-        throw new Error(text || "Unexpected server response");
+        throw new Error("Invalid email, password or not authorized as admin");
       }
 
       const data = await response.json();
 
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("role", data.role);
+      localStorage.setItem("role", "admin");
+      localStorage.setItem("token", data.access_token); 
 
-      login({
-        id: data._id || null,
-        email: formData.email,
-        role: data.role || "admin",
-        token: data.access_token,
-        token_type: data.token_type || '',
-        expires_in: data.expires_in || '',
-      });
-      navigate(from, { replace: true });
-    } catch (error) {
-      console.error("Login error", error);
-      setError(error.message || "An unexpected error occurred.");
+      login(data); 
+      navigate("/admin/users"); 
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '3rem', maxWidth: '400px', margin: '5rem auto', textAlign: 'center', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff' }}>
+    <div className="login-page">
       <h1>Admin Login</h1>
-      <p>Enter your admin credentials to access the panel.</p>
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
+      <form onSubmit={handleLogin} className="login-form">
+        {error && <div className="error-message">{error}</div>}
         <input
           type="email"
           name="email"
           placeholder="Email"
-          required
-          style={{ padding: '0.8rem' }}
           value={formData.email}
           onChange={handleInputChange}
+          required
         />
         <input
           type="password"
           name="password"
           placeholder="Password"
-          required
-          style={{ padding: '0.8rem' }}
           value={formData.password}
           onChange={handleInputChange}
+          required
         />
-        <button type="submit" className="btn btn-primary">
-          Login
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
   );
-}
+};
 
-export default LoginPage;
+export default AdminLoginPage;

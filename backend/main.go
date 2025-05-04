@@ -147,13 +147,13 @@ func newHTTPHandler() http.Handler {
 
 	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
 	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
-	//--------------------------------------------------------
-	//
+
+
 	//-------------Vendor-Specific-----------------------------
-	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
+	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))  // to add items//
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
 
-	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
+	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores)))) //store_id to be stored
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
@@ -162,8 +162,7 @@ func newHTTPHandler() http.Handler {
 
 	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
 	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
-	//---------------------------------------------------------
-	//
+
 	//-------------User-Specific-------------------------------
 	handleFunc("POST /user/recipes", mid(user(http.HandlerFunc(CreateRecipes))))
 	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
@@ -181,13 +180,10 @@ func newHTTPHandler() http.Handler {
 	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
 	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
 
-<<<<<<< HEAD
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return CORSMiddleware(handler)
-=======
-	return CORSMiddleware(otelhttp.NewHandler(mux, "/"))
->>>>>>> 07db8211b494b8a6360939d0ce5a2c4643a94626
+
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {

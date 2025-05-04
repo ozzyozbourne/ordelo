@@ -7,28 +7,41 @@ const VendorManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
     setLoading(true);
     setError(null);
 
-    fetch("http://localhost:8080/api/vendors")
-      .then(response => response.json())
-      .then(data => setVendors(data))
+    const token = localStorage.getItem("token") || "";
+
+    fetch("http://localhost:8080/admin/vendors", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Unauthorized or failed to fetch vendors");
+        }
+        return response.json();
+      })
+      .then(data => setVendors(data.vendors))
       .catch(() => setError("Failed to load vendors."))
       .finally(() => setLoading(false));
   }, []);
 
   const filteredVendors = vendors.filter(vendor => {
-    const vendorName = vendor.vendorInfo?.storeName || vendor.user?.name || '';
-    const contactEmail = vendor.user?.email || '';
-    const status = vendor.vendorInfo?.status || 'pending';
+    const vendorName = vendor.name || '';
+    const storeName = vendor.stores?.[0]?.name || '';
+    const address = vendor.address || '';
+    const email = vendor.email || '';
 
     return (
-      (vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contactEmail.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (statusFilter === '' || status === statusFilter)
+      vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
@@ -39,13 +52,12 @@ const VendorManagementPage = () => {
       </div>
 
       <div className="admin-controls">
-        <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        <input 
+          type="text" 
+          placeholder="Search by vendor name, store name, address or email..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+        />
       </div>
 
       {loading && <LoadingSpinner message="Loading vendors..." />}
@@ -55,19 +67,19 @@ const VendorManagementPage = () => {
         <table>
           <thead>
             <tr>
+              <th>Vendor Name</th>
               <th>Store Name</th>
+              <th>Address</th>
               <th>Email</th>
-              <th>Status</th>
-              <th>Applied On</th>
             </tr>
           </thead>
           <tbody>
             {filteredVendors.map(vendor => (
-              <tr key={vendor._id}>
-                <td>{vendor.vendorInfo?.storeName || vendor.user?.name}</td>
-                <td>{vendor.user?.email}</td>
-                <td>{vendor.vendorInfo?.status}</td>
-                <td>{vendor.vendorInfo?.applicationDate ? new Date(vendor.vendorInfo.applicationDate).toLocaleDateString() : 'N/A'}</td>
+              <tr key={vendor.user_id}>
+                <td>{vendor.name || 'N/A'}</td>
+                <td>{vendor.stores?.[0]?.name || 'N/A'}</td>
+                <td>{vendor.address || 'N/A'}</td>
+                <td>{vendor.email || 'N/A'}</td>
               </tr>
             ))}
           </tbody>

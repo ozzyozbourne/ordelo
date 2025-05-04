@@ -7,21 +7,97 @@ const IngredientManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [newIngredient, setNewIngredient] = useState({
+    name: '',
+    unit_quantity: '',
+    unit: '',
+  });
+  const [adding, setAdding] = useState(false);
 
-  useEffect(() => {
+  const token = localStorage.getItem("token") || "";
+
+  const fetchIngredients = () => {
     setLoading(true);
     setError(null);
 
-    fetch("http://localhost:8080/api/ingredients")
-      .then(response => response.json())
-      .then(data => setIngredients(data))
+    fetch("http://localhost:8080/admin/ingredients", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Unauthorized or failed to fetch ingredients");
+        }
+        return response.json();
+      })
+      .then(data => setIngredients(data.ingredients || []))
       .catch(() => setError("Failed to load ingredients."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchIngredients();
   }, []);
 
   const filteredIngredients = ingredients.filter(ingredient =>
-    ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ingredient.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewIngredient(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddIngredient = async (e) => {
+    e.preventDefault();
+    setAdding(true);
+
+    const unitQuantity = parseFloat(newIngredient.unit_quantity);
+    const unit = newIngredient.unit.trim();
+
+    if (!unitQuantity || unitQuantity <= 0 || !unit) {
+      alert("Please enter valid unit quantity and unit (SI units only).");
+      setAdding(false);
+      return;
+    }
+
+    const payload = {
+      name: newIngredient.name,
+      unit_quantity: unitQuantity,
+      unit: unit,
+      price: 0.0 
+    };
+
+    fetch("http://localhost:8080/admin/ingredients", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to add ingredient");
+        }
+        return response.json();
+      })
+      .then(() => {
+        setNewIngredient({
+          name: '',
+          unit_quantity: '',
+          unit: ''
+        });
+        fetchIngredients();
+      })
+      .catch(() => alert("Failed to add ingredient."))
+      .finally(() => setAdding(false));
+  };
 
   return (
     <div>
@@ -29,7 +105,43 @@ const IngredientManagementPage = () => {
         <h1>Ingredient Management</h1>
       </div>
 
-      <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      <input 
+        type="text" 
+        placeholder="Search..." 
+        value={searchTerm} 
+        onChange={(e) => setSearchTerm(e.target.value)} 
+      />
+
+      <h2>Add New Ingredient</h2>
+      <form onSubmit={handleAddIngredient} style={{ marginBottom: "20px" }}>
+        <input 
+          type="text"
+          name="name"
+          placeholder="Ingredient Name"
+          value={newIngredient.name}
+          onChange={handleInputChange}
+          required
+        />
+        <input 
+          type="number"
+          name="unit_quantity"
+          placeholder="Unit Quantity (SI Units Only)"
+          value={newIngredient.unit_quantity}
+          onChange={handleInputChange}
+          required
+        />
+        <input 
+          type="text"
+          name="unit"
+          placeholder="Unit (gm, ml)"
+          value={newIngredient.unit}
+          onChange={handleInputChange}
+          required
+        />
+        <button type="submit" disabled={adding}>
+          {adding ? "Adding..." : "Add Ingredient"}
+        </button>
+      </form>
 
       {loading && <LoadingSpinner message="Loading ingredients..." />}
       {error && <ErrorMessage message={error} />}
@@ -39,20 +151,16 @@ const IngredientManagementPage = () => {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Unit</th>
-              <th>Created At</th>
+              <th>Unit Quantity</th>
+              <th>Unit (SI)</th>
             </tr>
           </thead>
           <tbody>
             {filteredIngredients.map(ingredient => (
-              <tr key={ingredient._id}>
+              <tr key={ingredient.ingredient_id}>
                 <td>{ingredient.name}</td>
-                <td>{ingredient.type}</td>
-                <td>{ingredient.originalAmount}</td>
-                <td>{ingredient.originalUnit}</td>
-                <td>{new Date(ingredient.createdAt).toLocaleDateString()}</td>
+                <td>{ingredient.unit_quantity}</td>
+                <td>{ingredient.unit}</td>
               </tr>
             ))}
           </tbody>

@@ -7,24 +7,37 @@ const UserManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
 
   useEffect(() => {
     setLoading(true);
     setError(null);
 
-    fetch("http://localhost:8080/api/users")
-      .then(response => response.json())
-      .then(data => setUsers(data))
-      .catch(() => setError("Failed to load users."))
+    const token = localStorage.getItem("token") || "";
+
+    fetch(`http://localhost:8080/admin/users`, {
+      method: "GET", 
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+      
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Unauthorized or failed to fetch users");
+        }
+        return response.json();
+      })
+      .then(data => setUsers(data.users))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   const filteredUsers = users.filter(user =>
-    (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (roleFilter === '' || user.role === roleFilter)
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+
 
   return (
     <div>
@@ -33,13 +46,12 @@ const UserManagementPage = () => {
       </div>
 
       <div className="admin-controls">
-        <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-          <option value="">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="user">User</option>
-          <option value="vendor">Vendor</option>
-        </select>
+        <input 
+          type="text" 
+          placeholder="Search by name or email..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+        />
       </div>
 
       {loading && <LoadingSpinner message="Loading users..." />}
@@ -51,8 +63,8 @@ const UserManagementPage = () => {
             <tr>
               <th>Name</th>
               <th>Email</th>
-              <th>Role</th>
               <th>Joined</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -60,8 +72,15 @@ const UserManagementPage = () => {
               <tr key={user._id}>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
-                <td>{user.role}</td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button 
+                    onClick={() => handleDelete(user._id, user.name)}
+                    className="btn btn-danger btn-sm"
+                  >
+                    <i className="fas fa-trash"></i> Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -8,11 +8,11 @@ function VendorDashboard() {
     useEffect(() => {
         const verifyToken = async () => {
             try {
-                const token = localStorage.getItem("token");
+                const token = localStorage.getItem("access_token");
                 const role = localStorage.getItem("role");
 
                 if (!token || role !== "vendor") {
-                    localStorage.removeItem("token");
+                    localStorage.removeItem("access_token");
                     localStorage.removeItem("role");
                     navigate("/vendor/login");
                     return;
