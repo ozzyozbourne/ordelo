@@ -111,9 +111,9 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /register", http.HandlerFunc(CreateUser))
 	handleFunc("POST /login", http.HandlerFunc(UserLogin))
 
-	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
-	handleFunc("DELETE /vendor", mid(vendor(http.HandlerFunc(DeleteAdmin))))
-	handleFunc("DELETE /user", mid(user(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return CORSMiddleware(handler)
