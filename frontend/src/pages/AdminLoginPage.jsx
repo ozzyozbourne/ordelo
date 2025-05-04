@@ -65,7 +65,6 @@ function LoginPage() {
         token_type: data.token_type || '',
         expires_in: data.expires_in || '',
       });
-
       navigate(from, { replace: true });
     } catch (error) {
       console.error("Login error", error);

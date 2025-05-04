@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
+function UserLogin() {
   const [userData, setUserData] = useState({
     email: "",
     password: "",
@@ -122,4 +122,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default UserLogin;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
+function VendorLogin() {
   const [userData, setUserData] = useState({
     email: "",
     password: "",
@@ -112,7 +112,7 @@ function Login() {
 
           <div className="auth-footer">
             <p>Don't have an account?</p>
-            <Link to="/register" className="register-option">
+            <Link to="/vendor/register" className="register-option">
               <i className="fas fa-user"></i> Register
             </Link>
           </div>
@@ -122,4 +122,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default VendorLogin;
