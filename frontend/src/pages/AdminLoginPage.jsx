@@ -1,47 +1,103 @@
-// src/pages/LoginPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
 
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get intended destination from route state or default to admin users
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState(null);
+
   const from = location.state?.from || '/admin/users';
 
-  const handleLogin = (event) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleLogin = async (event) => {
     event.preventDefault();
-    // Add actual form handling here later
-    const simulatedCredentials = { email: 'admin@ordelo.com', password: 'password' };
+    setError(null);
 
-    // Use the login function from context
-    const success = login(simulatedCredentials);
+    try {
+      const response = await fetch("http://localhost:8080/login", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          role: "admin" // Sending role as admin in the request body
+        }),
+      });
 
-    if (success) {
-      // Navigate to the intended destination after successful login
-      navigate(from, { replace: true });
-    } else {
-      alert("Simulated login failed (only admin role works in this demo).");
+      const data = await response.json();
+
+      if (response.ok) {
+        // Save token and role in localStorage
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("role", data.role);
+
+        // Call login and normalize data properly
+        login({
+          id: data._id || null,
+          name: formData.email,
+          email: formData.email,
+          role: data.role || "admin",
+          token: data.access_token,
+          token_type: data.token_type || '',
+          expires_in: data.expires_in || '',
+        });
+
+        navigate(from, { replace: true });
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error", error);
+      setError("An unexpected error occurred.");
     }
   };
 
   return (
     <div style={{ padding: '3rem', maxWidth: '400px', margin: '5rem auto', textAlign: 'center', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff' }}>
       <h1>Admin Login</h1>
-      <p>Enter credentials to access the admin panel.</p>
+      <p>Enter your admin credentials to access the panel.</p>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
-         {/* Basic form elements - enhance later */}
-         <input type="email" placeholder="Email (e.g., admin@ordelo.com)" required style={{padding: '0.8rem'}}/>
-         <input type="password" placeholder="Password" required style={{padding: '0.8rem'}} />
-         <button type="submit" className="btn btn-primary">
-           Login
-         </button>
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          required
+          style={{ padding: '0.8rem' }}
+          value={formData.email}
+          onChange={handleInputChange}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          required
+          style={{ padding: '0.8rem' }}
+          value={formData.password}
+          onChange={handleInputChange}
+        />
+        <button type="submit" className="btn btn-primary">
+          Login
+        </button>
       </form>
-      <p style={{marginTop: '1rem', fontSize: '0.9rem', color: '#666'}}>
-          (Note: Authentication is mocked. Click Login to proceed as admin.)
-      </p>
     </div>
   );
 }

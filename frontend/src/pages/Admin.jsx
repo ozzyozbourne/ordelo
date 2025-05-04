@@ -11,6 +11,7 @@ const AddUser = () => {
     role: "",
     created_at:""
   })
+  
   let { user_name, user_address, email, password, saved_recipe, role, created_at}= userData;
   const onChangeHandler=(e)=>{
     setBookData({
@@ -18,6 +19,7 @@ const AddUser = () => {
       [e.target.name] : e.target.value
     })
   }
+
   const onSubmitHandler = async(e)=>{
     try{
     e.preventDefault();
@@ -29,7 +31,7 @@ const AddUser = () => {
       }
     })
     console.log(tokenData)*/
-    let { data } = await axios.post("http://localhost:7001/admin/add", userData);
+    let { data } = await axios.post("http://localhost:8080/admin/add", userData);
     console.log(data);
     }
     catch(error){

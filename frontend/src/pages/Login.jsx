@@ -6,7 +6,7 @@ function Login() {
   const [userData, setUserData] = useState({
     email: "",
     password: "",
-    role: "user", // ✅ Automatically set role here
+    role: "user", 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
