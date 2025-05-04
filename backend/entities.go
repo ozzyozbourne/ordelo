@@ -9,6 +9,30 @@ import (
 //
 // ------------------------Basic types------------------------------------
 
+type RequestRecipes struct {
+	Recipes []*Recipe `json:"recipes"`
+}
+
+type RequestCarts struct {
+	Carts []*Cart `json:"carts"`
+}
+
+type RequestUserOrders struct {
+	Orders []*UserOrder `json:"orders"`
+}
+
+type RequestStores struct {
+	Stores []*Store `json:"stores"`
+}
+
+type RequestVendorOrders struct {
+	Orders []*VendorOrder `json:"orders"`
+}
+
+type ComConReq interface {
+	RequestRecipes | RequestCarts | RequestUserOrders | RequestVendorOrders | RequestStores
+}
+
 type Login struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`

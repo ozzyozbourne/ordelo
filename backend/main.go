@@ -129,31 +129,65 @@ func newHTTPHandler() http.Handler {
 	vendor := RoleAuthMiddleware("vendor")
 	user := RoleAuthMiddleware("user")
 
-	//-------------common-to-all-----------------------------
+	//-------------Common-To-All-----------------------------
 	handleFunc("POST /register", http.HandlerFunc(CreateUser))
 	handleFunc("POST /login", http.HandlerFunc(UserLogin))
 	//-------------------------------------------------------
 	//
 	//-------------Admin-Specific-----------------------------
 	handleFunc("POST /admin/ingredients", mid(admin(http.HandlerFunc(DeleteAdmin))))
+
+	handleFunc("GET /admin/users", mid(admin(http.HandlerFunc(AdminGetUsers))))
+	handleFunc("GET /admin/vendors", mid(admin(http.HandlerFunc(AdminGetVendors))))
+	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
+	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
+
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(AdminUpdate))))
+	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
+
 	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
 	//--------------------------------------------------------
 	//
 	//-------------Vendor-Specific-----------------------------
-	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(DeleteVendor))))
-	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
+	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
+
+	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
+	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
+
+	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
+	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
+	handleFunc("PUT /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
+
+	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
 	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
 	//---------------------------------------------------------
 	//
 	//-------------User-Specific-------------------------------
-	handleFunc("POST /user/recipes", mid(user(http.HandlerFunc(DeleteUser))))
-	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(DeleteUser))))
-	handleFunc("POST /user/orders", mid(user(http.HandlerFunc(DeleteUser))))
+	handleFunc("POST /user/recipes", mid(user(http.HandlerFunc(CreateRecipes))))
+	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
+	handleFunc("POST /user/orders", mid(user(http.HandlerFunc(CreateUserOrders))))
+
+	handleFunc("GET /user/recipes", mid(user(http.HandlerFunc(GetRecipes))))
+	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
+	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(GetUserOrders))))
+
+	handleFunc("PUT /user/recipes", mid(user(http.HandlerFunc(UpdateRecipes))))
+	handleFunc("PUT /user/carts", mid(user(http.HandlerFunc(UpdateCarts))))
+	handleFunc("PUT /user/orders", mid(user(http.HandlerFunc(UpdateUserOrders))))
+
+	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(DeleteRecipes))))
+	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
 	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
 
+<<<<<<< HEAD
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return CORSMiddleware(handler)
+=======
+	return CORSMiddleware(otelhttp.NewHandler(mux, "/"))
+>>>>>>> 07db8211b494b8a6360939d0ce5a2c4643a94626
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {
