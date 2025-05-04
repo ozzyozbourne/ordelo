@@ -121,7 +121,11 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
 	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
 
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(AdminUpdate))))
+	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
+
 	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
 	//--------------------------------------------------------
 	//
 	//-------------Vendor-Specific-----------------------------

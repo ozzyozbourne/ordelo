@@ -305,6 +305,153 @@ func AdminGetIngredients(w http.ResponseWriter, r *http.Request) {
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
+func AdminUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminUpdate")
+	defer span.End()
+	source := slog.String("source", "AdminUpdate")
+
+	Logger.InfoContext(ctx, "Updating admin information", source)
+
+	var admin Admin
+	if err := json.NewDecoder(r.Body).Decode(&admin); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body to admin struct", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Validating admin struct fields", source)
+	switch {
+	case admin.Name == "":
+		sendFailure(ctx, w, "Admin name is empty", source)
+		return
+	case admin.Email == "":
+		sendFailure(ctx, w, "Email is empty", source)
+		return
+	case admin.PasswordHash == "":
+		sendFailure(ctx, w, "Password is empty", source)
+		return
+	case admin.Role == "":
+		sendFailure(ctx, w, "Role is empty", source)
+		return
+	}
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	admin.ID = id.value
+
+	if err := Repos.Admin.UpdateAdmin(ctx, &admin); err != nil {
+		Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to update admin", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Admin updated successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminUpdateIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminUpdateIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminUpdateIngredients")
+
+	Logger.InfoContext(ctx, "Updating ingredients", source)
+
+	var req struct {
+		Ingredients []*Ingredient `json:"ingredients"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	if len(req.Ingredients) == 0 {
+		Logger.ErrorContext(ctx, "No ingredients provided", source)
+		sendFailure(ctx, w, "No ingredients provided", source)
+		return
+	}
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	if err := Repos.Admin.UpdateIngredients(ctx, id, req.Ingredients); err != nil {
+		Logger.ErrorContext(ctx, "Failed to update ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to update ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Ingredients updated successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminDeleteIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminDeleteIngredients")
+
+	Logger.InfoContext(ctx, "Deleting ingredients", source)
+
+	var req struct {
+		IngredientIDs []string `json:"ingredient_ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	if len(req.IngredientIDs) == 0 {
+		Logger.ErrorContext(ctx, "No ingredient IDs provided", source)
+		sendFailure(ctx, w, "No ingredient IDs provided", source)
+		return
+	}
+
+	adminID, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	ids := make([]*ID, len(req.IngredientIDs))
+	for i, idStr := range req.IngredientIDs {
+		id, err := NewID(ctx, idStr)
+		if err != nil {
+			Logger.ErrorContext(ctx, "Invalid ingredient ID format",
+				slog.String("id", idStr), slog.Any("error", err), source)
+			sendFailure(ctx, w, "Invalid ingredient ID format: "+idStr, source)
+			return
+		}
+		ids[i] = &id
+	}
+
+	if err := Repos.Admin.DeleteIngredients(ctx, adminID, ids); err != nil {
+		Logger.ErrorContext(ctx, "Failed to delete ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to delete ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Ingredients deleted successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func GetCarts(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "GetCarts")
 	defer span.End()
