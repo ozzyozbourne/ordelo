@@ -162,7 +162,7 @@ func (s *authService) Login(ctx context.Context, login *Login) (id ID, accessTok
 		return
 	}
 
-	if accessToken, err = s.GenerateAccessToken(ctx, com.ID.Hex(), com.Role); err != nil {
+	if accessToken, err = s.GenerateAccessToken(ctx, com); err != nil {
 		return
 	}
 	if refreshToken, err = s.GenerateRefreshToken(ctx, com.ID.Hex()); err != nil {
@@ -173,20 +173,22 @@ func (s *authService) Login(ctx context.Context, login *Login) (id ID, accessTok
 	return
 }
 
-func (s *authService) GenerateAccessToken(ctx context.Context, userID, role string) (token string, err error) {
+func (s *authService) GenerateAccessToken(ctx context.Context, com *Common) (token string, err error) {
 	ctx, span := Tracer.Start(ctx, "AuthService.GenerateAccessToken")
 	defer span.End()
 
 	now := time.Now()
 	claims := &Claims{
-		UserID: userID,
-		Role:   role,
+		UserID:  com.ID.Hex(),
+		Role:    com.Role,
+		Address: com.Address,
+		Name:    com.Name,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    "app-auth-service",
-			Subject:   userID,
+			Subject:   com.ID.Hex(),
 		},
 	}
 
@@ -194,7 +196,7 @@ func (s *authService) GenerateAccessToken(ctx context.Context, userID, role stri
 		Logger.ErrorContext(ctx, "Failed to generate access token", slog.Any("error", err), auth_source)
 		return
 	}
-	Logger.InfoContext(ctx, "Access token generated", slog.String("userID", userID), slog.String("token", token), auth_source)
+	Logger.InfoContext(ctx, "Access token generated", slog.String("userID", com.ID.Hex()), slog.String("token", token), auth_source)
 	return
 }
 
@@ -261,29 +263,26 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (st
 		return "", err
 	}
 
-	var com *Common
-	switch claims.Role {
-	case "user":
-		var user *User
-		if user, err = Repos.User.FindUserByID(ctx, id); err != nil {
-			return "", err
-		}
-		com = &user.Common
-	case "vendor":
-		var user *Vendor
-		if user, err = Repos.Vendor.FindVendorByID(ctx, id); err != nil {
-			return "", err
-		}
-		com = &user.Common
-	default:
-		var user *Admin
-		if user, err = Repos.Admin.FindAdminByID(ctx, id); err != nil {
-			return "", err
-		}
-		com = &user.Common
+	if err := isValidRole(claims.Role); err != nil {
+		Logger.ErrorContext(ctx, "Invalid role in the token", slog.String("role", claims.Role), auth_source)
 	}
 
-	accessToken, err := s.GenerateAccessToken(ctx, claims.UserID, com.Role)
+	switch claims.Role {
+	case "user":
+		if _, err := Repos.User.FindUserByID(ctx, id); err != nil {
+			return "", err
+		}
+	case "vendor":
+		if _, err := Repos.Vendor.FindVendorByID(ctx, id); err != nil {
+			return "", err
+		}
+	default:
+		if _, err := Repos.Admin.FindAdminByID(ctx, id); err != nil {
+			return "", err
+		}
+	}
+
+	accessToken, err := s.GenerateAccessToken(ctx, &Common{ID: id.value, Name: claims.Name, Role: claims.Role, Address: claims.Address})
 	if err != nil {
 		return "", err
 	}
