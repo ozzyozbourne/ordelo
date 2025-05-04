@@ -18,7 +18,7 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Error fatal error in server -> \n%v\n", err)
 	}
-	log.Printf("Sever shutdown successfull with no errors\n")
+	log.Printf("Server shutdown successful with no errors\n")
 }
 
 func run() (err error) {
@@ -67,15 +67,19 @@ func run() (err error) {
 	log.Printf("Starting Server\n")
 	port := os.Getenv("PORT")
 	if port == "" {
-		err = errors.New("env varible PORT is empty")
+		err = errors.New("env variable PORT is empty")
 		return
 	}
+
+	// ✅✅✅ CORRECT FIX → wrap handler with corsMiddleware at the top level (VERY IMPORTANT)
+	handler := corsMiddleware(newHTTPHandler())
+
 	srv := &http.Server{
 		Addr:         port,
 		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Handler:      newHTTPHandler(),
+		Handler:      handler, // <<< CORRECTED here
 	}
 
 	srvErr := make(chan error, 1)
@@ -95,6 +99,29 @@ func run() (err error) {
 	return
 }
 
+// ------------------------------------
+// ✅ CORS middleware (global)
+// ------------------------------------
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Always add CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ------------------------------------
+// ✅ Routes + mux + telemetry
+// ------------------------------------
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
@@ -106,6 +133,6 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /register", CreateUser)
 	handleFunc("POST /login", UserLogin)
 
-	handler := otelhttp.NewHandler(mux, "/")
-	return handler
+	// No need to wrap CORS here → handled globally now
+	return otelhttp.NewHandler(mux, "/")
 }
