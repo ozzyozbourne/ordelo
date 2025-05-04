@@ -51,8 +51,10 @@ type ResIng struct {
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID  string `json:"user_id"`
+	Role    string `json:"role"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
 	jwt.RegisteredClaims
 }
 
@@ -61,7 +63,7 @@ type Ingredient struct {
 	Name         string        `bson:"name" json:"name"`
 	UnitQuantity int           `bson:"unit_quantity" json:"unit_quantity"`
 	Unit         string        `bson:"unit" json:"unit"`
-	Price        float64       `bson:"price" json:"price"`
+	Price        float64       `bson:"price,omitempty" json:"price"`
 }
 
 type GeoJSON struct {
