@@ -1,4 +1,4 @@
-module auth
+module ordelo
 
 go 1.24.1
 

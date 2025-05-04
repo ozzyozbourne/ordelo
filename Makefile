@@ -1,4 +1,4 @@
-BACKEND:=auth
+BACKEND:=backend
 BUILD:=build
 STATICCHECK:=/Users/ozzy/go/bin/./staticcheck
 TEST_NAME:=TestCreateUser
@@ -6,7 +6,7 @@ TEST_NAME:=TestCreateUser
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
 .DEFAULT_GOAL := run-mac
-.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac
+.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac run-linux
 
 build: build-all
 
