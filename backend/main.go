@@ -98,14 +98,38 @@ func run() (err error) {
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
-	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
-		handler := otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc))
+	handleFunc := func(pattern string, hand http.Handler) {
+		handler := otelhttp.WithRouteTag(pattern, hand)
 		mux.Handle(pattern, handler)
 	}
 
-	handleFunc("POST /register", CreateUser)
-	handleFunc("POST /login", UserLogin)
+	mid := AuthService.JWTAuthMiddleware()
+	admin := RoleAuthMiddleware("admin")
+	vendor := RoleAuthMiddleware("vendor")
+	user := RoleAuthMiddleware("user")
+
+	handleFunc("POST /register", http.HandlerFunc(CreateUser))
+	handleFunc("POST /login", http.HandlerFunc(UserLogin))
+
+	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /vendor", mid(vendor(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /user", mid(user(http.HandlerFunc(DeleteAdmin))))
 
 	handler := otelhttp.NewHandler(mux, "/")
-	return handler
+	return CORSMiddleware(handler)
+}
+
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
