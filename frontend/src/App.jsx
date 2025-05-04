@@ -132,7 +132,7 @@ function App() {
                {/* Vendor Auth Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/register" element={<VendorRegister />} />
-              <Route path="/vendor/dashboard" element={<VendorDashboard/>} />
+
 
               {/* Public Routes */}
               <Route path="/" element={
