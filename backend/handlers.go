@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func sendResponse(ctx context.Context, w http.ResponseWriter, httpStatus int, messageMap *map[string]any, source slog.Attr) {
@@ -135,7 +138,6 @@ func CreateCarts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Carts)
-	Logger.InfoContext(ctx, "Added Carts successfully", source)
 }
 
 func CreateUserOrders(w http.ResponseWriter, r *http.Request) {
@@ -150,8 +152,6 @@ func CreateUserOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Added UserOrders successfully", source)
-
 }
 
 func CreateVendorOrders(w http.ResponseWriter, r *http.Request) {
@@ -166,8 +166,6 @@ func CreateVendorOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Orders)
-	Logger.InfoContext(ctx, "Added VendorOrders successfully", source)
-
 }
 
 func CreateStores(w http.ResponseWriter, r *http.Request) {
@@ -182,8 +180,6 @@ func CreateStores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Stores)
-	Logger.InfoContext(ctx, "Added stores successfully", source)
-
 }
 
 func CreateRecipes(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +194,424 @@ func CreateRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createCon(ctx, w, r, source, req.Recipes)
-	Logger.InfoContext(ctx, "Added recipes successfully", source)
+}
+
+func AdminGetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetUsers")
+	defer span.End()
+	source := slog.String("source", "AdminGetUsers")
+
+	Logger.InfoContext(ctx, "Admin retrieving all users", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	users, err := Repos.Admin.FindUsers(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch users", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch users", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"users":   users,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+
+}
+
+func AdminGetVendors(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetVendors")
+	defer span.End()
+	source := slog.String("source", "AdminGetVendors")
+
+	Logger.InfoContext(ctx, "Admin retrieving all vendors", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	vendors, err := Repos.Admin.FindVendors(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch vendors", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch vendors", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"vendors": vendors,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminGetStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetStores")
+	defer span.End()
+	source := slog.String("source", "AdminGetStores")
+
+	Logger.InfoContext(ctx, "Admin retrieving all stores", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	vendors, err := Repos.Admin.FindStores(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch stores", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch stores", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"vendors": vendors,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminGetIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminGetIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminGetIngredients")
+
+	Logger.InfoContext(ctx, "Admin retrieving all ingredients", source)
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID", source)
+		return
+	}
+
+	ingredients, err := Repos.Admin.FindIngredients(ctx, id)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success":     true,
+		"ingredients": ingredients,
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminUpdate")
+	defer span.End()
+	source := slog.String("source", "AdminUpdate")
+
+	Logger.InfoContext(ctx, "Updating admin information", source)
+
+	var admin Admin
+	if err := json.NewDecoder(r.Body).Decode(&admin); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body to admin struct", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Validating admin struct fields", source)
+	switch {
+	case admin.Name == "":
+		sendFailure(ctx, w, "Admin name is empty", source)
+		return
+	case admin.Email == "":
+		sendFailure(ctx, w, "Email is empty", source)
+		return
+	case admin.PasswordHash == "":
+		sendFailure(ctx, w, "Password is empty", source)
+		return
+	case admin.Role == "":
+		sendFailure(ctx, w, "Role is empty", source)
+		return
+	}
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	admin.ID = id.value
+
+	if err := Repos.Admin.UpdateAdmin(ctx, &admin); err != nil {
+		Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to update admin", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Admin updated successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminUpdateIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminUpdateIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminUpdateIngredients")
+
+	Logger.InfoContext(ctx, "Updating ingredients", source)
+
+	var req struct {
+		Ingredients []*Ingredient `json:"ingredients"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	if len(req.Ingredients) == 0 {
+		Logger.ErrorContext(ctx, "No ingredients provided", source)
+		sendFailure(ctx, w, "No ingredients provided", source)
+		return
+	}
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	if err := Repos.Admin.UpdateIngredients(ctx, id, req.Ingredients); err != nil {
+		Logger.ErrorContext(ctx, "Failed to update ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to update ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Ingredients updated successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func AdminDeleteIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteIngredients")
+	defer span.End()
+	source := slog.String("source", "AdminDeleteIngredients")
+
+	Logger.InfoContext(ctx, "Deleting ingredients", source)
+
+	var req struct {
+		IngredientIDs []string `json:"ingredient_ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	if len(req.IngredientIDs) == 0 {
+		Logger.ErrorContext(ctx, "No ingredient IDs provided", source)
+		sendFailure(ctx, w, "No ingredient IDs provided", source)
+		return
+	}
+
+	adminID, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		return
+	}
+
+	ids := make([]*ID, len(req.IngredientIDs))
+	for i, idStr := range req.IngredientIDs {
+		id, err := NewID(ctx, idStr)
+		if err != nil {
+			Logger.ErrorContext(ctx, "Invalid ingredient ID format",
+				slog.String("id", idStr), slog.Any("error", err), source)
+			sendFailure(ctx, w, "Invalid ingredient ID format: "+idStr, source)
+			return
+		}
+		ids[i] = &id
+	}
+
+	if err := Repos.Admin.DeleteIngredients(ctx, adminID, ids); err != nil {
+		Logger.ErrorContext(ctx, "Failed to delete ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to delete ingredients", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Ingredients deleted successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
+func GetCarts(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetCarts")
+	defer span.End()
+	source := slog.String("source", "GetCarts")
+
+	Logger.InfoContext(ctx, "Getting the Carts", source)
+	var carts []*Cart
+	getCon(ctx, w, r, carts, source)
+}
+
+func GetUserOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetUserOrders")
+	defer span.End()
+	source := slog.String("source", "GetUserOrders")
+
+	Logger.InfoContext(ctx, "Getting the UserOrders", source)
+	var userOrders []*UserOrder
+	getCon(ctx, w, r, userOrders, source)
+}
+
+func GetVendorOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetVendorOrders")
+	defer span.End()
+	source := slog.String("source", "GetVendorOrders")
+
+	Logger.InfoContext(ctx, "Getting the VendorOrders", source)
+	var vendorOrders []*VendorOrder
+	getCon(ctx, w, r, vendorOrders, source)
+}
+
+func GetStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetStores")
+	defer span.End()
+	source := slog.String("source", "GetStores")
+
+	Logger.InfoContext(ctx, "Getting the Stores", source)
+	var stores []*Store
+	getCon(ctx, w, r, stores, source)
+}
+
+func GetRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetRecipes")
+	defer span.End()
+	source := slog.String("source", "GetRecipes")
+
+	Logger.InfoContext(ctx, "Getting the Recipes", source)
+	var recipes []*Recipe
+	getCon(ctx, w, r, recipes, source)
+}
+
+func UpdateCarts(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateCarts")
+	defer span.End()
+	source := slog.String("source", "UpdateCarts")
+
+	Logger.InfoContext(ctx, "Updating Carts", source)
+	req, err := decodeStruct[RequestCarts](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing carts request body", source)
+		return
+	}
+	createCon(ctx, w, r, source, req.Carts)
+}
+
+func UpdateUserOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateUserOrders")
+	defer span.End()
+	source := slog.String("source", "UpdateUserOrders")
+
+	Logger.InfoContext(ctx, "Updating UserOrders", source)
+	req, err := decodeStruct[RequestUserOrders](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing userOrders request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Orders)
+}
+
+func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateVendorOrders")
+	defer span.End()
+	source := slog.String("source", "UpdateVendorOrders")
+
+	Logger.InfoContext(ctx, "Updating VendorOrders", source)
+	req, err := decodeStruct[RequestVendorOrders](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing VendorOrders request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Orders)
+}
+
+func UpdateStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateStores")
+	defer span.End()
+	source := slog.String("source", "UpdateStores")
+
+	Logger.InfoContext(ctx, "Updating stores ", source)
+	req, err := decodeStruct[RequestStores](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing Stores request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Stores)
+}
+
+func UpdateRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateRecipes")
+	defer span.End()
+	source := slog.String("source", "UpdateRecipes")
+
+	Logger.InfoContext(ctx, "Updating recipes", source)
+	req, err := decodeStruct[RequestRecipes](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing recipes request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Recipes)
+}
+
+func DeleteCarts(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteCarts")
+	defer span.End()
+	source := slog.String("source", "DeleteCarts")
+
+	Logger.InfoContext(ctx, "Deleting Carts", source)
+	req, err := decodeStruct[RequestCarts](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing carts request body", source)
+		return
+	}
+	createCon(ctx, w, r, source, req.Carts)
+}
+
+func DeleteStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteStores")
+	defer span.End()
+	source := slog.String("source", "DeleteStores")
+
+	Logger.InfoContext(ctx, "Deleting stores ", source)
+	req, err := decodeStruct[RequestStores](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing Stores request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Stores)
+}
+
+func DeleteRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteRecipes")
+	defer span.End()
+	source := slog.String("source", "DeleteRecipes")
+
+	Logger.InfoContext(ctx, "Deleting recipes", source)
+	req, err := decodeStruct[RequestRecipes](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing recipes request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Recipes)
 }
 
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
@@ -275,16 +688,9 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	var err error
 	var ids []*ID
 
-	v, ok := r.Context().Value(userIDKey).(string)
-	if !ok {
-		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
-		sendFailure(ctx, w, "Oops", source)
-		return
-	}
-
-	id, err := NewID(ctx, v)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, err.Error(), source)
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -329,6 +735,90 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
 }
 
+func updateCon[C containers](ctx context.Context, w http.ResponseWriter, r *http.Request, source slog.Attr, con C) {
+	var err error
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Oops", source)
+		return
+	}
+
+	if len(con) == 0 {
+		Logger.ErrorContext(ctx, "No items provided", source)
+		sendFailure(ctx, w, "No items provided", source)
+		return
+	}
+
+	switch c := any(con).(type) {
+	case []*Cart:
+		err = Repos.User.UpdateCarts(ctx, id, c)
+	case []*Recipe:
+		err = Repos.User.UpdateRecipes(ctx, id, c)
+	case []*UserOrder:
+		err = Repos.User.UpdateUserOrders(ctx, id, c)
+	case []*Store:
+		err = Repos.Vendor.UpdateStores(ctx, id, c)
+	case []*VendorOrder:
+		err = Repos.Vendor.UpdateVendorOrders(ctx, id, c)
+	default:
+		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
+		sendFailure(ctx, w, "unknown type", source)
+		return
+	}
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to update containers", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to update containers", source)
+		return
+	}
+
+	okResponseMap := map[string]any{"success": true}
+	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
+}
+
+func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Request, t c, source slog.Attr) {
+	var err error
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Oops", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+	}
+
+	switch a := any(t).(type) {
+	case []*Recipe:
+		a, err = Repos.User.FindRecipes(ctx, id)
+		okResponseMap["value"] = a
+	case []*Cart:
+		a, err = Repos.User.FindCarts(ctx, id)
+		okResponseMap["value"] = a
+	case []*UserOrder:
+		a, err = Repos.User.FindUserOrders(ctx, id)
+		okResponseMap["value"] = a
+	case []*Store:
+		a, err = Repos.Vendor.FindStores(ctx, id)
+		okResponseMap["value"] = a
+	case []*VendorOrder:
+		a, err = Repos.Vendor.FindVendorOrders(ctx, id)
+		okResponseMap["value"] = a
+	default:
+		Logger.ErrorContext(ctx, "Unknown get container constant", source)
+		sendFailure(ctx, w, "unknown get container constant", source)
+		return
+	}
+
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch containers", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch containers", source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.Attr) (v *req, err error) {
 	Logger.Info("Decode the body to struct", source)
 	if err := json.NewDecoder(r).Decode(&v); err != nil {
@@ -337,4 +827,13 @@ func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.A
 	}
 	Logger.Info("Decoded Successfully", source)
 	return
+}
+
+func getID(ctx context.Context, source slog.Attr) (ID, error) {
+	v, ok := ctx.Value(userIDKey).(string)
+	if !ok {
+		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
+		return ID{bson.NilObjectID}, errors.New("unable to cast to string from ctx")
+	}
+	return NewID(ctx, v)
 }
