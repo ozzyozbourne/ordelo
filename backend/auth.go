@@ -7,12 +7,16 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var (
@@ -288,14 +292,19 @@ func (s *authService) Logout(ctx context.Context, userID string) (err error) {
 func (s *authService) JWTAuthMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx, span := Tracer.Start(r.Context(), "JWTAuthMiddleware")
+			defer span.End()
 
 			authHeader := r.Header.Get("Authorization")
+			span.SetAttributes(attribute.String("auth.header.present", strconv.FormatBool(authHeader != "")))
+
 			if authHeader == "" {
 				http.Error(w, "Authorization header missing", http.StatusUnauthorized)
 				return
 			}
 
 			if !strings.HasPrefix(authHeader, "Bearer ") {
+				span.SetStatus(codes.Error, "Missing auth header")
 				http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
 				return
 			}
@@ -310,33 +319,48 @@ func (s *authService) JWTAuthMiddleware() func(http.Handler) http.Handler {
 			})
 
 			if err != nil {
+				span.SetStatus(codes.Error, "Invalid token")
+				span.RecordError(err)
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
 				return
 			}
 
 			if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-				ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+				span.SetAttributes(
+					attribute.String("auth.user.id", claims.UserID),
+					attribute.String("auth.user.role", claims.Role),
+				)
+
+				ctx = context.WithValue(r.Context(), userIDKey, claims.UserID)
 				ctx = context.WithValue(ctx, userRoleKey, claims.Role)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
+				span.SetStatus(codes.Error, "Invalid token claims")
 				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 			}
 		})
 	}
 }
 
-func RoleAuthMiddleware(allowedRole string) func(http.Handler) http.Handler {
+func RoleAuthMiddleware(role string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			role, ok := r.Context().Value(userRoleKey).(string)
+			ctx, span := Tracer.Start(r.Context(), "RoleAuthMiddleware")
+			defer span.End()
+
+			span.SetAttributes(attribute.String("auth.required_role", role))
+
+			user_role, ok := r.Context().Value(userRoleKey).(string)
 			if !ok {
+				span.SetStatus(codes.Error, "No role in context")
 				http.Error(w, "Unauthorized - missing role claim", http.StatusUnauthorized)
 				return
 			}
-			if role == allowedRole {
-				next.ServeHTTP(w, r)
+			if user_role == role {
+				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
+				span.SetStatus(codes.Error, "Insufficient permissions")
 				http.Error(w, "Forbidden - insufficient permissions", http.StatusForbidden)
 				return
 			}

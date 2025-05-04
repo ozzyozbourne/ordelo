@@ -1,4 +1,4 @@
-BACKEND:=auth
+BACKEND:=backend
 BUILD:=build
 STATICCHECK:=/Users/ozzy/go/bin/./staticcheck
 TEST_NAME:=TestCreateUser

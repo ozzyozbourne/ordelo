@@ -148,3 +148,15 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Oops!", http.StatusInternalServerError)
 	}
 }
+
+func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func DeleteVendor(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+}
