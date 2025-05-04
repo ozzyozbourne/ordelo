@@ -572,6 +572,48 @@ func UpdateRecipes(w http.ResponseWriter, r *http.Request) {
 	updateCon(ctx, w, r, source, req.Recipes)
 }
 
+func DeleteCarts(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteCarts")
+	defer span.End()
+	source := slog.String("source", "DeleteCarts")
+
+	Logger.InfoContext(ctx, "Deleting Carts", source)
+	req, err := decodeStruct[RequestCarts](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing carts request body", source)
+		return
+	}
+	createCon(ctx, w, r, source, req.Carts)
+}
+
+func DeleteStores(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteStores")
+	defer span.End()
+	source := slog.String("source", "DeleteStores")
+
+	Logger.InfoContext(ctx, "Deleting stores ", source)
+	req, err := decodeStruct[RequestStores](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing Stores request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Stores)
+}
+
+func DeleteRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteRecipes")
+	defer span.End()
+	source := slog.String("source", "DeleteRecipes")
+
+	Logger.InfoContext(ctx, "Deleting recipes", source)
+	req, err := decodeStruct[RequestRecipes](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing recipes request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Recipes)
+}
+
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "DeleteAdmin")
 	defer span.End()

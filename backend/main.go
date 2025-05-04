@@ -139,8 +139,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
 	handleFunc("PUT /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
 
-	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
-	handleFunc("DELETE /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
+	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
 	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
 	//---------------------------------------------------------
 	//
@@ -157,9 +156,8 @@ func newHTTPHandler() http.Handler {
 	handleFunc("PUT /user/carts", mid(user(http.HandlerFunc(UpdateCarts))))
 	handleFunc("PUT /user/orders", mid(user(http.HandlerFunc(UpdateUserOrders))))
 
-	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(CreateRecipes))))
-	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
-	handleFunc("DELETE /user/orders", mid(user(http.HandlerFunc(CreateUserOrders))))
+	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(DeleteRecipes))))
+	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
 	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
 
 	return CORSMiddleware(otelhttp.NewHandler(mux, "/"))
