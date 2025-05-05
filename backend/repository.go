@@ -841,6 +841,7 @@ func getAllIngredients(ctx context.Context, source slog.Attr) ([]*Ingredient, er
 		Logger.ErrorContext(ctx, "Error in Fetching the single saved admin", slog.Any("error", err), source)
 		return nil, err
 	}
+
 	Logger.InfoContext(ctx, "Ingrediets found Successfully", source)
 	return admin.Ingredients, nil
 }
