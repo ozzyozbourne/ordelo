@@ -78,7 +78,7 @@ func run() (err error) {
 		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Handler:      handler, 
+		Handler:      handler,
 	}
 
 	srvErr := make(chan error, 1)
@@ -98,14 +98,12 @@ func run() (err error) {
 	return
 }
 
-
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -134,7 +132,6 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /login", http.HandlerFunc(UserLogin))
 	//-------------------------------------------------------
 
-
 	//-------------Admin-Specific-----------------------------
 	handleFunc("POST /admin/ingredients", mid(admin(http.HandlerFunc(AdminCreateIngredients))))
 
@@ -149,9 +146,8 @@ func newHTTPHandler() http.Handler {
 	handleFunc("DELETE /admin/{id}", mid(admin(http.HandlerFunc(DeleteAdmin))))
 	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
 
-
 	//-------------Vendor-Specific-----------------------------
-	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))  
+	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
 
 	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
@@ -180,7 +176,6 @@ func newHTTPHandler() http.Handler {
 	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(DeleteRecipes))))
 	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
 	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
-
 
 	handler := otelhttp.NewHandler(mux, "/")
 	return CORSMiddleware(handler)

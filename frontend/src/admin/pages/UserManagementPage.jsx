@@ -45,7 +45,6 @@ const UserManagementPage = () => {
             <tr>
               <th>Name</th>
               <th>Email</th>
-              <th>Joined</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -54,7 +53,6 @@ const UserManagementPage = () => {
               <tr key={user.email}>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
-                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                 <td>
                   <button 
                     onClick={() => handleDelete(user._id, user.name)}

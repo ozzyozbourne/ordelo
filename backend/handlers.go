@@ -391,9 +391,16 @@ func AdminCreateIngredients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	Logger.InfoContext(ctx, "Created ingredients successfully", source, slog.Any("ids", ids))
+	stringIds := make([]string, len(ids))
+
+	for i, v := range ids {
+		stringIds[i] = v.String()
+	}
+
 	okResponseMap := map[string]any{
 		"success": true,
-		"ids":     ids,
+		"ids":     stringIds,
 	}
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }

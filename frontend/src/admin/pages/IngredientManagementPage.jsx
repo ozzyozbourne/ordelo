@@ -12,29 +12,40 @@ const IngredientManagementPage = () => {
     unit: '',
   });
   const [adding, setAdding] = useState(false);
-  
+
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const token = storedUser?.token;
 
-  const fetchIngredients = () => {
+  const fetchIngredients = async () => {
     setLoading(true);
     setError(null);
 
-    fetch("http://localhost:8080/admin/ingredients", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Unauthorized or failed to fetch ingredients");
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-        return response.json();
-      })
-      .then(data => setIngredients(data.ingredients || []))
-      .catch(() => setError("Failed to load ingredients."))
-      .finally(() => setLoading(false));
+      });
+
+      if (!response.ok) {
+        throw new Error("Unauthorized or failed to fetch ingredients");
+      }
+
+      const data = await response.json();
+      const processed = (data.ingredients || []).map(ingredient => ({
+        _id: ingredient.ingredient_id,
+        name: ingredient.name,
+        unit_quantity: ingredient.unit_quantity,
+        unit: ingredient.unit
+      }));
+
+      setIngredients(processed);
+    } catch (error) {
+      setError("Failed to load ingredients.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -63,39 +74,71 @@ const IngredientManagementPage = () => {
     }
 
     const payload = {
-      name: newIngredient.name,
-      unit_quantity: unitQuantity,
-      unit: unit,
-      price: 0.0 
-    };
-    
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const token = storedUser?.token;
-
-    fetch("http://localhost:8080/admin/ingredients", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to add ingredient");
+      ingredients: [
+        {
+          name: newIngredient.name,
+          unit_quantity: unitQuantity,
+          unit: unit
         }
-        return response.json();
-      })
-      .then(() => {
-        setNewIngredient({
-          name: '',
-          unit_quantity: '',
-          unit: ''
-        });
-        fetchIngredients();
-      })
-      .catch(() => alert("Failed to add ingredient."))
-      .finally(() => setAdding(false));
+      ]
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add ingredient");
+      }
+
+      await response.json();
+      setNewIngredient({
+        name: '',
+        unit_quantity: '',
+        unit: ''
+      });
+      fetchIngredients();
+    } catch (error) {
+      alert("Failed to add ingredient.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteIngredient = async (ingredientId) => {
+    if (!window.confirm(`Are you sure you want to delete this ingredient?`)) {
+      return;
+    }
+
+    const payload = {
+      ingredient_ids: [ingredientId]
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete ingredient");
+      }
+
+      await response.json();
+      fetchIngredients();
+    } catch (error) {
+      alert("Failed to delete ingredient.");
+    }
   };
 
   return (
@@ -145,14 +188,20 @@ const IngredientManagementPage = () => {
               <th>Name</th>
               <th>Unit Quantity</th>
               <th>Unit (SI)</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {ingredients.map(ingredient => (
-              <tr key={ingredient}>
+            {ingredients.map((ingredient, index) => (
+              <tr key={index}>
                 <td>{ingredient.name}</td>
                 <td>{ingredient.unit_quantity}</td>
                 <td>{ingredient.unit}</td>
+                <td>
+                  <button onClick={() => handleDeleteIngredient(ingredient._id)}>
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
