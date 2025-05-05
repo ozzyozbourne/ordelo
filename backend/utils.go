@@ -443,15 +443,6 @@ func processDeleteItems(ctx context.Context, col *mongo.Collection, doc, con ID,
 
 func createContainers[T containers](ctx context.Context, col *mongo.Collection, id ID,
 	ids []*ID, t T, fil, up bson.D, source slog.Attr) error {
-	fieldName := ""
-	if len(up) > 0 && up[0].Key == "$push" {
-		if pushValue, ok := up[0].Value.(bson.M); ok {
-			for k := range pushValue {
-				fieldName = k
-				break
-			}
-		}
-	}
 	result, err := col.UpdateOne(ctx, fil, up)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), source)
