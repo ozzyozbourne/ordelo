@@ -80,17 +80,7 @@ func AssignIDs[I ItemWithID, C ContainerWithItems[I]](containers []C) []*ID {
 
 func getFilterPush[T containers](id ID, key string, t T) (bson.D, bson.D) {
 	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{
-		{Key: "$set", Value: bson.M{
-			key: bson.M{"$cond": bson.M{
-				"if":   bson.M{"$eq": bson.A{bson.M{"$type": "$" + key}, "null"}},
-				"then": bson.A{},
-				"else": "$" + key,
-			}},
-		}},
-		{Key: "$push", Value: bson.M{key: bson.M{"$each": t}}},
-	}
-
+	update := bson.D{{Key: "$push", Value: bson.M{key: bson.M{"$each": t}}}}
 	return filter, update
 }
 
