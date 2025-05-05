@@ -91,13 +91,6 @@ func (r CachedUserRepository) CreateUserOrders(ctx context.Context, id ID, order
 	return ids, r.Invalidate(ctx, keys...)
 }
 
-func (r CachedUserRepository) FindUserAdminIngredients(ctx context.Context) ([]*Ingredient, error) {
-	ctx, span := Tracer.Start(ctx, "FindUserAdminIngredients")
-	defer span.End()
-
-	return r.userRepo.FindUserAdminIngredients(ctx)
-}
-
 func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (*User, error) {
 	ctx, span := Tracer.Start(ctx, "FindUserByIDRedis")
 	defer span.End()

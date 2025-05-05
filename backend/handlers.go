@@ -555,7 +555,7 @@ func GetVendorAdminIngredients(w http.ResponseWriter, r *http.Request) {
 
 func sendIngredients(ctx context.Context, w http.ResponseWriter, source slog.Attr) {
 	Logger.InfoContext(ctx, "Getting the Admin Ingredients", source)
-	res, err := Repos.Vendor.FindVendorAdminIngredients(ctx)
+	res, err := getAllIngredients(ctx, source)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Failed to fetch Admin ingredients", slog.Any("error", err), source)
 		sendFailure(ctx, w, "Failed to fetch Admin ingredients", source)
