@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function VendorRegister() {
+function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -175,4 +175,4 @@ function VendorRegister() {
   );
 }
 
-export default VendorRegister;
+export default Register;
