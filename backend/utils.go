@@ -566,3 +566,10 @@ func findContainer[C containers](ctx context.Context, col *mongo.Collection, id 
 	return containerArray, nil
 
 }
+
+func getStringIDs(ids []*ID) (strIds []string) {
+	for _, v := range ids {
+		strIds = append(strIds, v.String())
+	}
+	return
+}
