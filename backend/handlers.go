@@ -335,14 +335,14 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	switch role {
 	case "user":
 		if err := Repos.User.UpdateUser(ctx, com); err != nil {
-			Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
-			sendFailure(ctx, w, "Failed to update admin", source)
+			Logger.ErrorContext(ctx, "Failed to update user", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to update user", source)
 			return
 		}
 	case "vendor":
 		if err := Repos.Vendor.UpdateVendor(ctx, com); err != nil {
-			Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
-			sendFailure(ctx, w, "Failed to update admin", source)
+			Logger.ErrorContext(ctx, "Failed to update vendor", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to update vendor", source)
 			return
 		}
 	case "admin":
@@ -537,6 +537,43 @@ func GetStores(w http.ResponseWriter, r *http.Request) {
 	Logger.InfoContext(ctx, "Getting the Stores", source)
 	var stores []*Store
 	getCon(ctx, w, r, stores, source)
+}
+
+func GetUserAdminIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetUserAdminIngredients")
+	defer span.End()
+
+	sendIngredients(ctx, w, slog.String("source", "GetUserAdminIngredients"))
+}
+
+func GetVendorAdminIngredients(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetVendorAdminIngredients")
+	defer span.End()
+
+	sendIngredients(ctx, w, slog.String("source", "GetVendorAdminIngredients"))
+}
+
+func sendIngredients(ctx context.Context, w http.ResponseWriter, source slog.Attr) {
+	Logger.InfoContext(ctx, "Getting the Admin Ingredients", source)
+	res, err := Repos.Vendor.FindVendorAdminIngredients(ctx)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to fetch Admin ingredients", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to fetch Admin ingredients", source)
+		return
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Failed to marshall the ingredients array to string", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Failed to marshall the ingredients array to string", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": string(b),
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func GetRecipes(w http.ResponseWriter, r *http.Request) {
