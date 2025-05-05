@@ -7,28 +7,59 @@ const UserManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchUsers = async () => {
     setLoading(true);
     setError(null);
 
     const token = localStorage.getItem("token") || "";
 
-    fetch(`http://localhost:8080/admin/users`, {
-      method: "GET", 
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Unauthorized or failed to fetch users");
+    try {
+      const response = await fetch(`http://localhost:8080/admin/users`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-        return response.json();
-      })
-      .then(data => setUsers(data.users))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      });
+
+      if (!response.ok) {
+        throw new Error("Unauthorized or failed to fetch users");
+      }
+
+      const data = await response.json();
+      setUsers(data.users);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
+
+  const handleDelete = async (_id, name) => {
+    if (!window.confirm(`Are you sure you want to delete user "${name}"?`)) return;
+
+    const token = localStorage.getItem("token") || "";
+
+    try {
+      const response = await fetch(`http://localhost:8080/admin/user/${_id}?_id=${_id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user");
+      }
+
+      fetchUsers();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   return (
     <div>
@@ -55,7 +86,7 @@ const UserManagementPage = () => {
                 <td>{user.email}</td>
                 <td>
                   <button 
-                    onClick={() => handleDelete(user._id, user.name)}
+                    onClick={() => handleDelete(user.user_id, user.name)}  
                     className="btn btn-danger btn-sm"
                   >
                     <i className="fas fa-trash"></i> Delete
