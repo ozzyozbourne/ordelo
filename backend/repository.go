@@ -831,3 +831,17 @@ func (v MongoAdminRepository) DeleteIngredients(ctx context.Context, id ID, ids 
 	Logger.InfoContext(ctx, "Ingredients deleted successfully", slog.String("adminID", id.String()), admin_repo_source)
 	return nil
 }
+
+func getAllIngredients(ctx context.Context, source slog.Attr) ([]*Ingredient, error) {
+	ctx, span := Tracer.Start(ctx, "GetAdminIngredients")
+	defer span.End()
+
+	admin := Admin{}
+	if err := MongoClient.Database(os.Getenv("DB_NAME")).Collection("admin").FindOne(ctx, bson.D{}).Decode(&admin); err != nil {
+		Logger.ErrorContext(ctx, "Error in Fetching the single saved admin", slog.Any("error", err), source)
+		return nil, err
+	}
+
+	Logger.InfoContext(ctx, "Ingrediets found Successfully", source)
+	return admin.Ingredients, nil
+}

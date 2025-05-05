@@ -57,7 +57,7 @@ func run() (err error) {
 		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}
-	if err = InitAuthService(ctx, Repos, RedisClient, 15*time.Minute, 7*24*time.Hour); err != nil {
+	if err = InitAuthService(ctx, Repos, RedisClient, 15*time.Hour, 7*24*time.Hour); err != nil {
 		log.Printf("Error in initing auth service -> %v\n", err)
 		return
 	}
@@ -136,6 +136,7 @@ func newHTTPHandler() http.Handler {
 
 	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
+	handleFunc("GET /vendor/ingredients", mid(vendor(http.HandlerFunc(GetVendorAdminIngredients))))
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
@@ -153,6 +154,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /user/recipes", mid(user(http.HandlerFunc(GetRecipes))))
 	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
 	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(GetUserOrders))))
+	handleFunc("GET /user/ingredients", mid(user(http.HandlerFunc(GetUserAdminIngredients))))
 
 	handleFunc("PUT /user", mid(user(http.HandlerFunc(UpdateUser))))
 	handleFunc("PUT /user/recipes", mid(user(http.HandlerFunc(UpdateRecipes))))
