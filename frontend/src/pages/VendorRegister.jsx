@@ -61,7 +61,7 @@ function Register() {
           token: data.access_token,        
           expires_in: data.expires_in || "900" 
         });
-        navigate('/vendor/dashboard', { replace: true });
+        navigate('/vendor/login', { replace: true });
       } else {
         setError(data.message || "Registration failed. Please try again.");
       }
