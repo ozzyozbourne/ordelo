@@ -80,7 +80,17 @@ func AssignIDs[I ItemWithID, C ContainerWithItems[I]](containers []C) []*ID {
 
 func getFilterPush[T containers](id ID, key string, t T) (bson.D, bson.D) {
 	filter := bson.D{{Key: "_id", Value: id.value}}
-	update := bson.D{{Key: "$push", Value: bson.M{key: bson.M{"$each": t}}}}
+	update := bson.D{
+		{Key: "$set", Value: bson.M{
+			key: bson.M{"$cond": bson.M{
+				"if":   bson.M{"$eq": bson.A{bson.M{"$type": "$" + key}, "null"}},
+				"then": bson.A{},
+				"else": "$" + key,
+			}},
+		}},
+		{Key: "$push", Value: bson.M{key: bson.M{"$each": t}}},
+	}
+
 	return filter, update
 }
 
@@ -433,6 +443,15 @@ func processDeleteItems(ctx context.Context, col *mongo.Collection, doc, con ID,
 
 func createContainers[T containers](ctx context.Context, col *mongo.Collection, id ID,
 	ids []*ID, t T, fil, up bson.D, source slog.Attr) error {
+	fieldName := ""
+	if len(up) > 0 && up[0].Key == "$push" {
+		if pushValue, ok := up[0].Value.(bson.M); ok {
+			for k := range pushValue {
+				fieldName = k
+				break
+			}
+		}
+	}
 	result, err := col.UpdateOne(ctx, fil, up)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), source)
