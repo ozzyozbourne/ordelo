@@ -1,4 +1,4 @@
-// src/components/admin/ErrorMessage.jsx
+
 import React from 'react';
 
 const ErrorMessage = ({ message = "An error occurred." }) => (
