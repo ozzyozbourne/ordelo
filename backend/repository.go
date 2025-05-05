@@ -126,6 +126,15 @@ func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (ID, er
 	ctx, span := Tracer.Start(ctx, "CreateUser")
 	defer span.End()
 	Logger.InfoContext(ctx, "Inserting in Users collection", slog.Any("user", user), user_repo_source)
+	if user.Carts == nil {
+		user.Carts = []*Cart{}
+	}
+	if user.Orders == nil {
+		user.Orders = []*UserOrder{}
+	}
+	if user.SavedRecipes == nil {
+		user.SavedRecipes = []*Recipe{}
+	}
 	return create[*User](ctx, user, m.col, user_repo_source)
 }
 
@@ -296,7 +305,12 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 func (m MongoVendorRepository) CreateVendor(ctx context.Context, vendor *Vendor) (res ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateVendor")
 	defer span.End()
-
+	if vendor.Orders == nil {
+		vendor.Orders = []*VendorOrder{}
+	}
+	if vendor.Stores == nil {
+		vendor.Stores = []*Store{}
+	}
 	return create[*Vendor](ctx, vendor, m.col, vendor_repo_source)
 }
 
@@ -310,7 +324,7 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	filter, update := getFilterPush[[]*Store](id, "stores", stores)
 
 	if err := createContainers[[]*Store](ctx, m.col, id, ids, stores, filter, update, vendor_repo_source); err != nil {
-		Logger.ErrorContext(ctx, "Error in adding vendor stores", slog.Any("error", err), user_repo_source)
+		Logger.ErrorContext(ctx, "Error in adding vendor stores", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
 
@@ -498,6 +512,9 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateAdmin")
 	defer span.End()
+	if admin.Ingredients == nil {
+		admin.Ingredients = []*Ingredient{}
+	}
 	Logger.InfoContext(ctx, "Inserting in Admin collection", slog.Any("user", admin), admin_repo_source)
 	return create[*Admin](ctx, admin, v.col, admin_repo_source)
 }
