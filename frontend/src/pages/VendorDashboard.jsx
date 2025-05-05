@@ -1,55 +1,35 @@
-import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+
 function VendorDashboard() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [vendorData, setVendorData] = useState(null);
 
-    useEffect(() => {
-        const verifyToken = async () => {
-            try {
-                const token = localStorage.getItem("access_token");
-                const role = localStorage.getItem("role");
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user")); 
+    const token = storedUser?.token;
+    const role = storedUser?.role;
 
-                if (!token || role !== "vendor") {
-                    localStorage.removeItem("access_token");
-                    localStorage.removeItem("role");
-                    navigate("/vendor/login");
-                    return;
-                }
+    if (!token || role !== "vendor") {
+      localStorage.removeItem("user");
+      navigate("/vendor/login");
+    } else {
+      setVendorData(storedUser);
+    }
+  }, [navigate]);
 
-                const response = await axios.get("http://localhost:8080/login", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Role": role
-                    }
-                });
 
-                const data = response.data;
-                console.log("Backend verified:", data);
 
-                if (!data.role || data.role !== "vendor") {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("role");
-                    navigate("/vendor/login");
-                }
+  return (
+    <div className="vendor-dashboard">
 
-            } catch (error) {
-                console.error("Verification failed:", error.response?.data || error.message);
-                localStorage.removeItem("token");
-                localStorage.removeItem("role");
-                navigate("/vendor/login");
-            }
-        };
-
-        verifyToken();
-    }, [navigate]);
-
-    return (
-        <>
-            <h1>Vendor Dashboard</h1>
-        </>
-    );
+      <div className="main-content">
+        <h1 className="greeting">Welcome, {vendorData?.name || "Vendor"}</h1>
+      </div>
+    </div>
+  );
 }
 
 export default VendorDashboard;

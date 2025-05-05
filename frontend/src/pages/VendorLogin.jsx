@@ -12,9 +12,9 @@ function VendorLogin() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+ const { login } = useAuth();
 
-  const from = location.state?.from || "/vendor/dashboard";
+  const from = location.state?.from || "/vendordashboard";
 
   const API_URL = "http://localhost:8080/login";
 
@@ -39,18 +39,20 @@ function VendorLogin() {
         },
         body: JSON.stringify(userData),
       });
-
-      let data;
-      const text = await response.text();
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: text };
-      }
-
-      if (response.ok) {
-        login({
+      const contentType = response.headers.get("content-type");
+      if (!response.ok) {
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Login failed");
+        } else {
+          const text = await response.text();
+          throw new Error(text || "Login failed");
+        }
+      }  
+      const data = await response.json();
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("role", data.role);
+      login({
           id: data._id,
           email: userData.email,
           role: data.role,
@@ -58,11 +60,8 @@ function VendorLogin() {
           tokenType: data.token_type,
           expiresIn: data.expires_in,
         });
-
-        navigate(from, { replace: true });
-      } else {
-        setError(data.error || data.message || "Login failed. Please try again.");
-      }
+        navigate("/vendordashboard", { replace: true });
+      
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
       console.error("Login error:", error);
@@ -107,11 +106,9 @@ function VendorLogin() {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-primary auth-submit-btn"
+            <button type="submit" className="btn btn-primary auth-submit-btn"
               disabled={isLoading}
-            >
+    >
               {isLoading ? <span className="button-loader"></span> : <>Log In</>}
             </button>
           </form>

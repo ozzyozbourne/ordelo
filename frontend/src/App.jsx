@@ -31,7 +31,7 @@ import VendorRegister from "./pages/VendorRegister";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RecipeDetails from "./pages/RecipeDetails";
-import HelpAndSupport from "./pages/HelpAndSupport"; // <-- New Import
+import HelpAndSupport from "./pages/HelpAndSupport"; 
 
 // Admin Pages
 import UserManagementPage from "./admin/pages/UserManagementPage";
@@ -131,6 +131,8 @@ function App() {
                {/* Vendor Auth Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/register" element={<VendorRegister />} />
+              <Route path="/vendordahboard" element={<VendorDashboard />} />
+
 
               {/* Public Routes */}
               <Route path="/" element={
@@ -219,11 +221,9 @@ function App() {
 
                 <Route path="/vendordashboard" element={
                   <>
-                    <Header />
-                    <main>
+              
                       <VendorDashboard />
-                    </main>
-                    <Footer />
+                    
                   </>
                 } />
 
