@@ -1,7 +1,7 @@
 BACKEND:=backend
 BUILD:=build
 STATICCHECK:=/Users/ozzy/go/bin/./staticcheck
-TEST_NAME:=TestCreateUser
+TEST_NAME:=TestReq
 
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
