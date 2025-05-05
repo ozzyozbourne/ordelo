@@ -1,94 +1,92 @@
-import { useState } from "react";
-import { useRecipes } from "../context/RecipeContext";
-import RecipeCard from "../components/RecipeCard";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 function SavedRecipes() {
-  const { savedRecipes, toggleSaveRecipe } = useRecipes();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredRecipes = savedRecipes.filter(recipe =>
-    recipe.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const fetchSavedRecipes = async () => {
+      try {
+
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+        const token = storedUser?.token;
+
+        if (!token) {
+          throw new Error("You are not logged in.");
+        }
+
+        const response = await fetch("http://localhost:8080/user/recipes", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Unauthorized. Please log in again.");
+          } else {
+            throw new Error("Failed to fetch recipes.");
+          }
+        }
+
+        const data = await response.json();
+
+      } catch (err) {
+        console.error("Error fetching recipes", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSavedRecipes();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <p>Loading saved recipes...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="saved-recipes-page">
-      <div className="page-header">
-        <div className="container">
-          <h1 className="page-title">
-            <i className="fas fa-heart"></i> Your Saved Recipes
-          </h1>
-          <p className="page-description">
-            All your favorite recipes in one place for quick access.
-          </p>
-        </div>
+    <div className="p-6 max-w-3xl mx-auto">
+      <div className="mb-4 text-right">
+        <Link
+          to="/add-recipe"
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Add New Recipe
+        </Link>
       </div>
 
-      <div className="container">
-        <div className="saved-recipes-controls">
-          <div className="search-filter">
-            <div className="search-input-container">
-              <i className="fas fa-search search-icon"></i>
-              <input
-                type="text"
-                placeholder="Search your saved recipes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-              {searchTerm && (
-                <button 
-                  className="clear-search" 
-                  onClick={() => setSearchTerm("")}
-                  aria-label="Clear search"
-                >
-                  <i className="fas fa-times"></i>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      <h1 className="text-2xl font-bold mb-4">Saved Recipes</h1>
 
-        {savedRecipes.length === 0 ? (
-          <div className="no-saved-recipes">
-            <div className="empty-state">
-              <i className="far fa-heart empty-icon"></i>
-              <h2>No Saved Recipes Yet</h2>
-              <p>
-                You haven't saved any recipes yet. Browse recipes and save your favorites!
-              </p>
-              <Link to="/" className="btn btn-primary">
-                <i className="fas fa-search"></i> Find Recipes
-              </Link>
-            </div>
-          </div>
-        ) : filteredRecipes.length === 0 ? (
-          <div className="no-results">
-            <i className="fas fa-search no-results-icon"></i>
-            <h2>No Matching Recipes</h2>
-            <p>
-              No saved recipes match your search: "{searchTerm}". Try a different search term.
-            </p>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setSearchTerm("")}
-            >
-              Clear Search
-            </button>
-          </div>
-        ) : (
-          <div className="recipes-grid">
-            {filteredRecipes.map(recipe => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onSave={toggleSaveRecipe}
-                isSaved={true}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {recipes.length === 0 ? (
+        <p>No saved recipes found.</p>
+      ) : (
+        <ul className="space-y-4">
+          {recipes.map((recipe) => (
+            <li key={recipe.recipe_id} className="border p-4 rounded bg-gray-50">
+              <h2 className="text-xl font-semibold">{recipe.title}</h2>
+              <p>{recipe.description}</p>
+              <p><strong>Serving Size:</strong> {recipe.serving_size}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

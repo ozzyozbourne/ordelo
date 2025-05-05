@@ -1,5 +1,3 @@
-// src/pages/RecipeDetails.jsx
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecipes } from "../context/RecipeContext";
@@ -7,12 +5,11 @@ import { useRecipes } from "../context/RecipeContext";
 function RecipeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { fetchRecipeById, toggleSaveRecipe, addToSelectedRecipes, savedRecipes, selectedRecipes } = useRecipes();
+  const { fetchRecipeById, addToSelectedRecipes, selectedRecipes } = useRecipes();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const isSaved = savedRecipes.some(saved => saved.id === Number(id));
   const isSelected = selectedRecipes.some(sel => sel.id === Number(id));
 
   useEffect(() => {
@@ -71,12 +68,6 @@ function RecipeDetails() {
         {/* Left side - Content */}
         <div className="recipe-content-card">
           <div className="recipe-actions" style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
-            <button 
-              className={`btn ${isSaved ? "btn-accent" : "btn-secondary"}`} 
-              onClick={() => toggleSaveRecipe(recipe)}
-            >
-              <i className={`${isSaved ? "fas" : "far"} fa-heart`}></i> {isSaved ? "Saved" : "Save"}
-            </button>
             <button 
               className={`btn ${isSelected ? "btn-accent" : "btn-secondary"}`} 
               onClick={() => addToSelectedRecipes(recipe)}

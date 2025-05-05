@@ -6,7 +6,6 @@ const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -19,7 +18,6 @@ const UserManagementPage = () => {
       headers: {
         "Authorization": `Bearer ${token}`
       }
-      
     })
       .then(response => {
         if (!response.ok) {
@@ -32,26 +30,10 @@ const UserManagementPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-
-
   return (
     <div>
       <div className="admin-page-header">
         <h1>User Management</h1>
-      </div>
-
-      <div className="admin-controls">
-        <input 
-          type="text" 
-          placeholder="Search by name or email..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-        />
       </div>
 
       {loading && <LoadingSpinner message="Loading users..." />}
@@ -68,8 +50,8 @@ const UserManagementPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map(user => (
-              <tr key={user._id}>
+            {users.map(user => (
+              <tr key={user.email}>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>

@@ -40,10 +40,16 @@ function VendorLogin() {
         body: JSON.stringify(userData),
       });
 
-      const data = await response.json();
+      let data;
+      const text = await response.text();
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
 
       if (response.ok) {
-  
         login({
           id: data._id,
           email: userData.email,

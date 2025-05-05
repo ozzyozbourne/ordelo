@@ -36,7 +36,6 @@ import HelpAndSupport from "./pages/HelpAndSupport"; // <-- New Import
 // Admin Pages
 import UserManagementPage from "./admin/pages/UserManagementPage";
 import VendorManagementPage from "./admin/pages/VendorManagementPage";
-import RecipeManagementPage from "./admin/pages/RecipeManagementPage";
 import IngredientManagementPage from "./admin/pages/IngredientManagementPage";
 
 // Admin Layout
@@ -63,7 +62,6 @@ function AdminRoutes() {
           <Route index element={<Navigate to="users" replace />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="vendors" element={<VendorManagementPage />} />
-          <Route path="recipes" element={<RecipeManagementPage />} />
           <Route path="ingredients" element={<IngredientManagementPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

@@ -53,7 +53,7 @@ func run() (err error) {
 	}()
 
 	log.Printf("Initing cached repositories and auth service\n")
-	if err = InitCachedMongoRepositories(ctx, RedisClient, MongoClient, 15*time.Minute); err != nil {
+	if err = InitCachedMongoRepositories(ctx, RedisClient, MongoClient, 60*time.Minute); err != nil {
 		log.Printf("Error in initing cached repositories -> %v\n", err)
 		return
 	}
@@ -133,7 +133,8 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /register", http.HandlerFunc(CreateUser))
 	handleFunc("POST /login", http.HandlerFunc(UserLogin))
 	//-------------------------------------------------------
-	//
+
+
 	//-------------Admin-Specific-----------------------------
 	handleFunc("POST /admin/ingredients", mid(admin(http.HandlerFunc(DeleteAdmin))))
 
@@ -150,10 +151,10 @@ func newHTTPHandler() http.Handler {
 
 
 	//-------------Vendor-Specific-----------------------------
-	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))  // to add items//
+	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))  
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
 
-	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores)))) //store_id to be stored
+	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))

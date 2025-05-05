@@ -6,15 +6,15 @@ const IngredientManagementPage = () => {
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [newIngredient, setNewIngredient] = useState({
     name: '',
     unit_quantity: '',
     unit: '',
   });
   const [adding, setAdding] = useState(false);
-
-  const token = localStorage.getItem("token") || "";
+  
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const token = storedUser?.token;
 
   const fetchIngredients = () => {
     setLoading(true);
@@ -40,10 +40,6 @@ const IngredientManagementPage = () => {
   useEffect(() => {
     fetchIngredients();
   }, []);
-
-  const filteredIngredients = ingredients.filter(ingredient =>
-    ingredient.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,6 +68,9 @@ const IngredientManagementPage = () => {
       unit: unit,
       price: 0.0 
     };
+    
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const token = storedUser?.token;
 
     fetch("http://localhost:8080/admin/ingredients", {
       method: "POST",
@@ -104,13 +103,6 @@ const IngredientManagementPage = () => {
       <div className="admin-page-header">
         <h1>Ingredient Management</h1>
       </div>
-
-      <input 
-        type="text" 
-        placeholder="Search..." 
-        value={searchTerm} 
-        onChange={(e) => setSearchTerm(e.target.value)} 
-      />
 
       <h2>Add New Ingredient</h2>
       <form onSubmit={handleAddIngredient} style={{ marginBottom: "20px" }}>
@@ -156,8 +148,8 @@ const IngredientManagementPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredIngredients.map(ingredient => (
-              <tr key={ingredient.ingredient_id}>
+            {ingredients.map(ingredient => (
+              <tr key={ingredient}>
                 <td>{ingredient.name}</td>
                 <td>{ingredient.unit_quantity}</td>
                 <td>{ingredient.unit}</td>
