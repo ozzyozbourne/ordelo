@@ -305,54 +305,59 @@ func AdminGetIngredients(w http.ResponseWriter, r *http.Request) {
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
-func AdminUpdate(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "AdminUpdate")
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateUser")
 	defer span.End()
-	source := slog.String("source", "AdminUpdate")
+	source := slog.String("source", "UpdateUser")
 
-	Logger.InfoContext(ctx, "Updating admin information", source)
+	Logger.InfoContext(ctx, "Updating User information", source)
 
-	var admin Admin
-	if err := json.NewDecoder(r.Body).Decode(&admin); err != nil {
-		Logger.ErrorContext(ctx, "Unable to parse the request body to admin struct", slog.Any("error", err), source)
+	var com *Common
+	if err := json.NewDecoder(r.Body).Decode(&com); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse the request body to common struct", slog.Any("error", err), source)
 		sendFailure(ctx, w, "Error in parsing request body", source)
-		return
-	}
-
-	Logger.InfoContext(ctx, "Validating admin struct fields", source)
-	switch {
-	case admin.Name == "":
-		sendFailure(ctx, w, "Admin name is empty", source)
-		return
-	case admin.Email == "":
-		sendFailure(ctx, w, "Email is empty", source)
-		return
-	case admin.PasswordHash == "":
-		sendFailure(ctx, w, "Password is empty", source)
-		return
-	case admin.Role == "":
-		sendFailure(ctx, w, "Role is empty", source)
 		return
 	}
 
 	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, "Unable to get admin ID from context", source)
+		sendFailure(ctx, w, "Unable to get ID from context", source)
 		return
 	}
 
-	admin.ID = id.value
-
-	if err := Repos.Admin.UpdateAdmin(ctx, &admin); err != nil {
-		Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
-		sendFailure(ctx, w, "Failed to update admin", source)
+	com.ID = id.value
+	role, ok := r.Context().Value(userRoleKey).(string)
+	if !ok {
+		sendFailure(ctx, w, "Unauthorized - missing role claim", source)
 		return
+	}
+
+	switch role {
+	case "user":
+		if err := Repos.User.UpdateUser(ctx, com); err != nil {
+			Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to update admin", source)
+			return
+		}
+	case "vendor":
+		if err := Repos.Vendor.UpdateVendor(ctx, com); err != nil {
+			Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to update admin", source)
+			return
+		}
+	case "admin":
+		if err := Repos.Admin.UpdateAdmin(ctx, com); err != nil {
+			Logger.ErrorContext(ctx, "Failed to update admin", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to update admin", source)
+			return
+		}
 	}
 
 	okResponseMap := map[string]any{
 		"success": true,
-		"message": "Admin updated successfully",
+		"message": "User updated successfully",
 	}
+
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
@@ -391,16 +396,9 @@ func AdminCreateIngredients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Logger.InfoContext(ctx, "Created ingredients successfully", source, slog.Any("ids", ids))
-	stringIds := make([]string, len(ids))
-
-	for i, v := range ids {
-		stringIds[i] = v.String()
-	}
-
 	okResponseMap := map[string]any{
 		"success": true,
-		"ids":     stringIds,
+		"ids":     getStringIDs(ids),
 	}
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
@@ -668,10 +666,9 @@ func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "DeleteAdmin")
 
-	id, err := NewID(ctx, r.PathValue("id"))
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
-		sendFailure(ctx, w, "Invalid id", source)
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -683,15 +680,53 @@ func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DeleteVendor(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "DeleteVendor")
+func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteUser")
 	defer span.End()
-	source := slog.String("source", "DeleteVendor")
+	source := slog.String("source", "AdminDeleteUser")
 
 	id, err := NewID(ctx, r.PathValue("id"))
 	if err != nil {
 		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
 		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Admin.DeleteUser(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "User deleted successfully"}, source)
+
+}
+
+func AdminDeleteVendor(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteVendor")
+	defer span.End()
+	source := slog.String("source", "AdminDeleteVendor")
+
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Admin.DeleteVendor(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "Vendor deleted successfully"}, source)
+}
+
+func DeleteVendor(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteVendor")
+	defer span.End()
+	source := slog.String("source", "DeleteVendor")
+
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -708,10 +743,9 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "DeleteUser")
 
-	id, err := NewID(ctx, r.PathValue("id"))
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
-		sendFailure(ctx, w, "Invalid id", source)
+		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
@@ -772,14 +806,9 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 		return
 	}
 
-	idStrings := make([]string, len(ids))
-	for i, id := range ids {
-		idStrings[i] = id.String()
-	}
-
 	okResponseMap := map[string]any{
 		"success": true,
-		"ids":     idStrings,
+		"ids":     getStringIDs(ids),
 	}
 	sendResponse(ctx, w, http.StatusCreated, &okResponseMap, source)
 }
