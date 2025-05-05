@@ -68,12 +68,14 @@ type VendorRepository interface {
 }
 
 type AdminRepository interface {
+	UserRepository
+	VendorRepository
 	CreateAdmin(context.Context, *Admin) (ID, error)
 	CreateIngredients(context.Context, ID, []*Ingredient) ([]*ID, error)
 
 	FindUsers(context.Context, ID) ([]*Common, error)
 	FindVendors(context.Context, ID) ([]*Common, error)
-	FindStores(context.Context, ID) ([]*Vendor, error)
+	FindVendorStores(context.Context, ID) ([]*Vendor, error)
 	FindAdminByEmail(context.Context, string) (*Admin, error)
 	FindAdminByID(context.Context, ID) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)
@@ -90,10 +92,11 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	if dbName == "" {
 		return nil, errors.New("env varible DB_NAME is empty")
 	}
+	ur, vr := newMongoUserRepository(mongoClient, dbName), newMongoVendorRepository(mongoClient, dbName)
 	mongoRepos := &Repositories{
-		User:   newMongoUserRepository(mongoClient, dbName),
-		Vendor: newMongoVendorRepository(mongoClient, dbName),
-		Admin:  newMongoAdminRepository(mongoClient, dbName),
+		User:   ur,
+		Vendor: vr,
+		Admin:  newMongoAdminRepository(mongoClient, dbName, ur, vr),
 	}
 	return mongoRepos, nil
 }
@@ -101,6 +104,8 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 type MongoUserRepository struct{ col *mongo.Collection }
 type MongoVendorRepository struct{ col *mongo.Collection }
 type MongoAdminRepository struct {
+	UserRepository
+	VendorRepository
 	col    *mongo.Collection
 	user   *mongo.Collection
 	vendor *mongo.Collection
@@ -114,11 +119,13 @@ func newMongoVendorRepository(client *mongo.Client, dbName string) VendorReposit
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
 }
 
-func newMongoAdminRepository(client *mongo.Client, dbName string) AdminRepository {
+func newMongoAdminRepository(client *mongo.Client, dbName string, ur UserRepository, vr VendorRepository) AdminRepository {
 	return &MongoAdminRepository{
-		col:    client.Database(dbName).Collection("admin"),
-		user:   client.Database(dbName).Collection("user"),
-		vendor: client.Database(dbName).Collection("vendor"),
+		UserRepository:   ur,
+		VendorRepository: vr,
+		col:              client.Database(dbName).Collection("admin"),
+		user:             client.Database(dbName).Collection("user"),
+		vendor:           client.Database(dbName).Collection("vendor"),
 	}
 }
 
@@ -615,8 +622,8 @@ func (v MongoAdminRepository) FindVendors(ctx context.Context, id ID) (vendors [
 	return
 }
 
-func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) (vendors []*Vendor, err error) {
-	ctx, span := Tracer.Start(ctx, "FindStores")
+func (v MongoAdminRepository) FindVendorStores(ctx context.Context, id ID) (vendors []*Vendor, err error) {
+	ctx, span := Tracer.Start(ctx, "FindVendorStores")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Admin retrieving all stores", slog.String("adminID", id.String()), admin_repo_source)

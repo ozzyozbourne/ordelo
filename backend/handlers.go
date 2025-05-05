@@ -393,7 +393,7 @@ func AdminCreateIngredients(w http.ResponseWriter, r *http.Request) {
 
 	okResponseMap := map[string]any{
 		"success": true,
-		"ids":     ids,
+		"ids":     getStringIDs(ids),
 	}
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
@@ -674,6 +674,45 @@ func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "Admin deleted successfully"}, source)
 
+}
+
+func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteUser")
+	defer span.End()
+	source := slog.String("source", "AdminDeleteUser")
+
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Admin.DeleteUser(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "User deleted successfully"}, source)
+
+}
+
+func AdminDeleteVendor(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AdminDeleteVendor")
+	defer span.End()
+	source := slog.String("source", "AdminDeleteVendor")
+
+	id, err := NewID(ctx, r.PathValue("id"))
+	if err != nil {
+		Logger.Error("Unable to convert id req to ID", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Invalid id", source)
+		return
+	}
+
+	if err = Repos.Admin.DeleteVendor(ctx, id); err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "Vendor deleted successfully"}, source)
 }
 
 func DeleteVendor(w http.ResponseWriter, r *http.Request) {
