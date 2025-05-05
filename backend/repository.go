@@ -37,7 +37,6 @@ type UserRepository interface {
 	FindRecipes(context.Context, ID) ([]*Recipe, error)
 	FindCarts(context.Context, ID) ([]*Cart, error)
 	FindUserOrders(context.Context, ID) ([]*UserOrder, error)
-	FindUserAdminIngredients(context.Context) ([]*Ingredient, error)
 
 	UpdateUser(context.Context, *Common) error
 	UpdateRecipes(context.Context, ID, []*Recipe) error
@@ -59,7 +58,6 @@ type VendorRepository interface {
 	FindStores(context.Context, ID) ([]*Store, error)
 	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
 	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
-	FindVendorAdminIngredients(context.Context) ([]*Ingredient, error)
 
 	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
@@ -236,13 +234,6 @@ func (m MongoUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*User
 
 	Logger.InfoContext(ctx, "Finding orders for user", slog.String("UserId", id.String()), user_repo_source)
 	return findContainer[[]*UserOrder](ctx, m.col, id, "orders", user_repo_source)
-}
-
-func (m MongoUserRepository) FindUserAdminIngredients(ctx context.Context) ([]*Ingredient, error) {
-	ctx, span := Tracer.Start(ctx, "FindUserAdminIngredients")
-	defer span.End()
-
-	return getAllIngredients(ctx, slog.String("source", "FindUserAdminIngredients"))
 }
 
 func (m MongoUserRepository) UpdateUser(ctx context.Context, user *Common) error {
@@ -478,13 +469,6 @@ func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*
 	Logger.InfoContext(ctx, "Finding orders for vendor", slog.String("VendorId", id.String()), vendor_repo_source)
 	return findContainer[[]*VendorOrder](ctx, m.col, id, "orders", vendor_repo_source)
 
-}
-
-func (m MongoVendorRepository) FindVendorAdminIngredients(ctx context.Context) ([]*Ingredient, error) {
-	ctx, span := Tracer.Start(ctx, "FindVendorAdminIngredients")
-	defer span.End()
-
-	return getAllIngredients(ctx, slog.String("source", "FindVendorAdminIngredients"))
 }
 
 func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Common) error {
