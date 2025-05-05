@@ -38,7 +38,7 @@ type UserRepository interface {
 	FindCarts(context.Context, ID) ([]*Cart, error)
 	FindUserOrders(context.Context, ID) ([]*UserOrder, error)
 
-	UpdateUser(context.Context, *User) error
+	UpdateUser(context.Context, *Common) error
 	UpdateRecipes(context.Context, ID, []*Recipe) error
 	UpdateCarts(context.Context, ID, []*Cart) error
 	UpdateUserOrders(context.Context, ID, []*UserOrder) error
@@ -59,7 +59,7 @@ type VendorRepository interface {
 	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
 	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
 
-	UpdateVendor(context.Context, *Vendor) error
+	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
 	UpdateVendorOrders(context.Context, ID, []*VendorOrder) error
 
@@ -68,17 +68,19 @@ type VendorRepository interface {
 }
 
 type AdminRepository interface {
+	UserRepository
+	VendorRepository
 	CreateAdmin(context.Context, *Admin) (ID, error)
 	CreateIngredients(context.Context, ID, []*Ingredient) ([]*ID, error)
 
 	FindUsers(context.Context, ID) ([]*Common, error)
 	FindVendors(context.Context, ID) ([]*Common, error)
-	FindStores(context.Context, ID) ([]*Vendor, error)
+	FindVendorStores(context.Context, ID) ([]*Vendor, error)
 	FindAdminByEmail(context.Context, string) (*Admin, error)
 	FindAdminByID(context.Context, ID) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)
 
-	UpdateAdmin(context.Context, *Admin) error
+	UpdateAdmin(context.Context, *Common) error
 	UpdateIngredients(context.Context, ID, []*Ingredient) error
 
 	Delete(context.Context, ID) error
@@ -90,10 +92,11 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 	if dbName == "" {
 		return nil, errors.New("env varible DB_NAME is empty")
 	}
+	ur, vr := newMongoUserRepository(mongoClient, dbName), newMongoVendorRepository(mongoClient, dbName)
 	mongoRepos := &Repositories{
-		User:   newMongoUserRepository(mongoClient, dbName),
-		Vendor: newMongoVendorRepository(mongoClient, dbName),
-		Admin:  newMongoAdminRepository(mongoClient, dbName),
+		User:   ur,
+		Vendor: vr,
+		Admin:  newMongoAdminRepository(mongoClient, dbName, ur, vr),
 	}
 	return mongoRepos, nil
 }
@@ -101,6 +104,8 @@ func initMongoRepositories(mongoClient *mongo.Client) (*Repositories, error) {
 type MongoUserRepository struct{ col *mongo.Collection }
 type MongoVendorRepository struct{ col *mongo.Collection }
 type MongoAdminRepository struct {
+	UserRepository
+	VendorRepository
 	col    *mongo.Collection
 	user   *mongo.Collection
 	vendor *mongo.Collection
@@ -114,11 +119,13 @@ func newMongoVendorRepository(client *mongo.Client, dbName string) VendorReposit
 	return &MongoVendorRepository{col: client.Database(dbName).Collection("vendor")}
 }
 
-func newMongoAdminRepository(client *mongo.Client, dbName string) AdminRepository {
+func newMongoAdminRepository(client *mongo.Client, dbName string, ur UserRepository, vr VendorRepository) AdminRepository {
 	return &MongoAdminRepository{
-		col:    client.Database(dbName).Collection("admin"),
-		user:   client.Database(dbName).Collection("user"),
-		vendor: client.Database(dbName).Collection("vendor"),
+		UserRepository:   ur,
+		VendorRepository: vr,
+		col:              client.Database(dbName).Collection("admin"),
+		user:             client.Database(dbName).Collection("user"),
+		vendor:           client.Database(dbName).Collection("vendor"),
 	}
 }
 
@@ -229,10 +236,10 @@ func (m MongoUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*User
 	return findContainer[[]*UserOrder](ctx, m.col, id, "orders", user_repo_source)
 }
 
-func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (m MongoUserRepository) UpdateUser(ctx context.Context, user *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUser")
 	defer span.End()
-	return update(ctx, &user.Common, m.col, user_repo_source)
+	return update(ctx, user, m.col, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
@@ -464,10 +471,10 @@ func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*
 
 }
 
-func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Vendor) error {
+func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendor")
 	defer span.End()
-	return update(ctx, &vendor.Common, m.col, vendor_repo_source)
+	return update(ctx, vendor, m.col, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores []*Store) error {
@@ -615,8 +622,8 @@ func (v MongoAdminRepository) FindVendors(ctx context.Context, id ID) (vendors [
 	return
 }
 
-func (v MongoAdminRepository) FindStores(ctx context.Context, id ID) (vendors []*Vendor, err error) {
-	ctx, span := Tracer.Start(ctx, "FindStores")
+func (v MongoAdminRepository) FindVendorStores(ctx context.Context, id ID) (vendors []*Vendor, err error) {
+	ctx, span := Tracer.Start(ctx, "FindVendorStores")
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Admin retrieving all stores", slog.String("adminID", id.String()), admin_repo_source)
@@ -696,11 +703,11 @@ func (v MongoAdminRepository) FindIngredients(ctx context.Context, id ID) ([]*In
 	return result.Ingredients, nil
 }
 
-func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) error {
+func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateAdmin")
 	defer span.End()
 
-	return update(ctx, &admin.Common, v.col, admin_repo_source)
+	return update(ctx, admin, v.col, admin_repo_source)
 }
 
 func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) error {

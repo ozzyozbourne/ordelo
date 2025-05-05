@@ -114,7 +114,7 @@ func (r CachedUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*Use
 	return nil, nil
 }
 
-func (r CachedUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (r CachedUserRepository) UpdateUser(ctx context.Context, user *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUserRedis")
 	defer span.End()
 
