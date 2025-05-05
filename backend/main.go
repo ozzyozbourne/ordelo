@@ -121,7 +121,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
 	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
 
-	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(AdminUpdate))))
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser))))
 	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
 
 	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
@@ -139,10 +139,10 @@ func newHTTPHandler() http.Handler {
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
-	handleFunc("PUT /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	handleFunc("PUT /vendor", mid(vendor(http.HandlerFunc(UpdateUser))))
 
 	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
-	handleFunc("DELETE /vendor/{id}", mid(vendor(http.HandlerFunc(DeleteVendor))))
+	handleFunc("DELETE /vendor", mid(vendor(http.HandlerFunc(DeleteVendor))))
 	//---------------------------------------------------------
 	//
 	//-------------User-Specific-------------------------------
@@ -154,13 +154,14 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
 	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(GetUserOrders))))
 
+	handleFunc("PUT /user", mid(user(http.HandlerFunc(UpdateUser))))
 	handleFunc("PUT /user/recipes", mid(user(http.HandlerFunc(UpdateRecipes))))
 	handleFunc("PUT /user/carts", mid(user(http.HandlerFunc(UpdateCarts))))
 	handleFunc("PUT /user/orders", mid(user(http.HandlerFunc(UpdateUserOrders))))
 
 	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(DeleteRecipes))))
 	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
-	handleFunc("DELETE /user/{id}", mid(user(http.HandlerFunc(DeleteUser))))
+	handleFunc("DELETE /user", mid(user(http.HandlerFunc(DeleteUser))))
 
 	return CORSMiddleware(otelhttp.NewHandler(mux, "/"))
 }

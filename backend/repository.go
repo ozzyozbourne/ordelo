@@ -38,7 +38,7 @@ type UserRepository interface {
 	FindCarts(context.Context, ID) ([]*Cart, error)
 	FindUserOrders(context.Context, ID) ([]*UserOrder, error)
 
-	UpdateUser(context.Context, *User) error
+	UpdateUser(context.Context, *Common) error
 	UpdateRecipes(context.Context, ID, []*Recipe) error
 	UpdateCarts(context.Context, ID, []*Cart) error
 	UpdateUserOrders(context.Context, ID, []*UserOrder) error
@@ -59,7 +59,7 @@ type VendorRepository interface {
 	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
 	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
 
-	UpdateVendor(context.Context, *Vendor) error
+	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
 	UpdateVendorOrders(context.Context, ID, []*VendorOrder) error
 
@@ -80,7 +80,7 @@ type AdminRepository interface {
 	FindAdminByID(context.Context, ID) (*Admin, error)
 	FindIngredients(context.Context, ID) ([]*Ingredient, error)
 
-	UpdateAdmin(context.Context, *Admin) error
+	UpdateAdmin(context.Context, *Common) error
 	UpdateIngredients(context.Context, ID, []*Ingredient) error
 
 	Delete(context.Context, ID) error
@@ -236,10 +236,10 @@ func (m MongoUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*User
 	return findContainer[[]*UserOrder](ctx, m.col, id, "orders", user_repo_source)
 }
 
-func (m MongoUserRepository) UpdateUser(ctx context.Context, user *User) error {
+func (m MongoUserRepository) UpdateUser(ctx context.Context, user *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateUser")
 	defer span.End()
-	return update(ctx, &user.Common, m.col, user_repo_source)
+	return update(ctx, user, m.col, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
@@ -471,10 +471,10 @@ func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*
 
 }
 
-func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Vendor) error {
+func (m MongoVendorRepository) UpdateVendor(ctx context.Context, vendor *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateVendor")
 	defer span.End()
-	return update(ctx, &vendor.Common, m.col, vendor_repo_source)
+	return update(ctx, vendor, m.col, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores []*Store) error {
@@ -703,11 +703,11 @@ func (v MongoAdminRepository) FindIngredients(ctx context.Context, id ID) ([]*In
 	return result.Ingredients, nil
 }
 
-func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Admin) error {
+func (v MongoAdminRepository) UpdateAdmin(ctx context.Context, admin *Common) error {
 	ctx, span := Tracer.Start(ctx, "UpdateAdmin")
 	defer span.End()
 
-	return update(ctx, &admin.Common, v.col, admin_repo_source)
+	return update(ctx, admin, v.col, admin_repo_source)
 }
 
 func (v MongoAdminRepository) UpdateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) error {
