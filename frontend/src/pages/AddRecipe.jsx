@@ -45,9 +45,14 @@ function AddRecipe() {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setRecipe((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]:
+        name === "preparation_time" || name === "serving_size"
+          ? value
+          : value,
     }));
   };
 
@@ -56,12 +61,14 @@ function AddRecipe() {
       (ing) => ing.ingredient_id === ingredient_id
     );
 
-    setNewItem((prev) => ({
-      ...prev,
+    setNewItem({
       ingredient_id,
+      name: selectedIngredient.name,
+      price: selectedIngredient.price,
       unit_quantity: selectedIngredient.unit_quantity,
       unit: selectedIngredient.unit,
-    }));
+      quantity: "",
+    });
   };
 
   const handleItemChange = (e) => {
@@ -80,6 +87,8 @@ function AddRecipe() {
         ...prev.items,
         {
           ingredient_id: newItem.ingredient_id,
+          name: newItem.name,
+          price: newItem.price,
           unit_quantity: newItem.unit_quantity,
           unit: newItem.unit,
           quantity: parseInt(newItem.quantity),
@@ -114,13 +123,22 @@ function AddRecipe() {
       }
 
       const payload = {
-        ...recipe,
-        items: recipe.items.map((item) => ({
-          ingredient_id: item.ingredient_id,
-          unit_quantity: item.unit_quantity,
-          unit: item.unit,
-          quantity: item.quantity,
-        })),
+        recipes: [
+          {
+            title: recipe.title,
+            description: recipe.description,
+            preparation_time: parseInt(recipe.preparation_time) || 0, // FIXED
+            serving_size: parseInt(recipe.serving_size) || 0,         // FIXED
+            items: recipe.items.map((item) => ({
+              ingredient_id: { $oid: item.ingredient_id },
+              name: item.name,
+              price: item.price,
+              unit_quantity: item.unit_quantity,
+              unit: item.unit,
+              quantity: item.quantity,
+            })),
+          },
+        ],
       };
 
       const response = await fetch("http://localhost:8080/user/recipes", {
@@ -175,6 +193,7 @@ function AddRecipe() {
           value={recipe.preparation_time}
           onChange={handleChange}
           className="border p-2 w-full"
+          min="0"
         />
 
         <input
@@ -184,6 +203,7 @@ function AddRecipe() {
           value={recipe.serving_size}
           onChange={handleChange}
           className="border p-2 w-full"
+          min="0"
         />
 
         <div>
@@ -192,7 +212,7 @@ function AddRecipe() {
           {recipe.items.map((item, index) => (
             <div key={index} className="flex items-center space-x-2 mb-2">
               <p>
-                {item.quantity} x {item.unit_quantity} {item.unit} → Ingredient ID: {item.ingredient_id}
+                {item.quantity} x {item.unit_quantity} {item.unit} {item.name} (${item.price?.toFixed(2)})
               </p>
               <button
                 type="button"

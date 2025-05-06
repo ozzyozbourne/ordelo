@@ -135,7 +135,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/add-recipe" element={<AddRecipe />} />
+              <Route path="/add-recipe" element={
+                <><Header /> <main>  <AddRecipe/> </main> <Footer />   </>
+              } />
 
               {/* Vendor Auth Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
