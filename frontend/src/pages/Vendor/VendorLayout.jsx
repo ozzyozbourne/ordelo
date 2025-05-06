@@ -14,7 +14,7 @@ function VendorLayout() {
 
     if (!token || role !== "vendor") {
       localStorage.removeItem("user");
-      navigate("/vendor/login");
+      navigate("/");
     }
   }, [navigate]);
 
