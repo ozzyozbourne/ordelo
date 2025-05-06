@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";  // ✅ Import useAuth
+import { useAuth } from "../context/AuthContext";  
 
 function SavedRecipes() {
-  const { user } = useAuth();  // ✅ Get user from AuthContext
+  const { user } = useAuth();  
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +16,7 @@ function SavedRecipes() {
 
   const fetchSavedRecipes = async () => {
     try {
-      const token = user?.token;  // ✅ No more localStorage
+      const token = user?.token;  
 
       if (!token) throw new Error("You are not logged in.");
 

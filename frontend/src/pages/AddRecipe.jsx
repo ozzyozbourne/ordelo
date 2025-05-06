@@ -10,7 +10,7 @@ function AddRecipe() {
     description: "",
     preparation_time: 0,
     serving_size: 0,
-    items: new Array(),
+    items: [],
   });
   const [newItem, setNewItem] = useState({ ingredient_id: "", quantity: "" });
   const [ingredients, setIngredients] = useState([]);
@@ -36,8 +36,6 @@ function AddRecipe() {
       if (!response.ok) throw new Error("Failed to fetch ingredients");
 
       const data = await response.json();
-
-      // FIXED: Parse message string to array
       const parsedIngredients = JSON.parse(data.message);
 
       setIngredients(parsedIngredients || []);
@@ -54,9 +52,15 @@ function AddRecipe() {
   };
 
   const handleIngredientSelect = (ingredient_id) => {
+    const selectedIngredient = ingredients.find(
+      (ing) => ing.ingredient_id === ingredient_id
+    );
+
     setNewItem((prev) => ({
       ...prev,
       ingredient_id,
+      unit_quantity: selectedIngredient.unit_quantity,
+      unit: selectedIngredient.unit,
     }));
   };
 
@@ -67,29 +71,18 @@ function AddRecipe() {
     }));
   };
 
-  const handleAddItem = async () => {
-    const selectedIngredient = ingredients.find(
-      (ing) => ing.ingredient_id === newItem.ingredient_id
-    );
-
-    if (!selectedIngredient || !newItem.quantity) {
-      // Do not add if no ingredient selected or quantity is missing
-      return;
-    }
-
-    const quantityNumber = parseInt(newItem.quantity);
+  const handleAddItem = () => {
+    if (!newItem.ingredient_id || !newItem.quantity) return;
 
     setRecipe((prev) => ({
       ...prev,
       items: [
         ...prev.items,
         {
-          ingredient_id: selectedIngredient.ingredient_id,
-          name: selectedIngredient.name,
-          unit_quantity: selectedIngredient.unit_quantity,
-          unit: selectedIngredient.unit,
-          price: selectedIngredient.price,
-          quantity: quantityNumber,
+          ingredient_id: newItem.ingredient_id,
+          unit_quantity: newItem.unit_quantity,
+          unit: newItem.unit,
+          quantity: parseInt(newItem.quantity),
         },
       ],
     }));
@@ -97,7 +90,7 @@ function AddRecipe() {
     setNewItem({ ingredient_id: "", quantity: "" });
   };
 
-  const handleRemoveItem = async (index) => {
+  const handleRemoveItem = (index) => {
     setRecipe((prev) => {
       const updatedItems = [...prev.items];
       updatedItems.splice(index, 1);
@@ -120,13 +113,23 @@ function AddRecipe() {
         throw new Error("Please add at least one item to recipe");
       }
 
+      const payload = {
+        ...recipe,
+        items: recipe.items.map((item) => ({
+          ingredient_id: item.ingredient_id,
+          unit_quantity: item.unit_quantity,
+          unit: item.unit,
+          quantity: item.quantity,
+        })),
+      };
+
       const response = await fetch("http://localhost:8080/user/recipes", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(recipe),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -188,7 +191,9 @@ function AddRecipe() {
 
           {recipe.items.map((item, index) => (
             <div key={index} className="flex items-center space-x-2 mb-2">
-              <p>{item.name} - {item.quantity}</p>
+              <p>
+                {item.quantity} x {item.unit_quantity} {item.unit} → Ingredient ID: {item.ingredient_id}
+              </p>
               <button
                 type="button"
                 onClick={() => handleRemoveItem(index)}
