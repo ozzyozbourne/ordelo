@@ -133,6 +133,7 @@ func newHTTPHandler() http.Handler {
 	//-------------Vendor-Specific-----------------------------
 	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
+	handleFunc("POST /vendor/items", mid(http.HandlerFunc(VendorComparedItemsValue)))
 
 	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))

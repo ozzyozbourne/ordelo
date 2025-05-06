@@ -24,7 +24,6 @@ func TestReq1(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("Request -> \n%s\n", string(s))
-
 }
 
 func TestReq2(t *testing.T) {
@@ -40,7 +39,6 @@ func TestReq2(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("Request -> \n%s\n", string(s))
-
 }
 
 func TestReq3(t *testing.T) {
@@ -56,7 +54,36 @@ func TestReq3(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("Orders -> \n%s\n", string(s))
+}
 
+func TestReq4(t *testing.T) {
+	res := generateRecipesArray(1, 1)
+	var req struct {
+		Recipes []*Recipe `json:"recipes"`
+	}
+
+	req.Recipes = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Recipes -> \n%s\n", string(s))
+}
+
+func TestReq5(t *testing.T) {
+	res := generateReqIngArray(3, 4)
+	var req struct {
+		Compare []*ReqIng `json:"compare"`
+	}
+
+	req.Compare = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ReqIng -> \n%s\n", string(s))
 }
 
 func ATestCreateUser(t *testing.T) {

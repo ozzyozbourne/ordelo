@@ -168,6 +168,39 @@ func CreateVendorOrders(w http.ResponseWriter, r *http.Request) {
 	createCon(ctx, w, r, source, req.Orders)
 }
 
+func VendorComparedItemsValue(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetItemsComparedValue")
+	defer span.End()
+	source := slog.String("source", "GetItemsComparedValue")
+
+	Logger.InfoContext(ctx, "Getting the camparison request", source)
+	req, err := decodeStruct[ReqIngArray](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing userOrders request body", source)
+		return
+	}
+	Logger.InfoContext(ctx, "Decoded the ReqIng Struct successfully", source)
+
+	res, err := Repos.Vendor.FindAllIngredients(ctx, req.Compare)
+	if err != nil {
+		sendFailure(ctx, w, "Error in fetchig compared value", source)
+		return
+	}
+
+	s, err := json.Marshal(res)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in marshalling to string", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in fetchig compared value", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"ids":     string(s),
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func CreateStores(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "CreateStores")
 	defer span.End()
