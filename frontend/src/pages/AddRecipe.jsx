@@ -49,17 +49,17 @@ function AddRecipe() {
 
     setRecipe((prev) => ({
       ...prev,
-      [name]:
-        name === "preparation_time" || name === "serving_size"
-          ? value
-          : value,
+      [name]: value,
     }));
   };
 
-  const handleIngredientSelect = (ingredient_id) => {
+  const handleIngredientSelect = (e) => {
+    const ingredient_id = e.target.value;
     const selectedIngredient = ingredients.find(
       (ing) => ing.ingredient_id === ingredient_id
     );
+
+    if (!selectedIngredient) return;
 
     setNewItem({
       ingredient_id,
@@ -127,8 +127,8 @@ function AddRecipe() {
           {
             title: recipe.title,
             description: recipe.description,
-            preparation_time: parseInt(recipe.preparation_time) || 0, // FIXED
-            serving_size: parseInt(recipe.serving_size) || 0,         // FIXED
+            preparation_time: parseInt(recipe.preparation_time) || 0,
+            serving_size: parseInt(recipe.serving_size) || 0,
             items: recipe.items.map((item) => ({
               ingredient_id: { $oid: item.ingredient_id },
               name: item.name,
@@ -212,7 +212,7 @@ function AddRecipe() {
           {recipe.items.map((item, index) => (
             <div key={index} className="flex items-center space-x-2 mb-2">
               <p>
-                {item.quantity} x {item.unit_quantity} {item.unit} {item.name} (${item.price?.toFixed(2)})
+                {item.quantity} x {item.unit_quantity} {item.unit} {item.name} 
               </p>
               <button
                 type="button"
@@ -224,24 +224,21 @@ function AddRecipe() {
             </div>
           ))}
 
-          <div className="mb-4">
+          <div className="mb-4 mt-4">
             <h4 className="mb-2">Select Ingredient</h4>
-            <div className="flex flex-wrap gap-2">
+
+            <select
+              value={newItem.ingredient_id}
+              onChange={handleIngredientSelect}
+              className="border p-2 w-full"
+            >
+              <option value="">-- Select Ingredient --</option>
               {ingredients.map((ing) => (
-                <button
-                  key={ing.ingredient_id}
-                  type="button"
-                  onClick={() => handleIngredientSelect(ing.ingredient_id)}
-                  className={`px-3 py-1 rounded border ${
-                    newItem.ingredient_id === ing.ingredient_id
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {ing.name}
-                </button>
+                <option key={ing.ingredient_id} value={ing.ingredient_id}>
+                  {ing.name} ({ing.unit_quantity} {ing.unit}) 
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="flex space-x-2 mb-2 mt-2">
