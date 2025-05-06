@@ -8,7 +8,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type ID struct{ value bson.ObjectID }
@@ -532,39 +531,35 @@ func findByEmail[U UserType](ctx context.Context, col *mongo.Collection, email s
 
 func findContainer[C containers](ctx context.Context, col *mongo.Collection, id ID, container string, source slog.Attr) (C, error) {
 	Logger.InfoContext(ctx, "Finding container array", slog.String("Array", container), source)
-	filter := bson.D{{Key: "_id", Value: id.value}}
-	projection := bson.D{{Key: container, Value: 1}, {Key: "_id", Value: 0}}
 
-	res := col.FindOne(ctx, filter, options.FindOne().SetProjection(projection))
-	if err := res.Err(); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.ErrorContext(ctx, "User not found", slog.String("ID", id.String()), source)
-			return nil, fmt.Errorf("user with ID %s not found", id.String())
-		}
-		Logger.ErrorContext(ctx, "Error finding container", slog.String("Array", container), slog.Any("error", err), source)
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "_id", Value: id.value}}}},
+		{{Key: "$project", Value: bson.D{{Key: "containerData", Value: "$" + container}}}},
+	}
+
+	cursor, err := col.Aggregate(ctx, pipeline)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in aggregation", slog.Any("error", err), source)
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if !cursor.Next(ctx) {
+		Logger.ErrorContext(ctx, "No results found", slog.String("ID", id.String()), source)
+		return nil, fmt.Errorf("no results found for ID %s", id.String())
+	}
+
+	var result struct {
+		ContainerData C `bson:"containerData"`
+	}
+
+	if err := cursor.Decode(&result); err != nil {
+		Logger.ErrorContext(ctx, "Error decoding result", slog.Any("error", err), source)
 		return nil, err
 	}
 
-	var rawDoc bson.Raw
-	if err := res.Decode(&rawDoc); err != nil {
-		Logger.ErrorContext(ctx, "Error in decoding to raw document", slog.Any("error", err), source)
-		return nil, err
-	}
-
-	var containerArray C
-	rawValue := rawDoc.Lookup(container)
-	if rawValue.Type == bson.TypeNull {
-		Logger.ErrorContext(ctx, "Container not found in document", slog.String("Array", container), source)
-		return nil, fmt.Errorf("container %s not found in document", container)
-	}
-
-	if err := bson.Unmarshal(rawValue.Value, &containerArray); err != nil {
-		Logger.ErrorContext(ctx, "Error unmarshaling container data", slog.Any("error", err), source)
-		return nil, err
-	}
-	Logger.InfoContext(ctx, "Container found successfully", slog.Any("Array", fmt.Sprintf("%+v", containerArray)), source)
-	return containerArray, nil
-
+	Logger.InfoContext(ctx, "Container found successfully", slog.Any("containerData", fmt.Sprintf("%+v", result.ContainerData)), source)
+	return result.ContainerData, nil
 }
 
 func getStringIDs(ids []*ID) (strIds []string) {

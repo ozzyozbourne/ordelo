@@ -11,7 +11,7 @@ import (
 
 const LOCAL_URL = "http://localhost:8080/"
 
-func TestReq1(t *testing.T) {
+func TestReqIngredients(t *testing.T) {
 	res := generateIngredientsArray(3)
 	var req struct {
 		Ingredients []*Ingredient `json:"ingredients"`
@@ -23,11 +23,11 @@ func TestReq1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("Request -> \n%s\n", string(s))
+	t.Logf("Ingredients -> \n%s\n", string(s))
 }
 
-func TestReq2(t *testing.T) {
-	res := generateStoresArray(3, 4)
+func TestReqStores(t *testing.T) {
+	res := generateStoresArray(1, 1)
 	var req struct {
 		Stores []*Store `json:"stores"`
 	}
@@ -56,7 +56,7 @@ func TestReq3(t *testing.T) {
 	t.Logf("Orders -> \n%s\n", string(s))
 }
 
-func TestReq4(t *testing.T) {
+func TestReqRecipes(t *testing.T) {
 	res := generateRecipesArray(1, 1)
 	var req struct {
 		Recipes []*Recipe `json:"recipes"`
