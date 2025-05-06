@@ -25,13 +25,13 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ProfilePage from "./pages/ProfilePage";
 import UserDashboard from "./pages/UserDashboard";
-import VendorDashboard from "./pages/VendorDashboard";
 import VendorLogin from "./pages/VendorLogin";
 import VendorRegister from "./pages/VendorRegister";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RecipeDetails from "./pages/RecipeDetails";
-import HelpAndSupport from "./pages/HelpAndSupport"; 
+import HelpAndSupport from "./pages/HelpAndSupport";
+
 
 // Admin Pages
 import UserManagementPage from "./admin/pages/UserManagementPage";
@@ -44,6 +44,13 @@ import AdminDashboardLayout from "./admin/layouts/AdminDashboardLayout";
 // Auth Components
 import PrivateRoute from "./components/PrivateRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
+// Vendor Layout
+import VendorLayout from "./pages/Vendor/VendorLayout";
+// Vendor Pages
+import VendorStore from "./pages/Vendor/VendorStore";
+import VendorDashboard from "./pages/Vendor/VendorDashboard";
+
 
 // Styles
 import "./App.css";
@@ -119,20 +126,25 @@ function App() {
           <ShoppingProvider>
             <ScrollToTop />
             <Routes>
+
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
 
-              {/*User Auth Routes */}
+              {/* User Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
-               {/* Vendor Auth Routes */}
+              {/* Vendor Auth Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/register" element={<VendorRegister />} />
-              <Route path="/vendordashboard" element={<VendorDashboard />} />
 
+              {/* Vendor Layout Routes */}
+              <Route path="/vendor/*" element={<VendorLayout />}>
+                <Route path="dashboard" element={<VendorDashboard />} />
+                <Route path="store" element={<VendorStore />} />
+              </Route>
 
               {/* Public Routes */}
               <Route path="/" element={
@@ -216,14 +228,6 @@ function App() {
                       <UserDashboard />
                     </main>
                     <Footer />
-                  </>
-                } />
-
-                <Route path="/vendordashboard" element={
-                  <>
-              
-                      <VendorDashboard />
-                    
                   </>
                 } />
 

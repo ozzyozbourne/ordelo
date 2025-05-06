@@ -14,7 +14,7 @@ function VendorLogin() {
   const location = useLocation();
  const { login } = useAuth();
 
-  const from = location.state?.from || "/vendordashboard";
+  const from = location.state?.from || "/vendor/dashboard";
 
   const API_URL = "http://localhost:8080/login";
 
@@ -60,7 +60,7 @@ function VendorLogin() {
           tokenType: data.token_type,
           expiresIn: data.expires_in,
         });
-        navigate("/vendordashboard", { replace: true });
+        navigate("/vendor/dashboard", { replace: true });
       
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");

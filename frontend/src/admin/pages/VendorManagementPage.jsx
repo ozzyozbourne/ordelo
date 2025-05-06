@@ -26,7 +26,7 @@ const VendorManagementPage = () => {
       }
 
       const data = await response.json();
-      console.log(data);
+      setVendors(data.vendors);
     } catch (err) {
       setError("Failed to load vendors.");
     } finally {
