@@ -12,6 +12,8 @@ const IngredientManagementPage = () => {
     unit: '',
   });
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const token = storedUser?.token;
@@ -141,6 +143,63 @@ const IngredientManagementPage = () => {
     }
   };
 
+  const handleEditClick = (ingredient) => {
+    setEditingId(ingredient._id);
+    setEditFormData({
+      name: ingredient.name,
+      unit_quantity: ingredient.unit_quantity,
+      unit: ingredient.unit,
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveEdit = async () => {
+    const payload = {
+      ingredients: [
+        {
+          ingredient_id: editingId,
+          name: editFormData.name,
+          unit_quantity: parseFloat(editFormData.unit_quantity),
+          unit: editFormData.unit,
+        }
+      ]
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update ingredient");
+      }
+
+      await response.json();
+      fetchIngredients();
+      setEditingId(null);
+      setEditFormData({});
+    } catch (error) {
+      alert("Failed to update ingredient.");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
+
   return (
     <div>
       <div className="admin-page-header">
@@ -194,14 +253,52 @@ const IngredientManagementPage = () => {
           <tbody>
             {ingredients.map((ingredient, index) => (
               <tr key={index}>
-                <td>{ingredient.name}</td>
-                <td>{ingredient.unit_quantity}</td>
-                <td>{ingredient.unit}</td>
-                <td>
-                  <button onClick={() => handleDeleteIngredient(ingredient._id)}>
-                    Delete
-                  </button>
-                </td>
+                {editingId === ingredient._id ? (
+                  <>
+                    <td>
+                      <input
+                        type="text"
+                        name="name"
+                        value={editFormData.name}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        name="unit_quantity"
+                        value={editFormData.unit_quantity}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        name="unit"
+                        value={editFormData.unit}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <button onClick={handleSaveEdit}>Save</button>
+                      <button onClick={handleCancelEdit}>Cancel</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{ingredient.name}</td>
+                    <td>{ingredient.unit_quantity}</td>
+                    <td>{ingredient.unit}</td>
+                    <td>
+                      <button onClick={() => handleEditClick(ingredient)}>
+                        Edit
+                      </button>
+                      <button onClick={() => handleDeleteIngredient(ingredient._id)}>
+                        Delete
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

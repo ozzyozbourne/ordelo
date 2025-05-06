@@ -121,10 +121,10 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
 	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
 
-	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser))))
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser)))) /*Nahi daalna hai*/
 	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
 
-	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin)))) /*Nahi daalna hai*/
 	handleFunc("DELETE /admin/user/{id}", mid(admin(http.HandlerFunc(AdminDeleteUser))))
 	handleFunc("DELETE /admin/vendor/{id}", mid(admin(http.HandlerFunc(AdminDeleteVendor))))
 	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
