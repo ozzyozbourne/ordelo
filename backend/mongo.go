@@ -97,6 +97,10 @@ func initDB(c context.Context) (shutdown func(ctx context.Context) error, err er
 		return nil
 	}
 
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
+	}
+
 	loggerOptions := options.
 		Logger().
 		SetSink(NewOtelMongoLogger(ctx)).
@@ -119,14 +123,9 @@ func initDB(c context.Context) (shutdown func(ctx context.Context) error, err er
 
 	mongoShutDownFunc = MongoClient.Disconnect
 	if err = MongoClient.Ping(ctx, nil); err != nil {
-		Logger.
-			ErrorContext(
-				ctx,
-				"Disconnecting client since unable to ping MongoDB after connection to check for liveness",
-				slog.Any("Error", err),
-				mongo_source,
-			)
-		err = shutdown(ctx)
+		Logger.ErrorContext(ctx, "Disconnecting client since unable to ping MongoDB after connection to check for liveness",
+			slog.Any("Error", err), mongo_source)
+		handleErr(err)
 		return
 	}
 
