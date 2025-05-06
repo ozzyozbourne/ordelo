@@ -71,6 +71,21 @@ func TestReq4(t *testing.T) {
 	t.Logf("Recipes -> \n%s\n", string(s))
 }
 
+func TestReq5(t *testing.T) {
+	res := generateReqIngArray(3, 4)
+	var req struct {
+		Compare []*ReqIng `json:"compare"`
+	}
+
+	req.Compare = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ReqIng -> \n%s\n", string(s))
+}
+
 func ATestCreateUser(t *testing.T) {
 	loginUserFromAPI(t, createUserFromAPI(t))
 }
