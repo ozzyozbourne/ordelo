@@ -5,7 +5,7 @@ TEST_NAME:=TestReq
 
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
-.DEFAULT_GOAL := run-linux
+.DEFAULT_GOAL := run-mac
 
 .PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac
 
