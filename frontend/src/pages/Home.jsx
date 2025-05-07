@@ -1,5 +1,3 @@
-// src/pages/Home.jsx
-
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "../components/SearchBar";

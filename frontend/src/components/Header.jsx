@@ -31,8 +31,7 @@ function Header() {
 
   // Handle logout
   const handleLogout = () => {
-    logout();
-    navigate('/'); // Navigate to home after logout
+    logout(); // This clears the user and localStorage
   };
 
   return (
@@ -77,7 +76,7 @@ function Header() {
               <Link to="/profile">Profile</Link>
               <Link to="/saved-recipes">Saved Recipes</Link>
               {user.role === 'vendor' && (
-                <Link to="/vendordashboard">Vendor Dashboard</Link>
+                <Link to="/vendor/dashboard">Vendor Dashboard</Link>
               )}
               <button onClick={handleLogout} className="logout-btn">
                 <i className="fas fa-sign-out-alt"></i> Logout
@@ -124,7 +123,7 @@ function Header() {
                 <i className="fas fa-heart"></i> Saved Recipes
               </Link>
               {user.role === 'vendor' && (
-                <Link to="/vendordashboard">
+                <Link to="/vendor/dashboard">
                   <i className="fas fa-store-alt"></i> Vendor Dashboard
                 </Link>
               )}

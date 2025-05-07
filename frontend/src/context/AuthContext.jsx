@@ -66,12 +66,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Read the role before clearing anything
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const role = storedUser?.role;
+  
+    // Clear state and localStorage
     setUser(null);
     localStorage.removeItem('user');
     localStorage.clear();
-    window.location.href = '/login';
+  
+    // Redirect based on role
+    if (role === 'vendor') {
+      window.location.href = '/vendor/login'; // or any vendor landing page
+    } else {
+      window.location.href = '/login'; // default for users/admins
+    }
   };
-
+  
   const value = { 
     user, 
     loading, 
