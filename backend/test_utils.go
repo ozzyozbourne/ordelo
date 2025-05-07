@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func generateRandowEmails() string {
@@ -107,6 +109,7 @@ func generateIngredientsArray(n int) []*Ingredient {
 	res := make([]*Ingredient, n)
 	for i := range n {
 		res[i] = &Ingredient{
+			IngredientID: bson.NewObjectID(),
 			Name:         genRandIngredient(),
 			UnitQuantity: (rand.Intn(1000) + 1),
 			Unit:         []string{"kg", "g", "mg", "litre", "ml"}[rand.Intn(5)],
