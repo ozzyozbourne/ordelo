@@ -1,10 +1,29 @@
 // src/services/db.js
 // IndexedDB database setup and operations
 const DB_NAME = 'ordelo-recipe-cache';
-const DB_VERSION = 1;
+const DB_VERSION = 2;  // Using version 2 with DAILY_STORE
 const RECIPES_STORE = 'recipes';
 const SEARCH_STORE = 'searches';
 const CUISINE_STORE = 'cuisines';
+const DAILY_STORE = 'daily';  // Store for daily random recipes
+
+// Function to delete the existing database
+const deleteDatabase = () => {
+  return new Promise((resolve, reject) => {
+    const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+    
+    deleteRequest.onsuccess = () => {
+      console.log('Successfully deleted the existing database');
+      resolve();
+    };
+    
+    deleteRequest.onerror = () => {
+      console.error('Error deleting database');
+      reject();
+    };
+  });
+};
+
 // Open database connection
 export const openDB = () => {
   return new Promise((resolve, reject) => {
@@ -12,6 +31,7 @@ export const openDB = () => {
     
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+      const oldVersion = event.oldVersion;
       
       // Create stores if they don't exist
       if (!db.objectStoreNames.contains(RECIPES_STORE)) {
@@ -27,6 +47,13 @@ export const openDB = () => {
       if (!db.objectStoreNames.contains(CUISINE_STORE)) {
         const cuisineStore = db.createObjectStore(CUISINE_STORE, { keyPath: 'cuisine' });
         cuisineStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+
+      // Add DAILY_STORE only when upgrading from version 1
+      if (oldVersion < 2 && !db.objectStoreNames.contains(DAILY_STORE)) {
+        console.log('Creating DAILY_STORE for version 2 upgrade');
+        const dailyStore = db.createObjectStore(DAILY_STORE, { keyPath: 'key' });
+        dailyStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
     
@@ -140,9 +167,11 @@ export const deleteOldItems = async (storeName, maxAgeMs) => {
     };
   });
 };
+
 // Export store names for easy access
 export const STORES = {
   RECIPES: RECIPES_STORE,
   SEARCHES: SEARCH_STORE,
-  CUISINES: CUISINE_STORE
+  CUISINES: CUISINE_STORE,
+  DAILY: DAILY_STORE
 };
