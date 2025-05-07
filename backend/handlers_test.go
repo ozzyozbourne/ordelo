@@ -11,6 +11,88 @@ import (
 
 const LOCAL_URL = "http://localhost:8080/"
 
+<<<<<<< HEAD
+=======
+func TestReqIngredients(t *testing.T) {
+	res := generateIngredientsArray(3)
+	var req struct {
+		Ingredients []*Ingredient `json:"ingredients"`
+	}
+
+	req.Ingredients = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Ingredients -> \n%s\n", string(s))
+}
+
+func TestReqStores(t *testing.T) {
+	res := generateStoresArray(1, 1)
+	var req struct {
+		Stores []*Store `json:"stores"`
+	}
+
+	req.Stores = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Request -> \n%s\n", string(s))
+}
+
+func TestReq3(t *testing.T) {
+	res := generateUserOrdersArray(1, 1)
+	var req struct {
+		Orders []*UserOrder `json:"orders"`
+	}
+
+	req.Orders = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Orders -> \n%s\n", string(s))
+}
+
+func TestReqRecipes(t *testing.T) {
+	res := generateRecipesArray(1, 1)
+	var req struct {
+		Recipes []*Recipe `json:"recipes"`
+	}
+
+	req.Recipes = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Recipes -> \n%s\n", string(s))
+}
+
+func TestReq5(t *testing.T) {
+	res := generateReqIngArray(3, 4)
+	var req struct {
+		Compare []*ReqIng `json:"compare"`
+	}
+
+	req.Compare = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ReqIng -> \n%s\n", string(s))
+}
+
+func ATestCreateUser(t *testing.T) {
+	loginUserFromAPI(t, createUserFromAPI(t))
+}
+
+>>>>>>> 6f4d18fe9c06376568b9dcbe8e53c0b64c95c6b6
 func createUserFromAPI(t *testing.T) *Common {
 	com := generateCommon("user")
 	data, err := json.Marshal(com)
