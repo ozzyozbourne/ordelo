@@ -9,6 +9,7 @@ function RecipeDetails() {
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const isSelected = selectedRecipes.some(sel => sel.id === Number(id));
 
@@ -16,24 +17,35 @@ function RecipeDetails() {
     const loadRecipe = async () => {
       try {
         let data = await fetchRecipeById(id);
-        if (data && (!data.extendedIngredients?.length || !data.analyzedInstructions?.length)) {
-          console.log("Partial recipe detected. Refetching full details...");
+        
+        // Only retry once if we get partial data
+        if (data && retryCount === 0 && (!data.extendedIngredients?.length || !data.analyzedInstructions?.length)) {
+          console.log("Partial recipe detected. Attempting one refetch...");
+          setRetryCount(1);
           data = await fetchRecipeById(id);
         }
+        
         if (data) {
+          // Log what data we got
+          console.log("Recipe data loaded:", {
+            id: data.id,
+            hasIngredients: !!data.extendedIngredients?.length,
+            hasInstructions: !!data.analyzedInstructions?.length
+          });
           setRecipe(data);
         } else {
           setError("Recipe not found.");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error loading recipe:", err);
         setError("Failed to load recipe.");
       } finally {
         setLoading(false);
       }
     };
+    
     loadRecipe();
-  }, [id, fetchRecipeById]);
+  }, [id, fetchRecipeById, retryCount]);
 
   if (loading) {
     return (
@@ -44,11 +56,18 @@ function RecipeDetails() {
     );
   }
 
-  if (error) {
+  if (error || !recipe) {
     return (
       <div className="error-message">
         <i className="fas fa-exclamation-triangle"></i>
-        <p>{error}</p>
+        <p>{error || "Recipe not found"}</p>
+        <button 
+          className="btn btn-secondary mt-4" 
+          onClick={() => navigate(-1)}
+          style={{ marginTop: '1rem' }}
+        >
+          <i className="fas fa-arrow-left"></i> Go Back
+        </button>
       </div>
     );
   }
@@ -77,25 +96,35 @@ function RecipeDetails() {
           </div>
 
           <div className="recipe-meta">
-            <div className="recipe-meta-item"><i className="far fa-clock"></i> {recipe.readyInMinutes} min</div>
-            <div className="recipe-meta-item"><i className="fas fa-fire"></i> {recipe.nutrition?.nutrients?.[0]?.amount || "?"} cal</div>
-            <div className="recipe-meta-item"><i className="fas fa-utensils"></i> {recipe.servings} servings</div>
+            <div className="recipe-meta-item">
+              <i className="far fa-clock"></i> {recipe.readyInMinutes || '?'} min
+            </div>
+            <div className="recipe-meta-item">
+              <i className="fas fa-fire"></i> {recipe.nutrition?.nutrients?.[0]?.amount || "?"} cal
+            </div>
+            <div className="recipe-meta-item">
+              <i className="fas fa-utensils"></i> {recipe.servings || '?'} servings
+            </div>
           </div>
 
           {/* Ingredients */}
           <section className="ingredients-tab">
             <h2 className="section-title">Ingredients</h2>
-            <ul className="ingredients-list">
-              {recipe.extendedIngredients.map((ing, idx) => (
-                <li key={idx}>{ing.original}</li>
-              ))}
-            </ul>
+            {recipe.extendedIngredients?.length > 0 ? (
+              <ul className="ingredients-list">
+                {recipe.extendedIngredients.map((ing, idx) => (
+                  <li key={idx}>{ing.original}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No ingredients available.</p>
+            )}
           </section>
 
           {/* Instructions */}
           <section className="instructions-tab">
             <h2 className="section-title">Instructions</h2>
-            {recipe.analyzedInstructions?.length ? (
+            {recipe.analyzedInstructions?.length > 0 && recipe.analyzedInstructions[0]?.steps?.length > 0 ? (
               <ol className="instructions-list">
                 {recipe.analyzedInstructions[0].steps.map((step, idx) => (
                   <li key={idx}>{step.step}</li>

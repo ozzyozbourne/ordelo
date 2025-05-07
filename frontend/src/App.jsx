@@ -93,15 +93,9 @@ function App() {
           return;
         }
 
-        const dbOpenRequest = indexedDB.open("ordelo-recipe-cache", 1);
-
-        dbOpenRequest.onerror = (event) => {
-          console.error("IndexedDB error:", event.target.error);
-        };
-
-        dbOpenRequest.onsuccess = () => {
-          console.log("IndexedDB initialized");
-        };
+        // Just verify IndexedDB is available
+        // The actual database operations will be handled by db.js with version 2
+        console.log("IndexedDB is available");
       } catch (error) {
         console.error("IndexedDB check error:", error);
       }
