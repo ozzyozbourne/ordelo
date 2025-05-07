@@ -32,7 +32,7 @@ function VendorStore() {
       if (!response.ok) throw new Error("Failed to fetch stores");
       const data = await response.json();
 
-      const normalizedStores = (data.stores || []).map((store) => ({
+      const normalizedStores = (data.value || []).map((store) => ({
         ...store,
         id: store._id?.$oid || store._id,
       }));
