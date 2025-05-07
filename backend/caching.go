@@ -28,11 +28,11 @@ func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client,
 		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), cached_repo)
 		return err
 	}
-	mongoRepos.User = &CachedUserRepository{
-		redis:      redisClient,
-		userRepo:   mongoRepos.User,
-		expiration: cacheTTL,
-	}
+	// mongoRepos.User = &CachedUserRepository{
+	// 	redis:      redisClient,
+	// 	userRepo:   mongoRepos.User,
+	// 	expiration: cacheTTL,
+	// }
 
 	Repos = mongoRepos
 	return nil
