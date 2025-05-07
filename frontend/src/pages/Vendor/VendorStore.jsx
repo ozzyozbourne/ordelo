@@ -1,3 +1,4 @@
+// src/pages/Vendor/VendorStore.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -29,10 +30,15 @@ function VendorStore() {
       });
 
       if (!response.ok) throw new Error("Failed to fetch stores");
-
       const data = await response.json();
-      setStores(data.stores || []);
-      if (data.stores?.length) setActiveTab(data.stores[0]);
+
+      const normalizedStores = (data.stores || []).map((store) => ({
+        ...store,
+        id: store._id?.$oid || store._id,
+      }));
+
+      setStores(normalizedStores);
+      if (normalizedStores.length) setActiveTab(normalizedStores[0]);
     } catch (err) {
       console.error("Error fetching stores:", err);
     }
@@ -89,13 +95,12 @@ function VendorStore() {
   return (
     <div className="vendor-store-container">
       <h1>Vendor Stores</h1>
-
       <div className="tabs">
         {stores.map((store) => (
           <button
-            key={store.store_id}
+            key={store.id}
             className={`tab-button ${
-              activeTab?.store_id === store.store_id ? "active" : ""
+              activeTab?.id === store.id ? "active" : ""
             }`}
             onClick={() => setActiveTab(store)}
           >

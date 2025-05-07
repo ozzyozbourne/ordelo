@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = () => {
       setLoading(true);
       const storedUser = localStorage.getItem('user');
-
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
