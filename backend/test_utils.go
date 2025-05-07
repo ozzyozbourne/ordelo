@@ -619,3 +619,20 @@ func checkIngredients(in, out []*Ingredient) error {
 	}
 	return nil
 }
+
+func generateReqIng(n int) *ReqIng {
+	item := generateItemsArray(1)[0]
+	return &ReqIng{
+		Name:         item.Name,
+		UnitQuantity: item.UnitQuantity,
+		Unit:         item.Unit,
+	}
+}
+
+func generateReqIngArray(n, m int) []*ReqIng {
+	res := make([]*ReqIng, n)
+	for i := range n {
+		res[i] = generateReqIng(m)
+	}
+	return res
+}

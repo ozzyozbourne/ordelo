@@ -5,6 +5,7 @@
 //Improves Performance – Only updates necessary components when data changes.
 // Offline Support – Uses localStorage to persist data when offline.
 
+
 import { createContext, useState, useEffect, useContext } from "react";
 import { 
   fetchRandomRecipes, 
@@ -28,7 +29,6 @@ export const RecipeProvider = ({ children }) => {
   const [networkStatus, setNetworkStatus] = useState({ isOnline: true });
   const [apiStatus, setApiStatus] = useState({ isLimited: false, count: 0 });
 
-  // Load saved recipes and shopping list from localStorage
   useEffect(() => {
     const savedRecipesData = localStorage.getItem("savedRecipes");
     const shoppingListData = localStorage.getItem("shoppingList");

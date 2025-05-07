@@ -29,8 +29,12 @@ type RequestVendorOrders struct {
 	Orders []*VendorOrder `json:"orders"`
 }
 
+type ReqIngArray struct {
+	Compare []*ReqIng `json:"compare"`
+}
+
 type ComConReq interface {
-	RequestRecipes | RequestCarts | RequestUserOrders | RequestVendorOrders | RequestStores
+	RequestRecipes | RequestCarts | RequestUserOrders | RequestVendorOrders | RequestStores | ReqIngArray
 }
 
 type Login struct {

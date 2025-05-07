@@ -1,4 +1,3 @@
-// src/pages/ProfilePage.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -12,10 +11,9 @@ function ProfilePage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
 
- 
   const decoded = jwtDecode(user.token);
-  const name = decoded.name;
-  const address = decoded.address;
+  const [name, setName] = useState(decoded.name || "");
+  const [address, setAddress] = useState(decoded.address || "");
   const email = user.email;
 
   useEffect(() => {
@@ -24,7 +22,6 @@ function ProfilePage() {
     }
   }, [user, loading, navigate]);
 
- 
   useEffect(() => {
     const fetchOrders = async () => {
       setOrdersLoading(true);
@@ -41,7 +38,7 @@ function ProfilePage() {
         }
 
         const data = await response.json();
-        setOrders(data.orders || []); // expecting { orders: [...] }
+        setOrders(data.orders || []);
       } catch (err) {
         setOrdersError(err.message);
       } finally {
@@ -79,7 +76,7 @@ function ProfilePage() {
               <button className={`profile-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile Information</button>
               <button className={`profile-tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Order History</button>
               <button className={`profile-tab ${activeTab === 'saved' ? 'active' : ''}`} onClick={() => setActiveTab('saved')}>Saved Recipes</button>
-              <button className={`profile-tab ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>Notifications</button>
+              <button className={`profile-tab ${activeTab === 'add' ? 'active' : ''}`} onClick={() => setActiveTab('add')}>Add Recipe</button>
             </div>
 
             <div className="profile-logout">
@@ -93,9 +90,58 @@ function ProfilePage() {
               <div className="tab-content">
                 <h2>Profile Information</h2>
                 <div className="profile-info">
-                  <div className="info-group"><h3>Full Name</h3><p>{name || 'Not provided'}</p></div>
-                  <div className="info-group"><h3>Email Address</h3><p>{email || 'Not provided'}</p></div>
-                  <div className="info-group"><h3>Address</h3><p>{address || 'Not provided'}</p></div>
+                  <div className="info-group">
+                    <h3>Full Name</h3>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="info-group">
+                    <h3>Address</h3>
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="info-group">
+                    <h3>Email Address</h3>
+                    <p>{email || 'Not provided'}</p>
+                  </div>
+
+                  <button
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch("http://localhost:8080/user", {
+                          method: "PUT",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${user.token}`,
+                          },
+                          body: JSON.stringify({
+                            name,
+                            address,
+                          }),
+                        });
+
+                        if (!response.ok) {
+                          throw new Error("Failed to update profile");
+                        }
+
+                        alert("Profile updated successfully!");
+
+                      } catch (err) {
+                        alert(err.message);
+                      }
+                    }}
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </div>
             )}
@@ -143,10 +189,12 @@ function ProfilePage() {
               </div>
             )}
 
-            {activeTab === 'notifications' && (
+            {activeTab === 'add' && (
               <div className="tab-content">
-                <h2>Notifications</h2>
-                <p>Notification settings here (not connected yet).</p>
+                <h2>Add New Recipe</h2>
+                <Link to="/add-recipe" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 inline-block">
+                  Go to Add Recipe Page
+                </Link>
               </div>
             )}
           </div>

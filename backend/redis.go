@@ -28,6 +28,7 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 		err = errors.New("env variable RD_PASSWORD is empty")
 		return
 	}
+
 	Logger.InfoContext(ctx, "Setting up redis with Opentelemetry", slog.String("Addr", addr),
 		slog.String("Password", password), slog.Int("DB", 0), redis_source)
 
@@ -51,6 +52,10 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 		return
 	}
 
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
+	}
+
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
@@ -65,19 +70,19 @@ func initRedis(c context.Context) (shutdown func(ctx context.Context) error, err
 	redisShutDownFunc = RedisClient.Close
 	if err = redisotel.InstrumentTracing(RedisClient); err != nil {
 		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis tracing", slog.Any("error", err), redis_source)
-		err = shutdown(ctx)
+		handleErr(err)
 		return
 	}
 
 	if err = redisotel.InstrumentMetrics(RedisClient); err != nil {
 		Logger.ErrorContext(ctx, "Closing redis client since failed to instrument Redis metrics", slog.Any("error", err), redis_source)
-		err = shutdown(ctx)
+		handleErr(err)
 		return
 	}
 
 	if err = RedisClient.Ping(ctx).Err(); err != nil {
 		Logger.ErrorContext(ctx, "Redis ping test failed", slog.Any("error", err), redis_source)
-		err = shutdown(ctx)
+		handleErr(err)
 		return
 	}
 

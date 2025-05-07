@@ -1,4 +1,6 @@
 // src/services/spoonacularApi.js
+/*  'd4fee4ecdd054ec9b843a94a50133d0d',
+  'cf36d70a161f4e6ab5dc3ebd810bbeb6'*/
 
 import axios from 'axios';
 import { createOptimizedAxios, retryRequest } from '../utils/apiUtils';
@@ -15,6 +17,7 @@ import {
 
 const API_BASE_URL = 'https://api.spoonacular.com';
 const API_KEYS = [
+  
   'e5417c0a2e4c4fca8b644c983f8327ee',
   '5337e71f5d9743ffad0ad4307681f80c'
 ];

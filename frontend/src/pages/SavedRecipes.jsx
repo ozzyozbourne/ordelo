@@ -1,65 +1,54 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function SavedRecipes() {
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSavedRecipes = async () => {
-      try {
-
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        const token = storedUser?.token;
-
-        if (!token) {
-          throw new Error("You are not logged in.");
-        }
-
-        const response = await fetch("http://localhost:8080/user/recipes", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error("Unauthorized. Please log in again.");
-          } else {
-            throw new Error("Failed to fetch recipes.");
-          }
-        }
-
-        const data = await response.json();
-
-      } catch (err) {
-        console.error("Error fetching recipes", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSavedRecipes();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="p-6 text-center">
-        <p>Loading saved recipes...</p>
-      </div>
-    );
-  }
+  const fetchSavedRecipes = async () => {
+    try {
+      const token = user?.token;
 
-  if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        <p>{error}</p>
-      </div>
-    );
-  }
+      if (!token) throw new Error("You are not logged in.");
+
+      const response = await fetch("http://localhost:8080/user/recipes", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch recipes.");
+
+      const data = await response.json();
+      console.log("Fetched recipes:", data);
+
+      // Normalize ingredient_id (fix $oid issue)
+      const parsedRecipes = data.recipes.map(recipe => ({
+        ...recipe,
+        items: recipe.items.map(item => ({
+          ...item,
+          ingredient_id: item.ingredient_id?.$oid || item.ingredient_id
+        }))
+      }));
+
+      setRecipes(parsedRecipes);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p>Loading recipes...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -75,14 +64,28 @@ function SavedRecipes() {
       <h1 className="text-2xl font-bold mb-4">Saved Recipes</h1>
 
       {recipes.length === 0 ? (
-        <p>No saved recipes found.</p>
+        <p>No recipes found.</p>
       ) : (
         <ul className="space-y-4">
           {recipes.map((recipe) => (
             <li key={recipe.recipe_id} className="border p-4 rounded bg-gray-50">
               <h2 className="text-xl font-semibold">{recipe.title}</h2>
               <p>{recipe.description}</p>
-              <p><strong>Serving Size:</strong> {recipe.serving_size}</p>
+              <p>
+                <strong>Preparation Time:</strong> {recipe.preparation_time} minutes
+              </p>
+              <p>
+                <strong>Serving Size:</strong> {recipe.serving_size}
+              </p>
+
+              <div className="mt-2">
+                <h3 className="font-semibold">Items:</h3>
+                {recipe.items.map((item, index) => (
+                  <p key={index}>
+                    {item.quantity} x {item.unit_quantity} {item.unit} {item.name} (${item.price?.toFixed(2)})
+                  </p>
+                ))}
+              </div>
             </li>
           ))}
         </ul>

@@ -121,10 +121,10 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
 	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
 
-	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser))))
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser)))) /*Nahi daalna hai*/
 	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
 
-	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
+	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin)))) /*Nahi daalna hai*/
 	handleFunc("DELETE /admin/user/{id}", mid(admin(http.HandlerFunc(AdminDeleteUser))))
 	handleFunc("DELETE /admin/vendor/{id}", mid(admin(http.HandlerFunc(AdminDeleteVendor))))
 	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
@@ -133,6 +133,7 @@ func newHTTPHandler() http.Handler {
 	//-------------Vendor-Specific-----------------------------
 	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
+	handleFunc("POST /vendor/items", mid(http.HandlerFunc(VendorComparedItemsValue)))
 
 	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
