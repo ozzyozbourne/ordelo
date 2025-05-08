@@ -11,6 +11,7 @@ import (
 
 const LOCAL_URL = "http://localhost:8080/"
 
+
 func createUserFromAPI(t *testing.T) *Common {
 	com := generateCommon("user")
 	data, err := json.Marshal(com)

@@ -133,7 +133,6 @@ func newHTTPHandler() http.Handler {
 	//-------------Vendor-Specific-----------------------------
 	handleFunc("POST /vendor/stores", mid(vendor(http.HandlerFunc(CreateStores))))
 	handleFunc("POST /vendor/orders", mid(vendor(http.HandlerFunc(CreateVendorOrders))))
-	handleFunc("POST /vendor/items", mid(http.HandlerFunc(VendorComparedItemsValue)))
 
 	handleFunc("GET /vendor/stores", mid(vendor(http.HandlerFunc(GetStores))))
 	handleFunc("GET /vendor/orders", mid(vendor(http.HandlerFunc(GetVendorOrders))))
@@ -141,6 +140,7 @@ func newHTTPHandler() http.Handler {
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
+	handleFunc("PUT /vendor/order/{id}", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
 	handleFunc("PUT /vendor", mid(vendor(http.HandlerFunc(UpdateUser))))
 
 	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
@@ -151,6 +151,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("POST /user/recipes", mid(user(http.HandlerFunc(CreateRecipes))))
 	handleFunc("POST /user/carts", mid(user(http.HandlerFunc(CreateCarts))))
 	handleFunc("POST /user/orders", mid(user(http.HandlerFunc(CreateUserOrders))))
+	handleFunc("POST /user/items/compare", mid(user(http.HandlerFunc(VendorComparedItemsValue))))
 
 	handleFunc("GET /user/recipes", mid(user(http.HandlerFunc(GetRecipes))))
 	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
