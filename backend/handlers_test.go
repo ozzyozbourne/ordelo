@@ -41,7 +41,7 @@ func TestReqStores(t *testing.T) {
 	t.Logf("Request -> \n%s\n", string(s))
 }
 
-func TestReq3(t *testing.T) {
+func TestReqUserOrders(t *testing.T) {
 	res := generateUserOrdersArray(1, 1)
 	var req struct {
 		Orders []*UserOrder `json:"orders"`
@@ -71,7 +71,22 @@ func TestReqRecipes(t *testing.T) {
 	t.Logf("Recipes -> \n%s\n", string(s))
 }
 
-func TestReq5(t *testing.T) {
+func TestReqCarts(t *testing.T) {
+	res := generateCartsArray(1, 1)
+	var req struct {
+		Carts []*Cart `json:"carts"`
+	}
+
+	req.Carts = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Carts -> \n%s\n", string(s))
+}
+
+func TestReqCompare(t *testing.T) {
 	res := generateReqIngArray(3, 4)
 	var req struct {
 		Compare []*ReqIng `json:"compare"`
@@ -83,7 +98,7 @@ func TestReq5(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("ReqIng -> \n%s\n", string(s))
+	t.Logf("ReqIng Comparison-> \n%s\n", string(s))
 }
 
 func ATestCreateUser(t *testing.T) {
