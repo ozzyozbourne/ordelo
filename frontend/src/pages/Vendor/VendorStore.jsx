@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-
 function VendorStore() {
   const [stores, setStores] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
@@ -31,6 +30,7 @@ function VendorStore() {
 
       if (!response.ok) throw new Error("Failed to fetch stores");
       const data = await response.json();
+      console.log(data)
 
       const normalizedStores = (data.value || []).map((store) => ({
         ...store,
