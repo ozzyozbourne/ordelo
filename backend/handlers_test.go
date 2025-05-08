@@ -27,7 +27,7 @@ func TestReqIngredients(t *testing.T) {
 }
 
 func TestReqStores(t *testing.T) {
-	res := generateStoresArray(1, 1)
+	res := generateStoresArray(1, 10)
 	var req struct {
 		Stores []*Store `json:"stores"`
 	}
