@@ -183,6 +183,11 @@ func VendorComparedItemsValue(w http.ResponseWriter, r *http.Request) {
 
 	res, err := Repos.Vendor.FindAllIngredients(ctx, req.Compare)
 	if err != nil {
+		if errors.Is(err, &NoItems{}) {
+			Logger.ErrorContext(ctx, "No items found", slog.Any("error", err))
+			sendFailure(ctx, w, "No items found", source)
+			return
+		}
 		sendFailure(ctx, w, "Error in fetchig compared value", source)
 		return
 	}
@@ -661,6 +666,20 @@ func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
 	updateCon(ctx, w, r, source, req.Orders)
 }
 
+func AcceptVendorOrder(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateVendorOrders")
+	defer span.End()
+	source := slog.String("source", "UpdateVendorOrders")
+
+	Logger.InfoContext(ctx, "Updating VendorOrders", source)
+	req, err := decodeStruct[RequestVendorOrders](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing VendorOrders request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Orders)
+}
+
 func UpdateStores(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "UpdateStores")
 	defer span.End()
@@ -859,7 +878,20 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	case []*Recipe:
 		ids, err = Repos.User.CreateRecipes(ctx, id, c)
 	case []*UserOrder:
-		ids, err = Repos.User.CreateUserOrders(ctx, id, c)
+		if ids, err = Repos.User.CreateUserOrders(ctx, id, c); err != nil {
+			Logger.ErrorContext(ctx, "Error in user peristance", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Error in user persistance", source)
+		}
+		vo := make([]*VendorOrder, len(c))
+		for i, v := range c {
+			vo[i].Order = v.Order
+			vo[i].UserID = id.value
+		}
+		if _, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].ID}, vo); err != nil {
+			Logger.ErrorContext(ctx, "Error in vendor peristance", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Error in vendor persistance", source)
+		}
+
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:

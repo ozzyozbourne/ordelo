@@ -50,7 +50,7 @@ type ReqIng struct {
 }
 
 type ResIng struct {
-	ID     bson.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	ID     bson.ObjectID `bson:"_id,omitempty" json:"vendor_id"`
 	Stores []*Store      `bson:"stores" json:"stores"`
 }
 
@@ -171,3 +171,9 @@ type DeleteReq struct {
 }
 
 // ----------------------------------------------------------------------
+
+type NoItems struct{}
+
+func (n *NoItems) Error() string {
+	return "No items found"
+}

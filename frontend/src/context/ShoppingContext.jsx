@@ -1,6 +1,7 @@
 // Modified ShoppingContext.jsx with outside click handling
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useRecipes } from "./RecipeContext";
+import { useAuth } from "./AuthContext";
 
 // Create context
 const ShoppingContext = createContext();
@@ -16,6 +17,7 @@ export const useShoppingContext = () => {
 
 export const ShoppingProvider = ({ children }) => {
   const { shoppingList } = useRecipes();
+  const { user } = useAuth();
   
   // State for managing selected ingredients panel visibility
   const [showIngredientsPanel, setShowIngredientsPanel] = useState(true);
@@ -117,59 +119,149 @@ export const ShoppingProvider = ({ children }) => {
     );
   };
   
-  // Function to fetch vendors based on location and ingredients
-  const fetchVendors = async () => {
-    try {
-      // In a real app, this would be an API call
-      // For now, let's simulate with mock data
-      const mockVendors = [
-        {
-          id: "v1",
-          name: "Whole Foods Market",
-          distance: 2.3, // miles
-          address: "123 Main St",
-          matchingItems: 18,
-          totalItems: 25,
-          totalPrice: 65.43,
-          availableItems: [
-            { id: 1, name: "Organic Chicken", price: 12.99, quantity: 1 },
-            { id: 2, name: "Fresh Spinach", price: 3.99, quantity: 1 },
-            // More items would be here
-          ]
+  // Function to get user location
+  const getUserLocation = () => {
+    if (!user?.token) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation(prev => ({
+            ...prev,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }));
+          
+          // In a real app, you would reverse geocode to get the address
+          // For now, we'll just set a placeholder
+          setUserLocation(prev => ({
+            ...prev,
+            address: "Current Location"
+          }));
+          
+          // Fetch vendors after getting location
+          fetchVendors();
         },
-        {
-          id: "v2",
-          name: "Trader Joe's",
-          distance: 3.7,
-          address: "456 Market Ave",
-          matchingItems: 20,
-          totalItems: 25,
-          totalPrice: 58.75,
-          availableItems: [
-            { id: 1, name: "Organic Chicken", price: 11.99, quantity: 1 },
-            { id: 3, name: "Olive Oil", price: 8.99, quantity: 1 },
-            // More items would be here
-          ]
-        },
-        {
-          id: "v3",
-          name: "Local Farmer's Market",
-          distance: 5.2,
-          address: "789 Farm Rd",
-          matchingItems: 15,
-          totalItems: 25,
-          totalPrice: 52.30,
-          availableItems: [
-            { id: 2, name: "Fresh Spinach", price: 2.99, quantity: 1 },
-            { id: 4, name: "Free Range Eggs", price: 4.99, quantity: 1 },
-            // More items would be here
-          ]
+        (error) => {
+          console.error("Error getting location:", error);
+          // If location access is denied, use a default location
+          setUserLocation({
+            lat: 37.7749, // Default to San Francisco
+            lng: -122.4194,
+            address: "San Francisco, CA",
+            radius: 10
+          });
+          
+          // Fetch vendors with default location
+          fetchVendors();
         }
-      ];
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser");
+      // Use default location
+      setUserLocation({
+        lat: 37.7749,
+        lng: -122.4194,
+        address: "San Francisco, CA",
+        radius: 10
+      });
       
-      setVendors(mockVendors);
+      // Fetch vendors with default location
+      fetchVendors();
+    }
+  };
+  
+  // Function to fetch vendors based on location and ingredients
+  const fetchVendors = async (storeData) => {
+    if (!user?.token) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    try {
+      if (!storeData) {
+        // Get selected ingredients from the shopping list
+        const selectedItems = selectedIngredients.filter(item => item.selected);
+        
+        if (selectedItems.length === 0) {
+          console.log("No ingredients selected");
+          return;
+        }
+
+        // Format the request body
+        const requestBody = {
+          compare: selectedItems.map(item => ({
+            name: item.name,
+            unit_quantity: Math.round(item.amount || 1),
+            unit: item.unit || ''
+          }))
+        };
+
+        console.log('Request body:', JSON.stringify(requestBody, null, 2)); // Debug log
+
+        const response = await fetch("http://localhost:8080/user/items/compare", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Error response:', errorData); // Debug log
+          throw new Error(errorData.message || "Failed to compare items");
+        }
+
+        const data = await response.json();
+        console.log('Response data:', data); // Debug log
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to get store data");
+        }
+
+        // Handle the case where ids is "null" or empty
+        if (!data.ids || data.ids === "null") {
+          console.log("No stores found for the selected ingredients");
+          setVendors([]); // Set empty vendors array
+          return;
+        }
+
+        // Parse the stringified JSON from data.ids
+        storeData = JSON.parse(data.ids);
+      }
+
+      // Transform store data into vendor format
+      const transformedVendors = storeData.map(vendor => ({
+        id: vendor.user_id,
+        name: vendor.name,
+        stores: vendor.stores.map(store => ({
+          id: store.store_id,
+          name: store.name,
+          storeType: store.store_type,
+          location: store.location,
+          matchingItems: store.items.length,
+          totalItems: store.items.length,
+          totalPrice: store.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+          availableItems: store.items.map(item => ({
+            id: item.ingredient_id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitQuantity: item.unit_quantity
+          }))
+        }))
+      }));
+
+      setVendors(transformedVendors);
     } catch (error) {
       console.error("Error fetching vendors:", error);
+      setVendors([]); // Set empty vendors array on error
     }
   };
   
@@ -216,56 +308,6 @@ export const ShoppingProvider = ({ children }) => {
     // If no carts left, hide the cart panel
     if (Object.keys(carts).length <= 1) {
       setShowCartPanel(false);
-    }
-  };
-  
-  // Function to get user location
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation(prev => ({
-            ...prev,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }));
-          
-          // In a real app, you would reverse geocode to get the address
-          // For now, we'll just set a placeholder
-          setUserLocation(prev => ({
-            ...prev,
-            address: "Current Location"
-          }));
-          
-          // Fetch vendors after getting location
-          fetchVendors();
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          // If location access is denied, use a default location
-          setUserLocation({
-            lat: 37.7749, // Default to San Francisco
-            lng: -122.4194,
-            address: "San Francisco, CA",
-            radius: 10
-          });
-          
-          // Fetch vendors with default location
-          fetchVendors();
-        }
-      );
-    } else {
-      console.error("Geolocation is not supported by this browser");
-      // Use default location
-      setUserLocation({
-        lat: 37.7749,
-        lng: -122.4194,
-        address: "San Francisco, CA",
-        radius: 10
-      });
-      
-      // Fetch vendors with default location
-      fetchVendors();
     }
   };
   
