@@ -52,6 +52,7 @@ import VendorStore from "./pages/Vendor/VendorStore";
 import Inventory from "./pages/Vendor/Inventory";
 import VendorDashboard from "./pages/Vendor/VendorDashboard";
 import AddInventory from "./pages/Vendor/AddInventory";
+import VendorOrder from "./pages/Vendor/VendorOrder";
 
 
 // Styles
@@ -146,6 +147,7 @@ function App() {
                 <Route path="store" element={<VendorStore />} />
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="add-inventory" element={<AddInventory />} />
+                <Route path="orders" element={<VendorOrder />} />
 
               </Route>
 
