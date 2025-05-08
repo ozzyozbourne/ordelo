@@ -58,6 +58,7 @@ type VendorRepository interface {
 	FindStores(context.Context, ID) ([]*Store, error)
 	FindVendorOrders(context.Context, ID) ([]*VendorOrder, error)
 	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
+	FindVendorStore(context.Context, ID, ID) ([]*Item, error)
 
 	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
@@ -465,6 +466,48 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 
 	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
+}
+
+func (m MongoVendorRepository) FindVendorStore(ctx context.Context, vendorid ID, storeid ID) ([]*Item, error) {
+	ctx, span := Tracer.Start(ctx, "FindVendorStore")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Finding items in vendor store", slog.String("vendorID", vendorid.String()),
+		slog.String("storeID", storeid.String()), vendor_repo_source)
+
+	filter := bson.D{{Key: "_id", Value: vendorid.value}, {Key: "stores._id", Value: storeid.value}}
+	projection := bson.D{{Key: "stores.$", Value: 1}}
+
+	var result struct {
+		Stores []*Store `bson:"stores"`
+	}
+
+	if err := m.col.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			Logger.ErrorContext(ctx, "Vendor or store not found", slog.String("vendorID", vendorid.String()),
+				slog.String("storeID", storeid.String()), vendor_repo_source)
+			return nil, fmt.Errorf("vendor with ID %s or store with ID %s not found", vendorid.String(), storeid.String())
+		}
+		Logger.ErrorContext(ctx, "Error finding store items", slog.Any("error", err), vendor_repo_source)
+		return nil, err
+	}
+
+	if len(result.Stores) == 0 || result.Stores[0] == nil {
+		Logger.ErrorContext(ctx, "Store not found", slog.String("vendorID", vendorid.String()),
+			slog.String("storeID", storeid.String()), vendor_repo_source)
+		return nil, fmt.Errorf("store with ID %s not found for vendor %s", storeid.String(), vendorid.String())
+	}
+
+	items := result.Stores[0].Items
+	if len(items) == 0 {
+		Logger.InfoContext(ctx, "No items found in store", slog.String("vendorID", vendorid.String()),
+			slog.String("storeID", storeid.String()), vendor_repo_source)
+		return nil, &NoItems{}
+	}
+
+	Logger.InfoContext(ctx, "Items found successfully", slog.Int("count", len(items)), slog.String("vendorID", vendorid.String()),
+		slog.String("storeID", storeid.String()), vendor_repo_source)
+	return items, nil
 }
 
 func (m MongoVendorRepository) FindVendorOrders(ctx context.Context, id ID) ([]*VendorOrder, error) {
