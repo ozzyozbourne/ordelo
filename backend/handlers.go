@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 
@@ -183,6 +184,11 @@ func VendorComparedItemsValue(w http.ResponseWriter, r *http.Request) {
 
 	res, err := Repos.Vendor.FindAllIngredients(ctx, req.Compare)
 	if err != nil {
+		if errors.Is(err, &NoItems{}) {
+			Logger.ErrorContext(ctx, "No items found", slog.Any("error", err))
+			sendFailure(ctx, w, "No items found", source)
+			return
+		}
 		sendFailure(ctx, w, "Error in fetchig compared value", source)
 		return
 	}
