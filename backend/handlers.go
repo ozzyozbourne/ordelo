@@ -661,6 +661,20 @@ func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
 	updateCon(ctx, w, r, source, req.Orders)
 }
 
+func AcceptVendorOrder(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "UpdateVendorOrders")
+	defer span.End()
+	source := slog.String("source", "UpdateVendorOrders")
+
+	Logger.InfoContext(ctx, "Updating VendorOrders", source)
+	req, err := decodeStruct[RequestVendorOrders](ctx, r.Body, source)
+	if err != nil {
+		sendFailure(ctx, w, "Error in parsing VendorOrders request body", source)
+		return
+	}
+	updateCon(ctx, w, r, source, req.Orders)
+}
+
 func UpdateStores(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "UpdateStores")
 	defer span.End()
