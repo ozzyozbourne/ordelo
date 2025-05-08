@@ -859,7 +859,20 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	case []*Recipe:
 		ids, err = Repos.User.CreateRecipes(ctx, id, c)
 	case []*UserOrder:
-		ids, err = Repos.User.CreateUserOrders(ctx, id, c)
+		if ids, err = Repos.User.CreateUserOrders(ctx, id, c); err != nil {
+			Logger.ErrorContext(ctx, "Error in user peristance", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Error in user persistance", source)
+		}
+		vo := make([]*VendorOrder, len(c))
+		for i, v := range c {
+			vo[i].Order = v.Order
+			vo[i].UserID = id.value
+		}
+		if _, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].ID}, vo); err != nil {
+			Logger.ErrorContext(ctx, "Error in vendor peristance", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Error in vendor persistance", source)
+		}
+
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:
