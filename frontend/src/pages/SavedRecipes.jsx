@@ -28,10 +28,9 @@ function SavedRecipes() {
       if (!response.ok) throw new Error("Failed to fetch recipes.");
 
       const data = await response.json();
-      console.log("Fetched recipes:", data);
 
       // Normalize ingredient_id (fix $oid issue)
-      const parsedRecipes = data.recipes.map(recipe => ({
+      const parsedRecipes = data.value.map(recipe => ({
         ...recipe,
         items: recipe.items.map(item => ({
           ...item,
@@ -82,7 +81,7 @@ function SavedRecipes() {
                 <h3 className="font-semibold">Items:</h3>
                 {recipe.items.map((item, index) => (
                   <p key={index}>
-                    {item.quantity} x {item.unit_quantity} {item.unit} {item.name} (${item.price?.toFixed(2)})
+                    {item.quantity} x {item.unit_quantity} {item.unit} {item.name} 
                   </p>
                 ))}
               </div>
