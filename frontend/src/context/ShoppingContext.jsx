@@ -102,7 +102,7 @@ export const ShoppingProvider = ({ children }) => {
       // Map shopping list items to selected ingredients
       const mappedIngredients = shoppingList.map(item => ({
         ...item,
-        selected: true, // Default all ingredients as selected
+        selected: false, // Default all ingredients as unselected
         id: item.id || `temp-${Date.now()}-${Math.random()}` // Ensure all items have an ID
       }));
       
@@ -113,19 +113,16 @@ export const ShoppingProvider = ({ children }) => {
   // Function to toggle ingredient selection
   const toggleIngredientSelection = (ingredientId) => {
     setSelectedIngredients(prev => 
-      prev.map(ing => 
-        ing.id === ingredientId ? { ...ing, selected: !ing.selected } : ing
+      prev.map(ingredient => 
+        ingredient.id === ingredientId 
+          ? { ...ingredient, selected: !ingredient.selected }
+          : ingredient
       )
     );
   };
   
   // Function to get user location
   const getUserLocation = () => {
-    if (!user?.token) {
-      console.error("User not authenticated");
-      return;
-    }
-
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -134,43 +131,11 @@ export const ShoppingProvider = ({ children }) => {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           }));
-          
-          // In a real app, you would reverse geocode to get the address
-          // For now, we'll just set a placeholder
-          setUserLocation(prev => ({
-            ...prev,
-            address: "Current Location"
-          }));
-          
-          // Fetch vendors after getting location
-          fetchVendors();
         },
         (error) => {
-          console.error("Error getting location:", error);
-          // If location access is denied, use a default location
-          setUserLocation({
-            lat: 37.7749, // Default to San Francisco
-            lng: -122.4194,
-            address: "San Francisco, CA",
-            radius: 10
-          });
-          
-          // Fetch vendors with default location
-          fetchVendors();
+          console.error('Error getting location:', error);
         }
       );
-    } else {
-      console.error("Geolocation is not supported by this browser");
-      // Use default location
-      setUserLocation({
-        lat: 37.7749,
-        lng: -122.4194,
-        address: "San Francisco, CA",
-        radius: 10
-      });
-      
-      // Fetch vendors with default location
-      fetchVendors();
     }
   };
   
@@ -329,18 +294,22 @@ export const ShoppingProvider = ({ children }) => {
     showCartPanel,
     setShowCartPanel,
     selectedIngredients,
-    toggleIngredientSelection,
+    setSelectedIngredients,
     vendors,
-    fetchVendors,
+    setVendors,
     carts,
-    addToCart,
-    removeCart,
+    setCarts,
     userLocation,
-    getUserLocation,
-    setRadius,
+    setUserLocation,
     isMobile,
     ingredientsPanelRef,
-    cartPanelRef
+    cartPanelRef,
+    getUserLocation,
+    toggleIngredientSelection,
+    fetchVendors,
+    addToCart,
+    removeCart,
+    setRadius
   };
   
   return (
