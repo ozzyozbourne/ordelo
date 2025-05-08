@@ -51,6 +51,7 @@ function VendorLayout() {
               <li><Link to="/vendor/orders">Orders</Link></li>
               <li><Link to="/vendor/store">Store</Link></li>
               <li><Link to="/vendor/inventory">Products</Link></li>
+              <li><Link to="/vendor/add-inventory">Add Products</Link></li>
             </ul>
           </nav>
         </aside>
