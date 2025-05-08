@@ -1,7 +1,8 @@
 // src/components/ShoppingList.jsx
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const FOOD_CATEGORIES = {
   PRODUCE: "Produce",
@@ -132,6 +133,9 @@ function ShoppingList() {
   const { shoppingList, removeFromShoppingList, clearShoppingList, addToShoppingList } = useRecipes();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.title = "Shopping List | Ordelo";
@@ -183,6 +187,88 @@ function ShoppingList() {
     removeFromShoppingList(item.id);
     addToShoppingList([{ ...item, amount: newAmount }]);
   }, [removeFromShoppingList, addToShoppingList]);
+
+  const handleShopNow = async () => {
+    if (selectedItems.length === 0) {
+      setError("Please select at least one item to shop for");
+      return;
+    }
+
+    if (!user?.token) {
+      setError("Please log in to continue shopping");
+      return;
+    }
+
+    try {
+      const selectedIngredients = mergedItems
+        .filter(item => selectedItems.includes(item.uniqueId))
+        .map(item => {
+          // Ensure amount is a valid number and convert to integer
+          const amount = typeof item.amount === 'number' ? Math.round(item.amount) : 1;
+          
+          // Ensure unit is a string
+          const unit = typeof item.unit === 'string' ? item.unit : '';
+          
+          // Ensure name is a string
+          const name = typeof item.name === 'string' ? item.name : '';
+          
+          if (!name) {
+            console.warn('Skipping item with no name:', item);
+            return null;
+          }
+
+          return {
+            name,
+            unit_quantity: amount,
+            unit
+          };
+        })
+        .filter(Boolean); // Remove any null items
+
+      if (selectedIngredients.length === 0) {
+        setError("No valid ingredients selected");
+        return;
+      }
+
+      const requestBody = {
+        compare: selectedIngredients
+      };
+
+      console.log('Request body:', JSON.stringify(requestBody, null, 2)); // Debug log
+
+      const response = await fetch("http://localhost:8080/user/items/compare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response:', errorData); // Debug log
+        throw new Error(errorData.message || "Failed to compare items");
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data); // Debug log
+
+      if (!data.success) {
+        throw new Error("Failed to get store data");
+      }
+
+      // Parse the stringified JSON from data.ids
+      const stores = JSON.parse(data.ids);
+      console.log('Parsed stores:', stores); // Debug log
+      
+      // Navigate to shopping page with the store data
+      navigate('/shopping', { state: { stores } });
+    } catch (err) {
+      console.error('Error in handleShopNow:', err);
+      setError(err.message);
+    }
+  };
 
   return (
       <div className="shopping-list-page fade-in">
@@ -405,9 +491,13 @@ function ShoppingList() {
       {shoppingList.length > 0 && (
         <div className="shop-now-container">
           <p>Ready to purchase these ingredients? Find the best stores near you!</p>
-          <Link to="/shopping" className="btn btn-primary shop-now-btn">
+          <button 
+            onClick={handleShopNow}
+            className="btn btn-primary shop-now-btn"
+            disabled={selectedItems.length === 0}
+          >
             <i className="fas fa-store"></i> Shop Now
-          </Link>
+          </button>
         </div>
       )}
     </div>
