@@ -163,114 +163,238 @@
   }
 }
 
-/*vendor dashboard styles */
-
 .vendor-layout-wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--surface-2);
 }
 
+/* Header */
 .vendor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background-color: #f8f8f8;
-  border-bottom: 1px solid #ddd;
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--surface-1);
+  border-bottom: 1px solid var(--surface-3);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: var(--z-header);
 }
 
+/* Body Layout */
 .vendor-body {
   display: flex;
   flex: 1;
 }
 
+/* Sidebar */
 .sidebar {
-  width: 200px;
-  background-color: #333;
-  color: white;
-  padding: 20px;
-  transition: transform 0.3s ease;
+  width: 220px;
+  background-color: var(--surface-3);
+  padding: var(--space-lg) var(--space-md);
+  color: var(--text-1);
+  transition: transform var(--transition-normal);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .sidebar ul li {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-sm);
 }
 
 .sidebar ul li a {
-  color: white;
+  color: var(--text-1);
   text-decoration: none;
+  font-weight: var(--font-weight-5);
+  transition: color var(--transition-fast);
 }
 
-.sidebar.open {
-  transform: translateX(0);
+.sidebar ul li a:hover {
+  color: var(--primary-color);
 }
 
-.sidebar:not(.open) {
-  transform: translateX(-100%);
-}
-
+/* Main Content */
 .vendor-main-content {
   flex: 1;
-  padding: 30px;
-  background-color: #222e36;
-  color: white;
-  min-height: calc(100vh - 100px); /* adjust for header/footer if needed */
+  padding: var(--space-lg);
+  background-color: var(--surface-2);
+  min-height: 100vh;
+  color: var(--text-1);
 }
 
+/* Footer */
 .vendor-footer {
   text-align: center;
-  padding: 10px;
-  background-color: #f8f8f8;
-  border-top: 1px solid #ddd;
+  padding: var(--space-md);
+  background-color: var(--surface-1);
+  border-top: 1px solid var(--surface-3);
+  color: var(--text-2);
 }
 
-.mobile-menu-toggle {
-  display: none;
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  background-color: #333;
+/* Store Container */
+.vendor-store-container {
+  background-color: var(--surface-1);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.vendor-store-container h1 {
+  font-size: var(--font-size-4);
+  font-weight: var(--font-weight-7);
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.tab-button {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background-color: transparent;
+  color: var(--text-2);
+  font-weight: var(--font-weight-5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  border-bottom: 3px solid var(--primary-color);
+  font-weight: var(--font-weight-7);
+  background-color: transparent;
+}
+
+
+
+/* Store Details */
+.store-details {
+  background-color: var(--surface-2);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-1);
+}
+
+.store-details h2 {
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-3);
+}
+
+.store-details p {
+  margin-bottom: var(--space-xs);
+}
+
+/* Toggle Button */
+.toggle-form-btn {
+  background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-1);
+  margin-bottom: var(--space-md);
   cursor: pointer;
-  z-index: 1001;
+  transition: background-color var(--transition-fast);
 }
 
+.toggle-form-btn:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Form */
+.create-form {
+  background-color: var(--surface-2);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.create-form input,
+.create-form select {
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-3);
+  font-size: var(--font-size-1);
+  background-color: white;
+  color: var(--text-1);
+}
+
+.create-form button {
+  background-color: var(--primary-color);
+  color: white;
+  padding: var(--space-sm);
+  font-size: var(--font-size-1);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.create-form button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .mobile-menu-toggle {
-    display: block;
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: var(--z-overlay);
   }
 
-  .sidebar {
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-toggle {
+    display: block;
     position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    z-index: 1000;
+    top: var(--space-md);
+    left: var(--space-md);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    z-index: var(--z-header);
+    box-shadow: var(--shadow-2);
   }
 
   .vendor-main-content {
-    padding: 20px;
+    margin-left: 0;
+    padding: var(--space-md);
   }
-}
-
-/* vendor dashboard styles */
-
-
-/* Dark mode adjustments */
-html.dark-theme .admin-sidebar {
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-}
-
-html.dark-theme .admin-table tbody tr:hover {
-  background-color: rgba(94, 204, 98, 0.1);
-}
-
-html.dark-theme .admin-table-container {
-  box-shadow: var(--shadow-3);
 }

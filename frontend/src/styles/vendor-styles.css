@@ -1,0 +1,117 @@
+.vendor-store-container {
+    background-color: var(--surface-1);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    margin-top: var(--space-md);
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .vendor-store-container h1 {
+    font-size: var(--font-size-4);
+    font-weight: var(--font-weight-7);
+    margin-bottom: var(--space-md);
+    text-align: center;
+  }
+  
+  .tabs {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-md);
+  }
+  
+  .tab-button {
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-1);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-2);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+  
+  .tab-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: var(--font-weight-6);
+    border-color: var(--primary-color);
+  }
+  
+  .tab-button:hover {
+    background-color: var(--surface-3);
+  }
+  
+  .store-details {
+    margin-bottom: var(--space-md);
+    background-color: var(--surface-2);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+  }
+  
+  .store-details h2 {
+    font-size: var(--font-size-3);
+    margin-bottom: var(--space-sm);
+  }
+  
+  .store-details p {
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-1);
+  }
+  
+  .toggle-form-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-size-1);
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-md);
+    box-shadow: var(--shadow-2);
+    transition: background-color var(--transition-fast);
+  }
+  
+  .toggle-form-btn:hover {
+    background-color: var(--primary-color-hover);
+  }
+  
+  .create-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    background-color: var(--surface-2);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+  }
+  
+  .create-form input,
+  .create-form select {
+    padding: var(--space-sm);
+    font-size: var(--font-size-1);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-sm);
+    background-color: white;
+    color: var(--text-1);
+  }
+  
+  .create-form button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--space-sm);
+    font-size: var(--font-size-1);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: var(--shadow-1);
+    transition: background-color var(--transition-fast);
+  }
+  
+  .create-form button:hover {
+    background-color: var(--primary-color-hover);
+  }

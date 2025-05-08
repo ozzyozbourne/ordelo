@@ -49,7 +49,7 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import VendorLayout from "./pages/Vendor/VendorLayout";
 // Vendor Pages
 import VendorStore from "./pages/Vendor/VendorStore";
-import VendorInventory from "./pages/Vendor/Inventory";
+import Inventory from "./pages/Vendor/Inventory";
 import VendorDashboard from "./pages/Vendor/VendorDashboard";
 
 
@@ -142,7 +142,7 @@ function App() {
               <Route path="/vendor/*" element={<VendorLayout />}>
                 <Route path="dashboard" element={<VendorDashboard />} />
                 <Route path="store" element={<VendorStore />} />
-                <Route path="inventory" element={<VendorInventory />} />
+                <Route path="inventory" element={<Inventory />} />
 
               </Route>
 
