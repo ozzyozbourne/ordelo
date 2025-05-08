@@ -263,11 +263,14 @@ function ShoppingList() {
             return null;
           }
 
+          // Use the standardizeUnit function to convert units
+          const { unit_quantity, unit } = standardizeUnit(item.amount, item.unit);
+
           // Format the data exactly as required
           return {
             name: item.name.toLowerCase().trim(),
-            unit_quantity: parseInt(item.amount) || 1,
-            unit: (item.unit || '').toLowerCase().trim()
+            unit_quantity,
+            unit
           };
         })
         .filter(Boolean); // Remove any null items
