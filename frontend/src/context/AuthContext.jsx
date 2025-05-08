@@ -74,13 +74,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.clear();
-  
-    // Redirect based on role
-    if (role === 'vendor') {
-      window.location.href = '/vendor/login'; // or any vendor landing page
-    } else {
-      window.location.href = '/login'; // default for users/admins
-    }
+    window.location.href = '/'; 
   };
   
   const value = { 

@@ -80,28 +80,8 @@ function Inventory() {
     }
   }, [user]);
 
-  const AddInventory = (ingredient) => {
-    setEditingId(ingredient._id);
-    setEditFormData({
-      name: ingredient.name,
-      unit_quantity: ingredient.unit_quantity,
-      unit: ingredient.unit,
-      price: ingredient.price,
-      times: ingredient.times,
-    });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditFormData({
-      name: "",
-      unit_quantity: "",
-      unit: "",
-      price: "",
-      times: "",
-    });
-  };
-
+  
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditFormData((prev) => ({ ...prev, [name]: value }));
@@ -198,93 +178,6 @@ function Inventory() {
           )}
         </div>
       )}
-      {activeTab && (
-        <div className="store-details">
-        <h2>All Ingredientsfor {activeTab.name}</h2>
-        
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Unit Quantity</th>
-            <th>Unit</th>
-            <th>Price</th>
-            <th>Times</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-       
-        <tbody>
-          {ingredients.map((ingredient, index) => (
-            <tr key={index}>
-              {editingId === ingredient._id ? (
-                <>
-                  <td>
-                    <input
-                      type="text"
-                      name="name"
-                      value={editFormData.name}
-                      disabled
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      name="unit_quantity"
-                      value={editFormData.unit_quantity}
-                      disabled
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      name="unit"
-                      value={editFormData.unit}
-                      disabled
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      name="price"
-                      value={editFormData.price}
-                      onChange={handleInputChange}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      name="times"
-                      value={editFormData.times}
-                      onChange={handleInputChange}
-                    />
-                  </td>
-                  <td>
-                    <button onClick={handleSaveEdit}>Save</button>
-                    <button onClick={handleCancelEdit}>Cancel</button>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td>{ingredient.name}</td>
-                  <td>{ingredient.unit_quantity}</td>
-                  <td>{ingredient.unit}</td>
-                  <td>{ingredient.price}</td>
-                  <td>{ingredient.times}</td>
-                  <td>
-                    <button onClick={() => AddInventory(ingredient)}>Add</button>
-                  </td>
-                </>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      
-        </div>
-      )}
-
-      {/* All Ingredients Table */}
     
     </div>
   );

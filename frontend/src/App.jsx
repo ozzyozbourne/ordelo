@@ -60,6 +60,7 @@ import "./styles/auth.css";
 import "./styles/profile.css";
 import "./styles/admin-styles.css";
 import "./styles/open-props-core.css";
+import ZAddRecipe from "./pages/ZAddRecipe";
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

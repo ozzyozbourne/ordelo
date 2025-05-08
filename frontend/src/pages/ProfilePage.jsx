@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { jwtDecode } from "jwt-decode";
+import AddRecipe from "./AddRecipe";
+import SavedRecipes from "./SavedRecipes"
 
 function ProfilePage() {
   const { user, logout, loading } = useAuth();
@@ -185,16 +187,14 @@ function ProfilePage() {
             {activeTab === 'saved' && (
               <div className="tab-content">
                 <h2>Saved Recipes</h2>
-                <Link to="/saved-recipes">View Saved Recipes</Link>
+                <SavedRecipes/>
               </div>
             )}
 
             {activeTab === 'add' && (
               <div className="tab-content">
                 <h2>Add New Recipe</h2>
-                <Link to="/add-recipe" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 inline-block">
-                  Go to Add Recipe Page
-                </Link>
+                <AddRecipe/>
               </div>
             )}
           </div>

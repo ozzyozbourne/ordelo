@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -12,8 +13,8 @@ function AddRecipe() {
     serving_size: 0,
     items: [],
   });
+  const [newItem, setNewItem] = useState({ ingredient_id: "", quantity: "" });
   const [ingredients, setIngredients] = useState([]);
-  const [ingredientQuantities, setIngredientQuantities] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,39 +54,50 @@ function AddRecipe() {
     }));
   };
 
-  const handleQuantityChange = (ingredient_id, value) => {
-    setIngredientQuantities((prev) => ({
-      ...prev,
-      [ingredient_id]: value,
-    }));
-  };
-
-  const handleAddItem = (ingredient_id) => {
+  const handleIngredientSelect = (e) => {
+    const ingredient_id = e.target.value;
     const selectedIngredient = ingredients.find(
       (ing) => ing.ingredient_id === ingredient_id
     );
 
-    if (!selectedIngredient || !ingredientQuantities[ingredient_id]) return;
+    if (!selectedIngredient) return;
+
+    setNewItem({
+      ingredient_id,
+      name: selectedIngredient.name,
+      price: selectedIngredient.price,
+      unit_quantity: selectedIngredient.unit_quantity,
+      unit: selectedIngredient.unit,
+      quantity: "",
+    });
+  };
+
+  const handleItemChange = (e) => {
+    setNewItem((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleAddItem = () => {
+    if (!newItem.ingredient_id || !newItem.quantity) return;
 
     setRecipe((prev) => ({
       ...prev,
       items: [
         ...prev.items,
         {
-          ingredient_id: selectedIngredient.ingredient_id,
-          name: selectedIngredient.name,
-          price: selectedIngredient.price,
-          unit_quantity: selectedIngredient.unit_quantity,
-          unit: selectedIngredient.unit,
-          quantity: parseInt(ingredientQuantities[ingredient_id]),
+          ingredient_id: newItem.ingredient_id,
+          name: newItem.name,
+          price: newItem.price,
+          unit_quantity: newItem.unit_quantity,
+          unit: newItem.unit,
+          quantity: parseInt(newItem.quantity),
         },
       ],
     }));
 
-    setIngredientQuantities((prev) => ({
-      ...prev,
-      [ingredient_id]: "", // Reset quantity field after adding
-    }));
+    setNewItem({ ingredient_id: "", quantity: "" });
   };
 
   const handleRemoveItem = (index) => {
@@ -152,10 +164,10 @@ function AddRecipe() {
   };
 
   return (
-    <div>
-      <h1>Add New Recipe</h1>
+    <div className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Add New Recipe</h1>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           name="title"
@@ -163,6 +175,7 @@ function AddRecipe() {
           value={recipe.title}
           onChange={handleChange}
           required
+          className="border p-2 w-full"
         />
 
         <textarea
@@ -171,6 +184,7 @@ function AddRecipe() {
           value={recipe.description}
           onChange={handleChange}
           required
+          className="border p-2 w-full"
         />
 
         <input
@@ -179,6 +193,7 @@ function AddRecipe() {
           placeholder="Preparation Time (minutes)"
           value={recipe.preparation_time}
           onChange={handleChange}
+          className="border p-2 w-full"
           min="0"
         />
 
@@ -188,69 +203,73 @@ function AddRecipe() {
           placeholder="Serving Size"
           value={recipe.serving_size}
           onChange={handleChange}
+          className="border p-2 w-full"
           min="0"
         />
 
         <div>
-          <h3>Ingredients / Items</h3>
+          <h3 className="font-semibold mt-4 mb-2">Ingredients / Items</h3>
 
           {recipe.items.map((item, index) => (
-            <div key={index}>
+            <div key={index} className="flex items-center space-x-2 mb-2">
               <p>
-                {item.quantity} x {item.unit_quantity} {item.unit} {item.name}
+                {item.quantity} x {item.unit_quantity} {item.unit} {item.name} 
               </p>
-              <button type="button" onClick={() => handleRemoveItem(index)}>
+              <button
+                type="button"
+                onClick={() => handleRemoveItem(index)}
+                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              >
                 Remove
               </button>
             </div>
           ))}
 
-          <div>
-            <h4>Select Ingredient</h4>
+          <div className="mb-4 mt-4">
+            <h4 className="mb-2">Select Ingredient</h4>
 
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Unit</th>
-                  <th>Add Quantity</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ingredients.map((ing) => (
-                  <tr key={ing.ingredient_id}>
-                    <td>{ing.name}</td>
-                    <td>{ing.unit_quantity} {ing.unit}</td>
-                    <td>
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={ingredientQuantities[ing.ingredient_id] || ""}
-                        onChange={(e) =>
-                          handleQuantityChange(ing.ingredient_id, e.target.value)
-                        }
-                        min="0"
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => handleAddItem(ing.ingredient_id)}
-                      >
-                        Add Item
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <select
+              value={newItem.ingredient_id}
+              onChange={handleIngredientSelect}
+              className="border p-2 w-full"
+            >
+              <option value="">-- Select Ingredient --</option>
+              {ingredients.map((ing) => (
+                <option key={ing.ingredient_id} value={ing.ingredient_id}>
+                  {ing.name} ({ing.unit_quantity} {ing.unit}) 
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex space-x-2 mb-2 mt-2">
+            <input
+              type="number"
+              name="quantity"
+              placeholder="Quantity"
+              value={newItem.quantity}
+              onChange={handleItemChange}
+              className="border p-2 w-full"
+              min="0"
+            />
+
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+            >
+              Add Item
+            </button>
           </div>
         </div>
 
-        {error && <p>{error}</p>}
+        {error && <p className="text-red-500">{error}</p>}
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
           {loading ? "Saving..." : "Save Recipe"}
         </button>
       </form>
