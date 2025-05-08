@@ -221,11 +221,11 @@ export const ShoppingProvider = ({ children }) => {
         console.log('Response data:', data); // Debug log
 
         if (!data.success) {
-          throw new Error("Failed to get store data");
+          throw new Error(data.error || "Failed to get store data");
         }
 
-        // Handle the case where ids is "null"
-        if (data.ids === "null") {
+        // Handle the case where ids is "null" or empty
+        if (!data.ids || data.ids === "null") {
           console.log("No stores found for the selected ingredients");
           setVendors([]); // Set empty vendors array
           return;

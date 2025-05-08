@@ -129,6 +129,59 @@ const mergeIngredients = (ingredients) => {
   return Object.values(mergedMap);
 };
 
+const standardizeUnit = (amount, unit) => {
+  let unitQuantity = Math.round(amount || 1);
+  let standardizedUnit = (unit || '').toLowerCase().trim();
+
+  // Common unit mappings
+  const unitMappings = {
+    // Weight conversions
+    'kg': { factor: 1000, unit: 'gm' },
+    'kgs': { factor: 1000, unit: 'gm' },
+    'g': { factor: 1, unit: 'gm' },
+    'gram': { factor: 1, unit: 'gm' },
+    'grams': { factor: 1, unit: 'gm' },
+    'oz': { factor: 28.35, unit: 'gm' },
+    'ounce': { factor: 28.35, unit: 'gm' },
+    'ounces': { factor: 28.35, unit: 'gm' },
+    'lb': { factor: 453.592, unit: 'gm' },
+    'pound': { factor: 453.592, unit: 'gm' },
+    'pounds': { factor: 453.592, unit: 'gm' },
+
+    // Volume conversions
+    'l': { factor: 1000, unit: 'ml' },
+    'liter': { factor: 1000, unit: 'ml' },
+    'liters': { factor: 1000, unit: 'ml' },
+    'ml': { factor: 1, unit: 'ml' },
+    'milliliter': { factor: 1, unit: 'ml' },
+    'milliliters': { factor: 1, unit: 'ml' },
+    'tbsp': { factor: 15, unit: 'ml' },
+    'tablespoon': { factor: 15, unit: 'ml' },
+    'tablespoons': { factor: 15, unit: 'ml' },
+    'tsp': { factor: 5, unit: 'ml' },
+    'teaspoon': { factor: 5, unit: 'ml' },
+    'teaspoons': { factor: 5, unit: 'ml' },
+    'cup': { factor: 240, unit: 'ml' },
+    'cups': { factor: 240, unit: 'ml' },
+
+    // Count units
+    'piece': { factor: 1, unit: 'count' },
+    'pieces': { factor: 1, unit: 'count' },
+    'pcs': { factor: 1, unit: 'count' },
+    'count': { factor: 1, unit: 'count' },
+    'unit': { factor: 1, unit: 'count' },
+    'units': { factor: 1, unit: 'count' }
+  };
+
+  // Get the conversion mapping or default to count
+  const mapping = unitMappings[standardizedUnit] || { factor: 1, unit: 'count' };
+  
+  return {
+    unit_quantity: Math.round(unitQuantity * mapping.factor),
+    unit: mapping.unit
+  };
+};
+
 function ShoppingList() {
   const { shoppingList, removeFromShoppingList, clearShoppingList, addToShoppingList } = useRecipes();
   const [searchTerm, setSearchTerm] = useState("");
@@ -200,27 +253,21 @@ function ShoppingList() {
     }
 
     try {
+      // Get selected ingredients from the shopping list
       const selectedIngredients = mergedItems
         .filter(item => selectedItems.includes(item.uniqueId))
         .map(item => {
-          // Ensure amount is a valid number and convert to integer
-          const amount = typeof item.amount === 'number' ? Math.round(item.amount) : 1;
-          
-          // Ensure unit is a string
-          const unit = typeof item.unit === 'string' ? item.unit : '';
-          
-          // Ensure name is a string
-          const name = typeof item.name === 'string' ? item.name : '';
-          
-          if (!name) {
+          // Ensure we have valid data
+          if (!item.name) {
             console.warn('Skipping item with no name:', item);
             return null;
           }
 
+          // Format the data exactly as required
           return {
-            name,
-            unit_quantity: amount,
-            unit
+            name: item.name.toLowerCase().trim(),
+            unit_quantity: parseInt(item.amount) || 1,
+            unit: (item.unit || '').toLowerCase().trim()
           };
         })
         .filter(Boolean); // Remove any null items
@@ -230,11 +277,15 @@ function ShoppingList() {
         return;
       }
 
+      // Log the exact data we're sending
+      console.log('Selected ingredients:', selectedIngredients);
+
       const requestBody = {
         compare: selectedIngredients
       };
 
-      console.log('Request body:', JSON.stringify(requestBody, null, 2)); // Debug log
+      // Log the exact request body
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch("http://localhost:8080/user/items/compare", {
         method: "POST",
@@ -245,28 +296,23 @@ function ShoppingList() {
         body: JSON.stringify(requestBody)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error response:', errorData); // Debug log
-        throw new Error(errorData.message || "Failed to compare items");
-      }
-
       const data = await response.json();
-      console.log('Response data:', data); // Debug log
+      console.log('Response data:', data);
 
       if (!data.success) {
-        throw new Error("Failed to get store data");
+        setError(data.error || "No stores found for the selected items");
+        return;
       }
 
       // Parse the stringified JSON from data.ids
       const stores = JSON.parse(data.ids);
-      console.log('Parsed stores:', stores); // Debug log
+      console.log('Parsed stores:', stores);
       
       // Navigate to shopping page with the store data
       navigate('/shopping', { state: { stores } });
     } catch (err) {
       console.error('Error in handleShopNow:', err);
-      setError(err.message);
+      setError(err.message || "An error occurred while searching for stores");
     }
   };
 
