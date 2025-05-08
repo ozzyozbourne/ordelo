@@ -458,6 +458,11 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 		return nil, err
 	}
 
+	if len(results) == 0 {
+		Logger.ErrorContext(ctx, "No match found", vendor_repo_source)
+		return nil, &NoItems{}
+	}
+
 	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
 }
