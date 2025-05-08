@@ -163,10 +163,10 @@ function AddRecipe() {
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Add New Recipe</h1>
+    <div className="add-recipe-container">
+      <h1 className="add-recipe-title">Add New Recipe</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="add-recipe-form">
         <input
           type="text"
           name="title"
@@ -174,7 +174,7 @@ function AddRecipe() {
           value={recipe.title}
           onChange={handleChange}
           required
-          className="border p-2 w-full"
+          className="add-recipe-input"
         />
 
         <textarea
@@ -183,93 +183,97 @@ function AddRecipe() {
           value={recipe.description}
           onChange={handleChange}
           required
-          className="border p-2 w-full"
+          className="add-recipe-textarea"
         />
 
-        <input
-          type="number"
-          name="preparation_time"
-          placeholder="Preparation Time (minutes)"
-          value={recipe.preparation_time}
-          onChange={handleChange}
-          className="border p-2 w-full"
-          min="0"
-        />
+        <div className="recipe-meta-inputs">
+          <div className="input-group">
+            <label className="input-label">Preparation Time (minutes)</label>
+            <input
+              type="number"
+              name="preparation_time"
+              value={recipe.preparation_time}
+              onChange={handleChange}
+              className="add-recipe-input"
+              min="0"
+            />
+          </div>
 
-        <input
-          type="number"
-          name="serving_size"
-          placeholder="Serving Size"
-          value={recipe.serving_size}
-          onChange={handleChange}
-          className="border p-2 w-full"
-          min="0"
-        />
+          <div className="input-group">
+            <label className="input-label">Serving Size</label>
+            <input
+              type="number"
+              name="serving_size"
+              value={recipe.serving_size}
+              onChange={handleChange}
+              className="add-recipe-input"
+              min="0"
+            />
+          </div>
+        </div>
 
-        <div>
-          <h3 className="font-semibold mt-4 mb-2">Ingredients / Items</h3>
+        <div className="ingredients-section">
+          <h3 className="ingredients-title">Ingredients / Items</h3>
 
-          {recipe.items.map((item, index) => (
-            <div key={index} className="flex items-center space-x-2 mb-2">
-              <p>
-                {item.quantity} x {item.unit_quantity} {item.unit} {item.name} 
-              </p>
-              <button
-                type="button"
-                onClick={() => handleRemoveItem(index)}
-                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+          <div className="ingredient-list">
+            {recipe.items.map((item, index) => (
+              <div key={index} className="ingredient-item">
+                <p>
+                  {item.quantity} x {item.unit_quantity} {item.unit} {item.name}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveItem(index)}
+                  className="remove-item-button"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
 
-          <div className="mb-4 mt-4">
-            <h4 className="mb-2">Select Ingredient</h4>
-
+          <div className="ingredient-controls">
             <select
               value={newItem.ingredient_id}
               onChange={handleIngredientSelect}
-              className="border p-2 w-full"
+              className="ingredient-select"
             >
               <option value="">-- Select Ingredient --</option>
               {ingredients.map((ing) => (
                 <option key={ing.ingredient_id} value={ing.ingredient_id}>
-                  {ing.name} ({ing.unit_quantity} {ing.unit}) 
+                  {ing.name} ({ing.unit_quantity} {ing.unit})
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="flex space-x-2 mb-2 mt-2">
             <input
               type="number"
               name="quantity"
               placeholder="Quantity"
               value={newItem.quantity}
               onChange={handleItemChange}
-              className="border p-2 w-full"
-              min="0"
+              className="add-recipe-input"
+              min="1"
             />
 
             <button
               type="button"
               onClick={handleAddItem}
-              className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+              className="add-item-button"
             >
               Add Item
             </button>
           </div>
         </div>
 
-        {error && <p className="text-red-500">{error}</p>}
+        {error && <p className="error-message">{error}</p>}
 
         <button
           type="submit"
+          className="submit-button"
           disabled={loading}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
         >
-          {loading ? "Saving..." : "Save Recipe"}
+          {loading ? "Adding Recipe..." : "Add Recipe"}
         </button>
       </form>
     </div>
