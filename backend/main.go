@@ -157,6 +157,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /user/carts", mid(user(http.HandlerFunc(GetCarts))))
 	handleFunc("GET /user/orders", mid(user(http.HandlerFunc(GetUserOrders))))
 	handleFunc("GET /user/ingredients", mid(user(http.HandlerFunc(GetUserAdminIngredients))))
+	handleFunc("GET /vendor/{vid}/store/{sid}/items", mid(user(http.HandlerFunc(GetItems))))
 
 	handleFunc("PUT /user", mid(user(http.HandlerFunc(UpdateUser))))
 	handleFunc("PUT /user/recipes", mid(user(http.HandlerFunc(UpdateRecipes))))
