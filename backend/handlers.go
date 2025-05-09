@@ -949,15 +949,21 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	var err error
 	var ids []*ID
 
+	defer func() {
+		if err != nil {
+			Logger.ErrorContext(ctx, "Failed to create containers", slog.Any("error", err), source)
+			sendFailure(ctx, w, "Failed to create containers", source)
+		}
+	}()
+
 	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, "Oops", source)
 		return
 	}
 
 	if len(con) == 0 {
 		Logger.ErrorContext(ctx, "No items provided", source)
-		sendFailure(ctx, w, "No items provided", source)
+		err = errors.New("No items provided")
 		return
 	}
 
@@ -969,31 +975,25 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 	case []*UserOrder:
 		if ids, err = Repos.User.CreateUserOrders(ctx, id, c); err != nil {
 			Logger.ErrorContext(ctx, "Error in user peristance", slog.Any("error", err), source)
-			sendFailure(ctx, w, "Error in user persistance", source)
+			return
 		}
 		vo := make([]*VendorOrder, len(c))
 		for i, v := range c {
 			vo[i].Order = v.Order
 			vo[i].UserID = id.value
 		}
-		if _, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].ID}, vo); err != nil {
-			Logger.ErrorContext(ctx, "Error in vendor peristance", slog.Any("error", err), source)
-			sendFailure(ctx, w, "Error in vendor persistance", source)
-		}
-
+		_, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].ID}, vo)
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:
 		ids, err = Repos.Vendor.CreateVendorOrders(ctx, id, c)
 	default:
 		Logger.ErrorContext(ctx, "Unable to get the id String fromn context", source)
-		sendFailure(ctx, w, "unknown type", source)
+		err = errors.New("unknown type")
 		return
 	}
 
 	if err != nil {
-		Logger.ErrorContext(ctx, "Failed to create containers", slog.Any("error", err), source)
-		sendFailure(ctx, w, "Failed to create containers", source)
 		return
 	}
 
