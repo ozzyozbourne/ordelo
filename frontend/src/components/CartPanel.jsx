@@ -1,5 +1,3 @@
-// src/components/CartPanel.jsx
-
 import { useShoppingContext } from "../context/ShoppingContext";
 
 function CartPanel() {
@@ -24,6 +22,12 @@ function CartPanel() {
         {cartCount > 0 ? (
           cartVendors.map(vendorId => {
             const cart = carts[vendorId];
+
+            // 🔢 Calculate total dynamically
+            const totalPrice = cart.items.reduce(
+              (sum, item) => sum + item.price * item.quantity, 0
+            );
+
             return (
               <div key={vendorId} className="cart-card">
                 <div className="cart-header">
@@ -35,12 +39,24 @@ function CartPanel() {
                     <i className="fas fa-trash-alt"></i>
                   </button>
                 </div>
-                
+
+                {/* 📦 Show item × quantity = subtotal */}
+                <div className="cart-items-list">
+                  {cart.items.map(item => (
+                    <div key={item.id} className="cart-item">
+                      <span>{item.name}</span>
+                      <span>
+                        {item.quantity} × ${item.price.toFixed(2)} = ${(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="cart-items-summary">
                   <span>{cart.items.length} items</span>
-                  <span className="cart-total">${cart.totalPrice.toFixed(2)}</span>
+                  <span className="cart-total">Total: ${totalPrice.toFixed(2)}</span>
                 </div>
-                
+
                 <button className="checkout-btn">
                   <i className="fas fa-shopping-bag"></i> Checkout
                 </button>
