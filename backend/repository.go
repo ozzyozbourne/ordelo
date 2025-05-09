@@ -60,6 +60,7 @@ type VendorRepository interface {
 	FindAllIngredients(context.Context, []*ReqIng) ([]*ResIng, error)
 	FindVendorStore(context.Context, ID, ID) ([]*Item, error)
 
+	UpdateUserOrder(context.Context, ID, *AcceptUserOrderReq) error
 	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
 	UpdateVendorOrders(context.Context, ID, []*VendorOrder) error
@@ -539,6 +540,47 @@ func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, or
 
 	Logger.InfoContext(ctx, "Updating orders for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
 	return processContainers[[]*VendorOrder](ctx, m.col, id, orders, vendor_repo_source)
+}
+
+func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *AcceptUserOrderReq) error {
+	ctx, span := Tracer.Start(ctx, "UpdateUserOrder")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Updating the user order", slog.String("vendorID", id.String()),
+		slog.String("Req", fmt.Sprintf("%+v", ord)), vendor_repo_source)
+
+	userCollection := MongoClient.Database(os.Getenv("DB_NAME")).Collection("user")
+	filter := bson.D{
+		{Key: "_id", Value: ord.UserID},
+		{Key: "orders._id", Value: ord.OrderID},
+	}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.M{
+			"orders.$.order_status": ord.OrderStatus,
+		}},
+	}
+
+	result, err := userCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error updating user order", slog.String("vendorID", id.String()),
+			slog.String("Req", fmt.Sprintf("%+v", ord)), vendor_repo_source)
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		Logger.ErrorContext(ctx, "User or order not found", slog.String("vendorID", id.String()),
+			slog.String("Req", fmt.Sprintf("%+v", ord)), vendor_repo_source)
+		return fmt.Errorf("user with ID %s or order with ID %s not found", ord.UserID.Hex(), ord.OrderID.Hex())
+	}
+
+	if result.ModifiedCount == 0 {
+		Logger.WarnContext(ctx, "Order status was already set to the requested value", slog.String("vendorID", id.String()),
+			slog.String("Req", fmt.Sprintf("%+v", ord)), vendor_repo_source)
+	}
+
+	Logger.InfoContext(ctx, "Updated Successfully", slog.String("vendorID", id.String()), vendor_repo_source)
+	return nil
 }
 
 func (m MongoVendorRepository) DeleteVendor(ctx context.Context, id ID) error {
