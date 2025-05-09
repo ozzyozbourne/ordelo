@@ -577,6 +577,63 @@ func GetStores(w http.ResponseWriter, r *http.Request) {
 	getCon(ctx, w, r, stores, source)
 }
 
+func GetItems(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetItems")
+	defer span.End()
+	source := slog.String("source", "GetItems")
+	vid := r.PathValue("vid")
+	if vid == "" {
+		Logger.ErrorContext(ctx, "No vendorID provided in the path parms", source)
+		sendFailure(ctx, w, "No vendorID provided in the path parms", source)
+		return
+	}
+
+	sid := r.PathValue("sid")
+	if sid == "" {
+		Logger.ErrorContext(ctx, "Failed to fetch Admin ingredients", source)
+		sendFailure(ctx, w, "Failed to fetch Admin ingredients", source)
+		return
+	}
+
+	v_id, err := NewID(ctx, vid)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to parse vendorID", source)
+	}
+
+	s_id, err := NewID(ctx, sid)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to parse storeID", source)
+
+	}
+
+	Logger.InfoContext(ctx, "Getting the All items in store", slog.String("vendorID", v_id.String()),
+		slog.String("storeID", s_id.String()), source)
+
+	res, err := Repos.Vendor.FindVendorStore(ctx, v_id, s_id)
+	if err != nil {
+		if errors.Is(err, &NoItems{}) {
+			Logger.ErrorContext(ctx, "No items found", slog.Any("error", err))
+			sendFailure(ctx, w, "No items found", source)
+			return
+		}
+		sendFailure(ctx, w, "Error in fetchig compared value", source)
+		return
+	}
+
+	s, err := json.Marshal(res)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in marshalling to string", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in fetchig compared value", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"ids":     string(s),
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func GetUserAdminIngredients(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "GetUserAdminIngredients")
 	defer span.End()
