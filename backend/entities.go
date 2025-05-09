@@ -54,6 +54,12 @@ type ResIng struct {
 	Stores []*Store      `bson:"stores" json:"stores"`
 }
 
+type AcceptUserOrderReq struct {
+	UserID      bson.ObjectID `bson:"_id" json:"user_id"`
+	OrderID     bson.ObjectID `bson:"_id" json:"order_id"`
+	OrderStatus string        `bson:"order_status" json:"order_status"`
+}
+
 type Claims struct {
 	UserID  string `json:"user_id"`
 	Role    string `json:"role"`
