@@ -1,5 +1,6 @@
 import { useShoppingContext } from "../context/ShoppingContext";
 import { useAuth } from "../context/AuthContext";
+import { Link, useNavigate} from "react-router-dom";
 
 function CartPanel() {
   const { 
@@ -25,7 +26,7 @@ function CartPanel() {
     );
 
     const order = {
-      store_id: cart.vendor.store_id,
+      store_id: store_id,
       delivery_method: "Deliver",
       order_status: "pending",
       total_price: totalPrice,
@@ -50,16 +51,17 @@ function CartPanel() {
         },
         body: JSON.stringify({ orders: [order] })
       });
-      console.log(order)
-      if (!response.ok) throw new Error("Failed to place order");
-      console.log(order)
+      console.log(store_id)
       console.log(cartVendors)
+      if (!response.ok) throw new Error("Failed to place order");
+      
+      console.log(cartVendors)
+      console.log(store_id)
       const result = await response.json();
       console.log("Order success:", result);
-
       removeCart(vendor_id);
     } catch (error) {
-      console.log(order)
+      console.log(cartVendors)
       console.error("Checkout error:", error);
     }
   };
@@ -83,6 +85,7 @@ function CartPanel() {
               <div key={vendor_id} className="cart-card">
                 <div className="cart-header">
                   <h3>{cart.vendorName}</h3>
+                  <p className="store-id">Store ID: {cart.store_id}</p>
                   <button 
                     className="remove-cart-btn"
                     onClick={() => removeCart(vendor_id)}

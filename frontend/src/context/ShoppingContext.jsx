@@ -208,6 +208,7 @@ export const ShoppingProvider = ({ children }) => {
         [vendorId]: {
           vendorId,
           vendorName: store.name,
+           store_id: store.id,
           items,
           totalPrice: items.reduce((sum, item) => sum + (item.price || 0), 0),
         },
@@ -247,6 +248,5 @@ export const ShoppingProvider = ({ children }) => {
     addToCart,
     removeCart,
   };
-
   return <ShoppingContext.Provider value={value}>{children}</ShoppingContext.Provider>;
 };
