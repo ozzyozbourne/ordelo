@@ -191,6 +191,7 @@ func VendorComparedItemsValue(w http.ResponseWriter, r *http.Request) {
 		sendFailure(ctx, w, "Error in fetchig compared value", source)
 		return
 	}
+	makeItemsOne(res)
 
 	s, err := json.Marshal(res)
 	if err != nil {
@@ -723,20 +724,6 @@ func UpdateVendorOrders(w http.ResponseWriter, r *http.Request) {
 	updateCon(ctx, w, r, source, req.Orders)
 }
 
-func AcceptVendorOrder(w http.ResponseWriter, r *http.Request) {
-	ctx, span := Tracer.Start(r.Context(), "UpdateVendorOrders")
-	defer span.End()
-	source := slog.String("source", "UpdateVendorOrders")
-
-	Logger.InfoContext(ctx, "Updating VendorOrders", source)
-	req, err := decodeStruct[RequestVendorOrders](ctx, r.Body, source)
-	if err != nil {
-		sendFailure(ctx, w, "Error in parsing VendorOrders request body", source)
-		return
-	}
-	updateCon(ctx, w, r, source, req.Orders)
-}
-
 func UpdateStores(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "UpdateStores")
 	defer span.End()
@@ -749,6 +736,51 @@ func UpdateStores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateCon(ctx, w, r, source, req.Stores)
+}
+
+func AcceptUserOrder(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "AcceptUserOrder")
+	defer span.End()
+	source := slog.String("source", "AcceptUserOrder")
+
+	Logger.InfoContext(ctx, "Processing order status update", source)
+	var req AcceptUserOrderReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse request body", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in parsing request body", source)
+		return
+	}
+
+	Logger.InfoContext(ctx, "Validating request fields", source)
+	switch {
+	case req.UserID == bson.NilObjectID:
+		sendFailure(ctx, w, "User ID is required", source)
+		return
+	case req.OrderID == bson.NilObjectID:
+		sendFailure(ctx, w, "Order ID is required", source)
+		return
+	case req.OrderStatus == "":
+		sendFailure(ctx, w, "Order status is required", source)
+		return
+	}
+	Logger.InfoContext(ctx, "Validated Successfully", source)
+
+	vendorID, err := getID(r.Context(), source)
+	if err != nil {
+		sendFailure(ctx, w, "Unable to get vendor ID from context", source)
+		return
+	}
+
+	if err := Repos.Vendor.UpdateUserOrder(ctx, vendorID, &req); err != nil {
+		sendFailure(ctx, w, "Failed to update order status", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"message": "Order status updated successfully",
+	}
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
 func UpdateRecipes(w http.ResponseWriter, r *http.Request) {
@@ -1073,4 +1105,14 @@ func getID(ctx context.Context, source slog.Attr) (ID, error) {
 		return ID{bson.NilObjectID}, errors.New("unable to cast to string from ctx")
 	}
 	return NewID(ctx, v)
+}
+
+func makeItemsOne(res []*ResIng) {
+	for _, v := range res {
+		for _, s := range v.Stores {
+			for _, i := range s.Items {
+				i.Quantity = 1
+			}
+		}
+	}
 }

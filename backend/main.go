@@ -139,6 +139,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /vendor/ingredients", mid(vendor(http.HandlerFunc(GetVendorAdminIngredients))))
 
 	handleFunc("PUT /vendor/stores", mid(vendor(http.HandlerFunc(UpdateStores))))
+	handleFunc("PUT /vendor/userorder/accept", mid(vendor(http.HandlerFunc(AcceptUserOrder))))
 	handleFunc("PUT /vendor/orders", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
 	handleFunc("PUT /vendor/order/{id}", mid(vendor(http.HandlerFunc(UpdateVendorOrders))))
 	handleFunc("PUT /vendor", mid(vendor(http.HandlerFunc(UpdateUser))))
