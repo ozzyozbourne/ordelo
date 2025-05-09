@@ -1,4 +1,5 @@
 import { useShoppingContext } from "../context/ShoppingContext";
+import { useAuth } from "../context/AuthContext";
 
 function CartPanel() {
   const { 
@@ -8,9 +9,61 @@ function CartPanel() {
     setShowCartPanel 
   } = useShoppingContext();
   
+  const { user } = useAuth();
+
   const cartVendors = Object.keys(carts);
-  const cartCount = cartVendors.length;
   
+  const cartCount = cartVendors.length;
+
+  const handleCheckout = async (vendor_id) => {
+    const cart = carts[vendor_id];
+    if (!cart) return;
+
+    // ✅ Calculate totalPrice directly from cart items
+    const totalPrice = cart.items.reduce(
+      (sum, item) => sum + item.price * item.quantity, 0
+    );
+
+    const order = {
+      store_id: cart.vendor.store_id,
+      delivery_method: "Deliver",
+      order_status: "pending",
+      total_price: totalPrice,
+      items: cart.items.map(item => ({
+        ingredient_id: item.ingredient_id,
+        name: item.name,
+        unit_quantity: item.unit_quantity,
+        unit: item.unit,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      vendor_id: vendor_id,
+      payment_status: "success"
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/user/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ orders: [order] })
+      });
+      console.log(order)
+      if (!response.ok) throw new Error("Failed to place order");
+      console.log(order)
+      console.log(cartVendors)
+      const result = await response.json();
+      console.log("Order success:", result);
+
+      removeCart(vendor_id);
+    } catch (error) {
+      console.log(order)
+      console.error("Checkout error:", error);
+    }
+  };
+
   return (
     <div className="cart-panel">
       <div className="panel-header">
@@ -20,27 +73,24 @@ function CartPanel() {
       
       <div className="carts-container">
         {cartCount > 0 ? (
-          cartVendors.map(vendorId => {
-            const cart = carts[vendorId];
-
-            // 🔢 Calculate total dynamically
+          cartVendors.map(vendor_id => {
+            const cart = carts[vendor_id];
             const totalPrice = cart.items.reduce(
               (sum, item) => sum + item.price * item.quantity, 0
             );
 
             return (
-              <div key={vendorId} className="cart-card">
+              <div key={vendor_id} className="cart-card">
                 <div className="cart-header">
                   <h3>{cart.vendorName}</h3>
                   <button 
                     className="remove-cart-btn"
-                    onClick={() => removeCart(vendorId)}
+                    onClick={() => removeCart(vendor_id)}
                   >
                     <i className="fas fa-trash-alt"></i>
                   </button>
                 </div>
 
-                {/* 📦 Show item × quantity = subtotal */}
                 <div className="cart-items-list">
                   {cart.items.map(item => (
                     <div key={item.id} className="cart-item">
@@ -57,7 +107,10 @@ function CartPanel() {
                   <span className="cart-total">Total: ${totalPrice.toFixed(2)}</span>
                 </div>
 
-                <button className="checkout-btn">
+                <button 
+                  className="checkout-btn" 
+                  onClick={() => handleCheckout(vendor_id)}
+                >
                   <i className="fas fa-shopping-bag"></i> Checkout
                 </button>
               </div>

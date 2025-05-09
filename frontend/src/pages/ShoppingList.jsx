@@ -165,16 +165,16 @@ const standardizeUnit = (amount, unit) => {
     'cups': { factor: 240, unit: 'ml' },
 
     // Count units
-    'piece': { factor: 1, unit: 'count' },
-    'pieces': { factor: 1, unit: 'count' },
-    'pcs': { factor: 1, unit: 'count' },
-    'count': { factor: 1, unit: 'count' },
-    'unit': { factor: 1, unit: 'count' },
-    'units': { factor: 1, unit: 'count' }
+    'piece': { factor: 100, unit: 'gm' },
+    'pieces': { factor: 100, unit: 'gm' },
+    'pcs': { factor: 100, unit: 'gm' },
+    'count': { factor: 100, unit: 'gm' },
+    'unit': { factor: 100, unit: 'gm' },
+    'units': { factor: 100, unit: 'gm' }
   };
 
   // Get the conversion mapping or default to count
-  const mapping = unitMappings[standardizedUnit] || { factor: 1, unit: 'count' };
+  const mapping = unitMappings[standardizedUnit] || { factor: 100, unit: 'gm' };
   
   return {
     unit_quantity: Math.round(unitQuantity * mapping.factor),

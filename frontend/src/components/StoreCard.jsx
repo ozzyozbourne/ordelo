@@ -13,7 +13,7 @@ function StoreCard({ store }) {
 
   const handleQuantityChange = (itemId, change) => {
     setQuantities(prev => {
-      const newQty = Math.max(1, (prev[itemId] || 1) + change); // prevent going below 1
+      const newQty = Math.max(0, (prev[itemId] ?? 1) + change);
       return { ...prev, [itemId]: newQty };
     });
   };
@@ -21,13 +21,13 @@ function StoreCard({ store }) {
   const handleAddToCart = () => {
     const itemsWithQuantities = store.availableItems.map(item => ({
       ...item,
-      quantity: quantities[item.id] || 1,
+       quantity: quantities[item.id] ?? 1,
     }));
     addToCart(store.id, itemsWithQuantities);
   };
 
   const totalPrice = store.availableItems.reduce((sum, item) => {
-    const qty = quantities[item.id] || 1;
+    const qty = quantities[item.id] ?? 1;
     return sum + item.price * qty;
   }, 0);
 
