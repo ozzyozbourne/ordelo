@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { jwtDecode } from "jwt-decode";
 import AddRecipe from "./AddRecipe";
 import SavedRecipes from "./SavedRecipes"
+import Orders from "./Orders"
 
 function ProfilePage() {
   const { user, logout, loading } = useAuth();
@@ -156,29 +157,8 @@ function ProfilePage() {
                 {ordersError && <p style={{ color: "red" }}>{ordersError}</p>}
 
                 <table>
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Delivery Method</th>
-                      <th>Status</th>
-                      <th>Total Price</th>
-                    </tr>
-                  </thead>
                   <tbody>
-                    {orders.length === 0 && !ordersLoading && !ordersError && (
-                      <tr>
-                        <td colSpan="4" style={{ textAlign: "center" }}>No orders found.</td>
-                      </tr>
-                    )}
-
-                    {orders.map(order => (
-                      <tr key={order.order_id}>
-                        <td>{order.order_id}</td>
-                        <td>{order.delivery_method}</td>
-                        <td>{order.order_status}</td>
-                        <td>${order.total_price}</td>
-                      </tr>
-                    ))}
+                        <Orders/>
                   </tbody>
                 </table>
               </div>

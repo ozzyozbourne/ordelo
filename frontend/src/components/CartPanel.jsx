@@ -1,6 +1,10 @@
 import { useShoppingContext } from "../context/ShoppingContext";
 import { useAuth } from "../context/AuthContext";
+<<<<<<< HEAD
 import { Link, useNavigate} from "react-router-dom";
+=======
+import { useNavigate } from "react-router-dom";
+>>>>>>> f47642186b971fdd5378f97c308a519d8eb99e21
 
 function CartPanel() {
   const { 
@@ -80,6 +84,7 @@ function CartPanel() {
 
       const result = await response.json();
       console.log("Order success:", result);
+      navigate("/orders");
 
       // Remove the cart after successful order
       removeCart(vendor_id);
