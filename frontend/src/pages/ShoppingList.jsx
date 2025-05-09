@@ -298,7 +298,6 @@ function ShoppingList() {
         },
         body: JSON.stringify(requestBody)
       });
-
       const data = await response.json();
       console.log('Response data:', data);
 

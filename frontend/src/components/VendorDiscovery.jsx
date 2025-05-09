@@ -1,38 +1,40 @@
-// VendorDiscovery.jsx - Complete code with CSS classes
 import { useState } from "react";
 import { useShoppingContext } from "../context/ShoppingContext";
-import VendorCard from "./VendorCard";
+import StoreCard from "./StoreCard";
 
 function VendorDiscovery() {
   const { 
     vendors, 
-    userLocation, 
-    setRadius,
     showCartPanel, 
     setShowCartPanel,
     showIngredientsPanel,
     setShowIngredientsPanel,
     isMobile,
     carts,
-    getUserLocation
   } = useShoppingContext();
   
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Calculate this inside VendorDiscovery component
+
   const hasActiveCarts = Object.keys(carts).length > 0;
-  
-  // Filter vendors based on search term
-  const filteredVendors = vendors.filter(vendor => 
-    vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.availableItems.some(item => 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+
+  // Flatten all stores and attach vendor name to each
+  const allStores = vendors.flatMap((vendor) =>
+    vendor.stores
+      .filter(store => 
+        vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        store.availableItems.some(item =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+      .map((store) => ({
+        ...store,
+        vendorName: vendor.name,
+      }))
   );
-  
+
   return (
     <div className="vendor-discovery">
-      {/* Desktop-only toggle controls - hidden on mobile */}
+      {/* Desktop-only toggle controls */}
       {!isMobile && (
         <div className="panel-toggles">
           <button 
@@ -50,23 +52,21 @@ function VendorDiscovery() {
         </div>
       )}
 
-      {/* Mobile-only toggle buttons */}
+      {/* Mobile-only toggles */}
       {isMobile && (
         <div className="panel-toggles">
           <button 
             className="mobile-toggle-btn"
             onClick={() => setShowIngredientsPanel(!showIngredientsPanel)}
           >
-            <i className="fas fa-list"></i>
-            Ingredients
+            <i className="fas fa-list"></i> Ingredients
           </button>
           {hasActiveCarts && (
             <button 
               className="mobile-toggle-btn accent"
               onClick={() => setShowCartPanel(!showCartPanel)}
             >
-              <i className="fas fa-shopping-cart"></i>
-              Cart
+              <i className="fas fa-shopping-cart"></i> Cart
             </button>
           )}
         </div>
@@ -89,45 +89,18 @@ function VendorDiscovery() {
             <i className="fas fa-search"></i>
           </button>
         </div>
-        
-        <div className="location-container">
-          <div className="location-info">
-            <i className="fas fa-map-marker-alt"></i>
-            <span>{userLocation.address || "Loading location..."}</span>
-          </div>
-          
-          <div className="radius-selector">
-            <span>Radius:</span>
-            <select 
-              value={userLocation.radius} 
-              onChange={(e) => setRadius(Number(e.target.value))}
-              className="radius-select"
-            >
-              <option value={5}>5 miles</option>
-              <option value={10}>10 miles</option>
-              <option value={15}>15 miles</option>
-              <option value={20}>20 miles</option>
-            </select>
-          </div>
-        </div>
       </div>
-      
+
       <div className="vendors-container">
-        {filteredVendors.length > 0 ? (
-          filteredVendors.map(vendor => (
-            <VendorCard key={vendor.id} vendor={vendor} />
+        {allStores.length > 0 ? (
+          allStores.map(store => (
+            <StoreCard key={store.id} store={store} />
           ))
         ) : (
           <div className="empty-state">
             <i className="fas fa-store-slash empty-icon"></i>
-            <h3>No vendors found</h3>
-            <p>Try expanding your search radius or changing your location.</p>
-            <button 
-              onClick={getUserLocation} 
-              className="btn btn-primary"
-            >
-              <i className="fas fa-sync"></i> Refresh Location
-            </button>
+            <h3>No stores found</h3>
+            <p>Try expanding your search radius or changing your keywords.</p>
           </div>
         )}
       </div>

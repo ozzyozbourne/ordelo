@@ -13,7 +13,7 @@ function ShoppingPage() {
   const { 
     showIngredientsPanel,
     showCartPanel,
-    getUserLocation,
+
     carts,
     isMobile,
     ingredientsPanelRef,
@@ -24,7 +24,7 @@ function ShoppingPage() {
   // Initialize the page - get user location and fetch vendors
   useEffect(() => {
     document.title = "Shopping | Ordelo";
-    getUserLocation();
+
 
     // Check if we have store data from navigation
     if (location.state?.stores) {
@@ -56,7 +56,7 @@ function ShoppingPage() {
       // If no store data, redirect back to shopping list
       navigate('/shopping-list');
     }
-  }, [getUserLocation, location.state, navigate, setVendors]);
+  }, [ location.state, navigate, setVendors]);
 
   // Only show cart panel if there are carts
   const hasActiveCarts = Object.keys(carts).length > 0;

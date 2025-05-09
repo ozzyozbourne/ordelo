@@ -1,5 +1,4 @@
 // src/components/VendorCard.jsx
-
 import { useShoppingContext } from "../context/ShoppingContext";
 
 function VendorCard({ vendor }) {
@@ -8,12 +7,11 @@ function VendorCard({ vendor }) {
   return (
     <div className="vendor-card">
       <div className="vendor-header">
-        <h3 className="vendor-name">{vendor.name}</h3>
+        <h3 className="store-name">{store.name}</h3>
         {vendor.stores.map(store => (
           <div key={store.id} className="store-section">
             <div className="store-meta">
-              <span className="store-name">{store.name}</span>
-              <span className="store-type">{store.storeType}</span>
+              <span className="store-type">{store.store_type}</span>
               {store.location && (
                 <span className="store-location">
                   <i className="fas fa-map-marker-alt"></i> 
