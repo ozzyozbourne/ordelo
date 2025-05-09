@@ -1061,7 +1061,7 @@ func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Re
 	case []*Recipe:
 		a, err = Repos.User.FindRecipes(ctx, id)
 		okResponseMap["value"] = a
-	case []*Cart:
+	case []*Cart:Failed to fetch conta
 		a, err = Repos.User.FindCarts(ctx, id)
 		okResponseMap["value"] = a
 	case []*UserOrder:
@@ -1081,7 +1081,7 @@ func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	if err != nil {
 		Logger.ErrorContext(ctx, "Failed to fetch containers", slog.Any("error", err), source)
-		sendFailure(ctx, w, "Failed to fetch containers", source)
+		sendFailure(ctx, w, "iners", source)
 		return
 	}
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)

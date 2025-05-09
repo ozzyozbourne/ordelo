@@ -26,19 +26,19 @@ function CartPanel() {
     );
 
     const order = {
-      store_id: store_id,
+      store_id: vendor_id,
       delivery_method: "Deliver",
       order_status: "pending",
       total_price: totalPrice,
       items: cart.items.map(item => ({
-        ingredient_id: item.ingredient_id,
+        ingredient_id: item.id, // Changed from item.ingredient_id to item.id based on available data
         name: item.name,
-        unit_quantity: item.unit_quantity,
+        unit_quantity: item.unitQuantity || 1, // Changed from item.unit_quantity with fallback
         unit: item.unit,
         price: item.price,
-        quantity: item.quantity
+        quantity: item.quantity || 1 // Added fallback for quantity
       })),
-      vendor_id: vendor_id,
+      // Removed vendor.id reference as it's undefined
       payment_status: "success"
     };
 
@@ -51,17 +51,15 @@ function CartPanel() {
         },
         body: JSON.stringify({ orders: [order] })
       });
-      console.log(store_id)
-      console.log(cartVendors)
+      
+      console.log("Store ID:", vendor_id);
+      
       if (!response.ok) throw new Error("Failed to place order");
       
-      console.log(cartVendors)
-      console.log(store_id)
       const result = await response.json();
       console.log("Order success:", result);
       removeCart(vendor_id);
     } catch (error) {
-      console.log(cartVendors)
       console.error("Checkout error:", error);
     }
   };
@@ -78,7 +76,7 @@ function CartPanel() {
           cartVendors.map(vendor_id => {
             const cart = carts[vendor_id];
             const totalPrice = cart.items.reduce(
-              (sum, item) => sum + item.price * item.quantity, 0
+              (sum, item) => sum + item.price * (item.quantity || 1), 0
             );
 
             return (
@@ -99,7 +97,7 @@ function CartPanel() {
                     <div key={item.id} className="cart-item">
                       <span>{item.name}</span>
                       <span>
-                        {item.quantity} × ${item.price.toFixed(2)} = ${(item.price * item.quantity).toFixed(2)}
+                        {item.quantity || 1} × ${item.price.toFixed(2)} = ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                       </span>
                     </div>
                   ))}
