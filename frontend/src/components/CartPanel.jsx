@@ -43,33 +43,19 @@ function CartPanel() {
 
     // Create the order object with the correct structure
     const order = {
-<<<<<<< HEAD
-      store_id: vendor_id,
-=======
       store_id: vendor_id, // This is the store ID
->>>>>>> 8371f0ccb7515eb21c0ef65e7c8b3f41b13adc07
       delivery_method: "Deliver",
       order_status: "pending",
       total_price: totalPrice,
       items: cart.items.map(item => ({
-<<<<<<< HEAD
-        ingredient_id: item.id, // Changed from item.ingredient_id to item.id based on available data
-        name: item.name,
-        unit_quantity: item.unitQuantity || 1, // Changed from item.unit_quantity with fallback
-=======
         ingredient_id: item.id,
         name: item.name,
         unit_quantity: item.unitQuantity,
->>>>>>> 8371f0ccb7515eb21c0ef65e7c8b3f41b13adc07
         unit: item.unit,
         price: item.price,
         quantity: item.quantity || 1 // Added fallback for quantity
       })),
-<<<<<<< HEAD
-      // Removed vendor.id reference as it's undefined
-=======
       vendor_id: vendor.id, // This is the vendor ID
->>>>>>> 8371f0ccb7515eb21c0ef65e7c8b3f41b13adc07
       payment_status: "success"
     };
 
@@ -85,15 +71,6 @@ function CartPanel() {
         },
         body: JSON.stringify({ orders: [order] })
       });
-<<<<<<< HEAD
-      
-      console.log("Store ID:", vendor_id);
-      
-      if (!response.ok) throw new Error("Failed to place order");
-      
-      const result = await response.json();
-      console.log("Order success:", result);
-=======
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -105,7 +82,6 @@ function CartPanel() {
       console.log("Order success:", result);
 
       // Remove the cart after successful order
->>>>>>> 8371f0ccb7515eb21c0ef65e7c8b3f41b13adc07
       removeCart(vendor_id);
     } catch (error) {
       console.error("Checkout error:", error);
