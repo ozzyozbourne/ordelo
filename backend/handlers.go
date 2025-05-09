@@ -191,6 +191,7 @@ func VendorComparedItemsValue(w http.ResponseWriter, r *http.Request) {
 		sendFailure(ctx, w, "Error in fetchig compared value", source)
 		return
 	}
+	makeItemsOne(res)
 
 	s, err := json.Marshal(res)
 	if err != nil {
@@ -1104,4 +1105,14 @@ func getID(ctx context.Context, source slog.Attr) (ID, error) {
 		return ID{bson.NilObjectID}, errors.New("unable to cast to string from ctx")
 	}
 	return NewID(ctx, v)
+}
+
+func makeItemsOne(res []*ResIng) {
+	for _, v := range res {
+		for _, s := range v.Stores {
+			for _, i := range s.Items {
+				i.Quantity = 1
+			}
+		}
+	}
 }
