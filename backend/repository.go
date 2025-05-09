@@ -46,6 +46,7 @@ type UserRepository interface {
 	DeleteUser(context.Context, ID) error
 	DeleteRecipes(context.Context, ID, []*ID) error
 	DeleteCarts(context.Context, ID, []*ID) error
+	DeleteUserOrders(context.Context, ID, []*ID) error
 }
 
 type VendorRepository interface {
@@ -67,6 +68,7 @@ type VendorRepository interface {
 
 	DeleteVendor(context.Context, ID) error
 	DeleteStores(context.Context, ID, []*ID) error
+	DeleteVendorOrders(context.Context, ID, []*ID) error
 }
 
 type AdminRepository interface {
@@ -308,6 +310,23 @@ func (m MongoUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) 
 	}
 
 	Logger.InfoContext(ctx, "Carts deleted successfully", slog.String("userID", id.String()), user_repo_source)
+	return nil
+}
+
+func (m MongoUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteUserOrderCarts")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting User Orders",
+		slog.String("userID", id.String()), slog.Any("orderIDs", ids), user_repo_source)
+
+	filter, update := getFilterDelete(id, "orders", ids)
+	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting UserOrders", slog.Any("error", err), user_repo_source)
+		return err
+	}
+
+	Logger.InfoContext(ctx, "Orders deleted successfully", slog.String("userID", id.String()), user_repo_source)
 	return nil
 }
 
@@ -603,6 +622,21 @@ func (m MongoVendorRepository) DeleteStores(ctx context.Context, id ID, ids []*I
 		return err
 	}
 	Logger.InfoContext(ctx, "Stores deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
+	return nil
+}
+
+func (m MongoVendorRepository) DeleteVendorOrders(ctx context.Context, id ID, ids []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteVendorOrders")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting orders for vendor",
+		slog.String("vendorID", id.String()), slog.Any("orderIDs", ids), vendor_repo_source)
+
+	filter, update := getFilterDelete(id, "orders", ids)
+	if err := deleteContainers(ctx, m.col, id, filter, update, vendor_repo_source); err != nil {
+		return err
+	}
+	Logger.InfoContext(ctx, "Vendor orders deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
 	return nil
 }
 

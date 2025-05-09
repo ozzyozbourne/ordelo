@@ -974,14 +974,41 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 		ids, err = Repos.User.CreateRecipes(ctx, id, c)
 	case []*UserOrder:
 		if ids, err = Repos.User.CreateUserOrders(ctx, id, c); err != nil {
-			Logger.ErrorContext(ctx, "Error in user peristance", slog.Any("error", err), source)
+			Logger.ErrorContext(ctx, "Error in user persistence", slog.Any("error", err), source)
 			return
 		}
-		vo := make([]*VendorOrder, len(c))
-		for i, v := range c {
-			vo[i] = &VendorOrder{Order: v.Order, UserID: id.value}
+
+		vg := make(map[bson.ObjectID][]*VendorOrder)
+		vi := make(map[bson.ObjectID][]*ID)
+
+		for _, v := range c {
+			vg[v.VendorID] = append(vg[v.VendorID], &VendorOrder{Order: v.Order, UserID: id.value})
 		}
-		_, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].VendorID}, vo)
+
+		for v, o := range vg {
+			oids, ordErr := Repos.Vendor.CreateVendorOrders(ctx, ID{v}, o)
+			if ordErr != nil {
+				Logger.ErrorContext(ctx, "Error in Vendor persistence Rolling back created user and vendor orders",
+					slog.Any("error", ordErr), source)
+				err = errors.Join(err, ordErr)
+
+				if userErr := Repos.User.DeleteUserOrders(ctx, id, ids); userErr != nil {
+					Logger.ErrorContext(ctx, "Error in deleting newly created User orders", slog.Any("error", userErr), source)
+					err = errors.Join(err, userErr)
+				}
+
+				for vid, oids := range vi {
+					if venErr := Repos.Vendor.DeleteVendorOrders(ctx, ID{vid}, oids); venErr != nil {
+						Logger.ErrorContext(ctx, "Error in deleting newly created Vendor orders", slog.Any("error", venErr), source)
+						err = errors.Join(err, venErr)
+					}
+				}
+				break
+			}
+
+			vi[v] = oids
+		}
+
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:
