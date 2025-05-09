@@ -981,7 +981,7 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 		for i, v := range c {
 			vo[i] = &VendorOrder{Order: v.Order, UserID: id.value}
 		}
-		_, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].ID}, vo)
+		_, err = Repos.Vendor.CreateVendorOrders(ctx, ID{c[0].VendorID}, vo)
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:
