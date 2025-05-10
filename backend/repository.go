@@ -365,10 +365,13 @@ func (m MongoVendorRepository) CreateVendorOrders(ctx context.Context, id ID, or
 	ctx, span := Tracer.Start(ctx, "CreateVendorOrders")
 	defer span.End()
 
-	ids := AssignIDs(orders)
-
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
 	filter, update := getFilterPush[[]*VendorOrder](id, "orders", orders)
+
+	ids := make([]*ID, len(orders))
+	for i, v := range orders {
+		ids[i] = &ID{v.ID}
+	}
 
 	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor orders", slog.Any("error", err), user_repo_source)
