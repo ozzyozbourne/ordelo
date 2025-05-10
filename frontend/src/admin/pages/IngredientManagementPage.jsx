@@ -201,108 +201,129 @@ const IngredientManagementPage = () => {
   };
 
   return (
-    <div>
+    <div className="ingredient-management">
       <div className="admin-page-header">
         <h1>Ingredient Management</h1>
       </div>
 
-      <h2>Add New Ingredient</h2>
-      <form onSubmit={handleAddIngredient} style={{ marginBottom: "20px" }}>
-        <input 
-          type="text"
-          name="name"
-          placeholder="Ingredient Name"
-          value={newIngredient.name}
-          onChange={handleInputChange}
-          required
-        />
-        <input 
-          type="number"
-          name="unit_quantity"
-          placeholder="Unit Quantity (SI Units Only)"
-          value={newIngredient.unit_quantity}
-          onChange={handleInputChange}
-          required
-        />
-        <input 
-          type="text"
-          name="unit"
-          placeholder="Unit (gm, ml)"
-          value={newIngredient.unit}
-          onChange={handleInputChange}
-          required
-        />
-        <button type="submit" disabled={adding}>
-          {adding ? "Adding..." : "Add Ingredient"}
-        </button>
-      </form>
+      <div className="ingredient-form">
+        <h2>Add New Ingredient</h2>
+        <form onSubmit={handleAddIngredient} className="ingredient-form-grid">
+          <div className="ingredient-form-group">
+            <label htmlFor="name">Ingredient Name</label>
+            <input 
+              id="name"
+              type="text"
+              name="name"
+              placeholder="Enter ingredient name"
+              value={newIngredient.name}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <label htmlFor="unit_quantity">Unit Quantity</label>
+            <input 
+              id="unit_quantity"
+              type="number"
+              name="unit_quantity"
+              placeholder="Enter quantity (SI Units Only)"
+              value={newIngredient.unit_quantity}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <label htmlFor="unit">Unit</label>
+            <input 
+              id="unit"
+              type="text"
+              name="unit"
+              placeholder="Enter unit (gm, ml)"
+              value={newIngredient.unit}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <button type="submit" className="ingredient-btn ingredient-btn-edit" disabled={adding}>
+              {adding ? "Adding..." : "Add Ingredient"}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {loading && <LoadingSpinner message="Loading ingredients..." />}
       {error && <ErrorMessage message={error} />}
 
       {!loading && !error && (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Unit Quantity</th>
-              <th>Unit (SI)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ingredients.map((ingredient, index) => (
-              <tr key={index}>
-                {editingId === ingredient._id ? (
-                  <>
-                    <td>
-                      <input
-                        type="text"
-                        name="name"
-                        value={editFormData.name}
-                        onChange={handleEditChange}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        name="unit_quantity"
-                        value={editFormData.unit_quantity}
-                        onChange={handleEditChange}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        name="unit"
-                        value={editFormData.unit}
-                        onChange={handleEditChange}
-                      />
-                    </td>
-                    <td>
-                      <button onClick={handleSaveEdit}>Save</button>
-                      <button onClick={handleCancelEdit}>Cancel</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td>{ingredient.name}</td>
-                    <td>{ingredient.unit_quantity}</td>
-                    <td>{ingredient.unit}</td>
-                    <td>
-                      <button onClick={() => handleEditClick(ingredient)}>
-                        Edit
-                      </button>
-                      <button onClick={() => handleDeleteIngredient(ingredient._id)}>
-                        Delete
-                      </button>
-                    </td>
-                  </>
-                )}
+        <div className="ingredient-table-container">
+          <table className="ingredient-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Unit Quantity</th>
+                <th>Unit (SI)</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {ingredients.map((ingredient, index) => (
+                <tr key={index}>
+                  {editingId === ingredient._id ? (
+                    <>
+                      <td>
+                        <input
+                          type="text"
+                          name="name"
+                          value={editFormData.name}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          name="unit_quantity"
+                          value={editFormData.unit_quantity}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          name="unit"
+                          value={editFormData.unit}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td className="ingredient-actions">
+                        <button onClick={handleSaveEdit} className="ingredient-btn ingredient-btn-edit">Save</button>
+                        <button onClick={handleCancelEdit} className="ingredient-btn ingredient-btn-delete">Cancel</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td>{ingredient.name}</td>
+                      <td>{ingredient.unit_quantity}</td>
+                      <td>{ingredient.unit}</td>
+                      <td className="ingredient-actions">
+                        <button onClick={() => handleEditClick(ingredient)} className="ingredient-btn ingredient-btn-edit">
+                          Edit
+                        </button>
+                        <button onClick={() => handleDeleteIngredient(ingredient._id)} className="ingredient-btn ingredient-btn-delete">
+                          Delete
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

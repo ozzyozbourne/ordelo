@@ -820,6 +820,14 @@
   padding-top: var(--space-lg);
   border-top: 1px solid var(--surface-3);
   color: var(--text-2);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.copyright p {
+  margin: 0;
+  max-width: 800px;
 }
 
 /* -------------------- */
@@ -1561,6 +1569,7 @@ html.dark-theme .search-input::placeholder {
 .search-filter {
   flex: 1;
   max-width: 500px;
+  background-color: transparent;
 }
 
 /* Container for the entire search input */
@@ -1568,17 +1577,17 @@ html.dark-theme .search-input::placeholder {
   position: relative;
   display: flex;
   align-items: center;
-  background-color: #f2f2f2; /* Light gray background color as shown in your screenshot */
-  border-radius: 50px; /* Fully rounded corners */
+  background-color: transparent;
+  border-radius: 50px;
   padding: 8px 16px;
-  box-shadow: none; /* Remove the shadow */
+  box-shadow: none;
   width: 100%;
 }
 
 /* The search icon styling */
 .search-icon {
   position: absolute;
-  left: 16px; /* Fixed pixel value for precise positioning */
+  left: 25px; /* Fixed pixel value for precise positioning */
   color: #888; /* Gray color as shown in your design */
   font-size: 20px;
   pointer-events: none;
@@ -2168,6 +2177,33 @@ html.dark-theme .search-input::placeholder {
   .category-header td {
     font-size: var(--font-size-0);
   }
+}
+
+.find-recipes-btn {
+  background-color: var(--primary-color); /* your standard green */
+  color: white;
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  padding: var(--space-sm) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  box-shadow: var(--shadow-2);
+  transition: all 0.2s ease-in-out;
+  font-family: var(--font-sans);
+}
+
+.find-recipes-btn:hover {
+  background-color: var(--primary-color-light); /* lighter green on hover */
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: var(--shadow-3);
+  cursor: pointer;
+}
+
+.find-recipes-btn i {
+  font-size: 1.1rem;
 }
 
 
@@ -3521,6 +3557,7 @@ margin-left: var(--space-md);
 /* -------------------- */
 
 .page-header {
+  display: none;
   background-image: var(--gradient-primary);
   color: white;
   padding: var(--space-xxl) 0;

@@ -58,13 +58,6 @@ function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <div className="page-header">
-        <div className="container">
-          <h1 className="page-title">Your Profile</h1>
-          <p className="page-description">Manage your account settings and preferences</p>
-        </div>
-      </div>
-
       <div className="container">
         <div className="profile-content">
           <div className="profile-sidebar">

@@ -383,8 +383,8 @@ function ShoppingList() {
             <p>
               Add ingredients to your shopping list by saving recipes.
             </p>
-            <Link to="/" className="btn btn-primary">
-              <i className="fas fa-search"></i> Find Recipes
+            <Link to="/" className="btn btn-primary find-recipes-btn">
+               Find Recipes
             </Link>
           </div>
         </div>
@@ -434,12 +434,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>
@@ -501,12 +501,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>

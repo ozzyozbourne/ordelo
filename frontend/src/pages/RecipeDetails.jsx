@@ -142,6 +142,10 @@ function RecipeDetails() {
             src={recipe.image || '/src/assets/placeholder-food.jpg'}
             alt={recipe.title}
             className="recipe-details-image"
+            onError={e => {
+              e.target.onerror = null;
+              e.target.src = '/src/assets/no-recipe-img.png';
+            }}
           />
         </div>
       </div>

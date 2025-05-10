@@ -62,7 +62,7 @@ const UserManagementPage = () => {
   };
 
   return (
-    <div>
+    <div className="user-management">
       <div className="admin-page-header">
         <h1>User Management</h1>
       </div>
@@ -71,31 +71,33 @@ const UserManagementPage = () => {
       {error && <ErrorMessage message={error} />}
 
       {!loading && !error && (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.email}>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>
-                  <button 
-                    onClick={() => handleDelete(user.user_id, user.name)}  
-                    className="btn btn-danger btn-sm"
-                  >
-                    <i className="fas fa-trash"></i> Delete
-                  </button>
-                </td>
+        <div className="user-table-container">
+          <table className="user-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.email}>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+                  <td className="user-actions">
+                    <button 
+                      onClick={() => handleDelete(user.user_id, user.name)}  
+                      className="user-btn user-btn-delete"
+                    >
+                      <i className="fas fa-trash"></i> Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

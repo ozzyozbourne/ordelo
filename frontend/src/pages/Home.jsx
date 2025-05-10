@@ -227,7 +227,10 @@ function Home() {
               ].map(({ name, img }) => (
                 <div key={name} className="ingredient-card" onClick={() => handleSearch(name)}>
                   <div className="ingredient-img-container">
-                    <img src={img} alt={name} className="ingredient-img" />
+                    <img src={img} alt={name} className="ingredient-img" onError={e => {
+                      e.target.onerror = null;
+                      e.target.src = '/src/assets/no-recipe-img.png';
+                    }} />
                   </div>
                   <h3>{name.charAt(0).toUpperCase() + name.slice(1)}</h3>
                 </div>

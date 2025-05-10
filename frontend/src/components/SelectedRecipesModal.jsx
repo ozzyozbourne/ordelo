@@ -130,9 +130,13 @@ function SelectedRecipesModal() {
                   <div key={recipeId} className="selected-recipe-item">
                     {recipe.extendedIngredients && (
                       <img 
-                        src={recipe.image || '/src/assets/placeholder-food.jpg'}
+                        src={recipe.image || '/src/assets/no-recipe-img.png'}
                         alt={recipe.title}
                         className="selected-recipe-img"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/src/assets/no-recipe-img.png';
+                        }}
                       />
                     )}
                     <div className="selected-recipe-details">

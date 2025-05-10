@@ -25,6 +25,10 @@ function RecipeCard({ recipe }) {
           src={recipe.image || '/src/assets/placeholder-food.jpg'} 
           alt={recipe.title} 
           className="recipe-image" 
+          onError={e => {
+            e.target.onerror = null;
+            e.target.src = '/src/assets/no-recipe-img.png';
+          }}
         />
         {isHovered && (
           <div className="recipe-card-overlay">

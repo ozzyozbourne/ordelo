@@ -359,21 +359,23 @@
  */
 @media (max-width: 768px) {
   .add-recipe-container {
-    margin: var(--space-sm); /* Reduced from var(--space-md) */
-    padding: var(--space-md); /* Reduced from var(--space-lg) */
+    margin: var(--space-sm);
+    padding: var(--space-md);
+    width: 95%;
   }
   
   .add-recipe-title {
     font-size: var(--font-size-3);
+    margin-bottom: var(--space-md);
   }
   
   .recipe-meta-inputs {
     grid-template-columns: 1fr;
-    gap: var(--space-sm); /* Reduced from var(--space-md) */
+    gap: var(--space-sm);
   }
   
   .addingredients-section {
-    padding: var(--space-sm); /* Reduced from var(--space-md) */
+    padding: var(--space-sm);
   }
   
   .ingredient-selection {
@@ -383,20 +385,94 @@
   .add-item-button {
     grid-column: 1;
   }
+
+  .ingredient-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .remove-item-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .submit-button {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .error-message,
+  .success-message {
+    padding: var(--space-sm);
+    font-size: var(--font-size-0);
+  }
 }
 
 @media (max-width: 480px) {
   .add-recipe-container {
-    margin: var(--space-xs); /* Reduced from var(--space-sm) */
-    padding: var(--space-sm); /* Reduced from var(--space-md) */
+    margin: var(--space-xs);
+    padding: var(--space-sm);
+    width: 100%;
   }
   
   .add-recipe-title {
     font-size: var(--font-size-2);
+    margin-bottom: var(--space-sm);
   }
-  
+
+  .add-recipe-input,
+  .add-recipe-textarea {
+    padding: var(--space-sm);
+    font-size: var(--font-size-0);
+  }
+
+  .ingredient-controls {
+    padding: var(--space-sm);
+  }
+
+  .ingredient-list {
+    max-height: 200px;
+  }
+
+  .ingredient-item {
+    padding: var(--space-sm);
+  }
+
+  .ingredient-name {
+    font-size: var(--font-size-0);
+  }
+
+  .ingredient-quantity {
+    font-size: var(--font-size--1);
+  }
+
+  .add-item-button {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-0);
+  }
+
   .submit-button {
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-1);
+    padding: var(--space-sm);
+  }
+}
+
+/* Add support for very small devices */
+@media (max-width: 320px) {
+  .add-recipe-container {
+    padding: var(--space-xs);
+  }
+
+  .add-recipe-title {
+    font-size: var(--font-size-1);
+  }
+
+  .ingredient-controls {
+    padding: var(--space-xs);
+  }
+
+  .ingredient-item {
+    padding: var(--space-xs);
   }
 }

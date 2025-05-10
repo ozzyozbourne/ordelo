@@ -62,7 +62,7 @@ const VendorManagementPage = () => {
   };
 
   return (
-    <div>
+    <div className="vendor-management">
       <div className="admin-page-header">
         <h1>Vendor Management</h1>
       </div>
@@ -71,35 +71,37 @@ const VendorManagementPage = () => {
       {error && <ErrorMessage message={error} />}
 
       {!loading && !error && (
-        <table>
-          <thead>
-            <tr>
-              <th>Vendor Name</th>
-              <th>Store Name</th>
-              <th>Address</th>
-              <th>Email</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vendors.map(vendor => (
-              <tr key={vendor.email}>
-                <td>{vendor.name || 'N/A'}</td>
-                <td>{vendor.stores?.[0]?.name || 'N/A'}</td>
-                <td>{vendor.address || 'N/A'}</td>
-                <td>{vendor.email || 'N/A'}</td>
-                <td>
-                  <button 
-                    onClick={() => handleDelete(vendor.user_id, vendor.name)} 
-                    className="btn btn-danger btn-sm"
-                  >
-                    <i className="fas fa-trash"></i> Remove
-                  </button>
-                </td>
+        <div className="vendor-table-container">
+          <table className="vendor-table">
+            <thead>
+              <tr>
+                <th>Vendor Name</th>
+                <th>Store Name</th>
+                <th>Address</th>
+                <th>Email</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {vendors.map(vendor => (
+                <tr key={vendor.email}>
+                  <td>{vendor.name || 'N/A'}</td>
+                  <td>{vendor.stores?.[0]?.name || 'N/A'}</td>
+                  <td>{vendor.address || 'N/A'}</td>
+                  <td>{vendor.email || 'N/A'}</td>
+                  <td className="vendor-actions">
+                    <button 
+                      onClick={() => handleDelete(vendor.user_id, vendor.name)} 
+                      className="vendor-btn vendor-btn-delete"
+                    >
+                      <i className="fas fa-trash"></i> Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

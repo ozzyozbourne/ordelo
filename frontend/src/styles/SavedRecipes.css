@@ -320,6 +320,7 @@
   @media (max-width: 768px) {
     .saved-recipes-container {
       padding: var(--space-md);
+      width: 95%;
     }
   
     .saved-recipes-header {
@@ -328,9 +329,36 @@
       gap: var(--space-md);
     }
   
+    .saved-recipes-title {
+      font-size: var(--font-size-3);
+    }
+  
+    .saved-recipes-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  
     .saved-recipes-grid {
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: var(--space-md);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-sm);
+    }
+  
+    .saved-recipe-title {
+      font-size: var(--font-size-1);
+    }
+  
+    .saved-recipe-meta {
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+  
+    .saved-recipe-description {
+      font-size: var(--font-size-0);
+      -webkit-line-clamp: 2;
     }
   
     .recipe-selection-header {
@@ -348,16 +376,34 @@
       width: 100%;
       justify-content: space-between;
     }
+  
+    .shopping-list-generator {
+      padding: var(--space-sm);
+    }
+  
+    .shopping-list-generator-title {
+      font-size: var(--font-size-1);
+    }
+  
+    .generate-list-btn {
+      width: 100%;
+      padding: var(--space-sm);
+    }
   }
   
   @media (max-width: 480px) {
     .saved-recipes-container {
       padding: var(--space-sm);
+      width: 100%;
     }
   
     .saved-recipes-grid {
       grid-template-columns: 1fr;
       gap: var(--space-md);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-xs);
     }
   
     .saved-recipe-actions {
@@ -368,6 +414,59 @@
     .saved-recipe-btn {
       width: 100%;
       justify-content: center;
+      padding: var(--space-xs);
+      font-size: var(--font-size--1);
+    }
+  
+    .saved-recipe-ingredients {
+      padding: var(--space-xs);
+    }
+  
+    .ingredients-list {
+      max-height: 100px;
+    }
+  
+    .ingredient-item {
+      font-size: var(--font-size--1);
+    }
+  
+    .ingredient-quantity {
+      min-width: 50px;
+    }
+  
+    .empty-saved-recipes {
+      padding: var(--space-md) var(--space-sm);
+    }
+  
+    .empty-icon {
+      font-size: 2rem;
+    }
+  
+    .empty-saved-recipes h3 {
+      font-size: var(--font-size-2);
+    }
+  }
+  
+  /* Add support for very small devices */
+  @media (max-width: 320px) {
+    .saved-recipes-container {
+      padding: var(--space-xs);
+    }
+  
+    .saved-recipes-title {
+      font-size: var(--font-size-2);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-xs);
+    }
+  
+    .saved-recipe-meta {
+      font-size: var(--font-size--1);
+    }
+  
+    .ingredients-list {
+      max-height: 80px;
     }
   }
   
