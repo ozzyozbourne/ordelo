@@ -170,7 +170,8 @@ export const RecipeProvider = ({ children }) => {
   };
 
   const addToSelectedRecipes = (recipe) => {
-    if (!selectedRecipes.some(r => r.id === recipe.id)) {
+    const recipeId = recipe.id || recipe.recipe_id;
+    if (!selectedRecipes.some(r => (r.id || r.recipe_id) === recipeId)) {
       setSelectedRecipes([...selectedRecipes, recipe]);
       showToast(`${recipe.title} added to selected recipes`, "success");
     } else {
@@ -179,7 +180,7 @@ export const RecipeProvider = ({ children }) => {
   };
 
   const removeFromSelected = (recipeId) => {
-    setSelectedRecipes(selectedRecipes.filter(recipe => recipe.id !== recipeId));
+    setSelectedRecipes(selectedRecipes.filter(recipe => (recipe.id || recipe.recipe_id) !== recipeId));
     showToast("Recipe removed from selected recipes", "error");
   };
 

@@ -298,6 +298,11 @@ function ShoppingList() {
         },
         body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       console.log('Response data:', data);
 
@@ -310,6 +315,11 @@ function ShoppingList() {
       const stores = JSON.parse(data.ids);
       console.log('Parsed stores:', stores);
       
+      if (!stores || stores.length === 0) {
+        setError("No stores found for the selected items");
+        return;
+      }
+
       // Navigate to shopping page with the store data
       navigate('/shopping', { state: { stores } });
     } catch (err) {

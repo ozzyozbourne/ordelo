@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "/Users/zohaahmed/ordelo/ordelo/frontend/src/context/AuthContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { jwtDecode } from "jwt-decode";
 
 function VendorDashboard() {

@@ -1,0 +1,402 @@
+/* Enhanced AddRecipe.css - With Reduced Paddings and Consistent Background */
+
+/*
+ * ==============================================
+ * 1. Container & Layout
+ * ==============================================
+ */
+ .add-recipe-container {
+  max-width: 800px;
+  margin: var(--space-lg) auto; /* Reduced from var(--space-xl) */
+  padding: var(--space-lg); /* Reduced from var(--space-xl) */
+  background-color: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.add-recipe-container:focus-within {
+  box-shadow: var(--shadow-4);
+}
+
+.add-recipe-title {
+  font-size: var(--font-size-4);
+  font-weight: var(--font-weight-6);
+  color: var(--text-1);
+  margin-bottom: var(--space-lg); /* Reduced from var(--space-xl) */
+  text-align: center;
+  padding-bottom: var(--space-md);
+  position: relative;
+}
+
+.add-recipe-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: var(--surface-1);
+  background-image: var(--gradient-primary);
+  border-radius: var(--radius-pill);
+}
+
+.add-recipe-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md); /* Reduced from var(--space-lg) */
+}
+
+/*
+ * ==============================================
+ * 2. Form Controls & Inputs
+ * ==============================================
+ */
+.add-recipe-input,
+.add-recipe-textarea {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-1);
+  background-color: var(--surface-1);
+  color: var(--text-1);
+  transition: all var(--transition-fast);
+}
+
+.add-recipe-input:focus,
+.add-recipe-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(94, 204, 98, 0.15);
+  outline: none;
+}
+
+.add-recipe-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.recipe-meta-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md); /* Reduced from var(--space-lg) */
+  margin-bottom: var(--space-sm); /* Reduced from var(--space-md) */
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs); /* Reduced from var(--space-sm) */
+}
+
+.input-label {
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-5);
+  color: var(--text-2);
+  margin-bottom: var(--space-xxs);
+}
+
+/*
+ * ==============================================
+ * 3. Ingredients Section
+ * ==============================================
+ */
+.addingredients-section {
+  margin-top: var(--space-lg); /* Reduced from var(--space-xl) */
+  padding: var(--space-md); /* Reduced from var(--space-lg) */
+  background-color: var(--surface-1); /* Match the container background exactly */
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  /* Removed border for a more seamless look */
+}
+
+.ingredients-title {
+  font-size: var(--font-size-3);
+  color: var(--text-1);
+  margin-bottom: var(--space-md); /* Reduced from var(--space-lg) */
+  font-weight: var(--font-weight-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ingredients-title i {
+  color: var(--primary-color);
+}
+
+.ingredient-add-title {
+  font-size: var(--font-size-2);
+  color: var(--text-1);
+  margin-bottom: var(--space-sm); /* Reduced from var(--space-md) */
+  font-weight: var(--font-weight-6);
+  border-bottom: 1px solid var(--surface-3);
+  padding-bottom: var(--space-xs);
+}
+
+.ingredient-list {
+  margin-bottom: var(--space-md); /* Reduced from var(--space-lg) */
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: var(--space-xs);
+}
+
+.ingredient-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ingredient-list::-webkit-scrollbar-track {
+  background-color: var(--surface-1); /* Match exactly with container */
+  border-radius: var(--radius-pill);
+}
+
+.ingredient-list::-webkit-scrollbar-thumb {
+  background-color: var(--surface-4);
+  border-radius: var(--radius-pill);
+}
+
+.ingredient-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+  background-color: var(--surface-2); /* Keep some contrast for the items */
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xs);
+  box-shadow: var(--shadow-1);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  border: 1px solid var(--surface-3); /* Added for definition */
+}
+
+.ingredient-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.ingredient-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.ingredient-name {
+  font-weight: var(--font-weight-5);
+}
+
+.ingredient-quantity {
+  color: var(--text-2);
+  font-size: var(--font-size-0);
+}
+
+.remove-item-button {
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.remove-item-button:hover {
+  background-color: var(--accent-color-dark);
+  transform: scale(1.05);
+}
+
+.remove-item-button:active {
+  transform: scale(0.98);
+}
+
+/*
+ * ==============================================
+ * 4. Ingredient Selection Controls
+ * ==============================================
+ */
+.ingredient-controls {
+  background-color: var(--surface-1); /* Match exactly with container background */
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-3); /* Subtle border for definition */
+  box-shadow: var(--shadow-1);
+}
+
+.ingredient-selection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-md);
+  align-items: flex-end;
+}
+
+.add-item-button {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: var(--font-weight-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  height: 42px; /* Match input height */
+  grid-column: span 2;
+}
+
+.add-item-button:hover {
+  background-color: var(--primary-color-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.add-item-button:active {
+  transform: translateY(0);
+}
+
+/*
+ * ==============================================
+ * 5. Submit Button & Messages
+ * ==============================================
+ */
+.submit-button {
+  margin-top: var(--space-lg); /* Reduced from var(--space-xl) */
+  padding: var(--space-md) var(--space-xl);
+  background-image: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: center;
+  box-shadow: var(--shadow-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.submit-button:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-3);
+}
+
+.submit-button:active {
+  transform: translateY(-1px);
+}
+
+.submit-button:disabled {
+  background: linear-gradient(90deg, #cccccc, #dddddd);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.error-message {
+  color: var(--accent-color);
+  background-color: rgba(255, 107, 107, 0.1);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-sm);
+  border-left: 3px solid var(--accent-color);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.success-message {
+  color: var(--primary-color);
+  background-color: rgba(94, 204, 98, 0.1);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-sm);
+  border-left: 3px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/*
+ * ==============================================
+ * 6. Empty States & Loaders
+ * ==============================================
+ */
+.empty-ingredient-list {
+  padding: var(--space-md); /* Reduced from var(--space-lg) */
+  text-align: center;
+  color: var(--text-2);
+  background-color: var(--surface-1); /* Match with container background */
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--surface-3);
+}
+
+.loading-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * ==============================================
+ * 7. Responsive Styling
+ * ==============================================
+ */
+@media (max-width: 768px) {
+  .add-recipe-container {
+    margin: var(--space-sm); /* Reduced from var(--space-md) */
+    padding: var(--space-md); /* Reduced from var(--space-lg) */
+  }
+  
+  .add-recipe-title {
+    font-size: var(--font-size-3);
+  }
+  
+  .recipe-meta-inputs {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm); /* Reduced from var(--space-md) */
+  }
+  
+  .addingredients-section {
+    padding: var(--space-sm); /* Reduced from var(--space-md) */
+  }
+  
+  .ingredient-selection {
+    grid-template-columns: 1fr;
+  }
+  
+  .add-item-button {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-recipe-container {
+    margin: var(--space-xs); /* Reduced from var(--space-sm) */
+    padding: var(--space-sm); /* Reduced from var(--space-md) */
+  }
+  
+  .add-recipe-title {
+    font-size: var(--font-size-2);
+  }
+  
+  .submit-button {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+  }
+}

@@ -480,3 +480,86 @@
 .back-button:hover {
   background-color: #5a6268;
 }
+
+/* Login Page Styles - adapting to existing class names */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, var(--surface-2) 60%, var(--surface-3) 100%);
+}
+
+.login-page h1 {
+  font-size: var(--font-size-6);
+  font-weight: var(--font-weight-7);
+  color: var(--text-1);
+  margin-bottom: var(--space-xxl);
+  padding-bottom: var(--space-xl);
+  letter-spacing: 0.01em;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  padding: var(--space-xl) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.login-form input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-1);
+  font-size: var(--font-size-1);
+  transition: all var(--transition-fast);
+}
+
+.login-form input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 204, 98, 0.12);
+}
+
+.login-form button {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(94, 204, 98, 0.08);
+  width: 100%;
+}
+
+.login-form button:hover,
+.login-form button:focus {
+  background: linear-gradient(90deg, var(--primary-color-dark) 0%, var(--primary-color) 100%);
+  box-shadow: 0 4px 16px rgba(94, 204, 98, 0.15);
+  transform: translateY(-2px) scale(1.03);
+  outline: none;
+}
+
+.error-message {
+  background-color: rgba(255, 107, 107, 0.1);
+  border-left: 3px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+  text-align: left;
+  width: 100%;
+}
