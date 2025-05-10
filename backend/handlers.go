@@ -978,9 +978,7 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 			return
 		}
 
-		vg := make(map[bson.ObjectID][]*VendorOrder)
-		vi := make(map[bson.ObjectID][]*ID)
-
+		vg, vi := make(map[bson.ObjectID][]*VendorOrder), make(map[bson.ObjectID][]*ID)
 		for _, v := range c {
 			vg[v.VendorID] = append(vg[v.VendorID], &VendorOrder{Order: v.Order, UserID: id.value})
 		}
@@ -1005,10 +1003,8 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 				}
 				break
 			}
-
 			vi[v] = oids
 		}
-
 	case []*Store:
 		ids, err = Repos.Vendor.CreateStores(ctx, id, c)
 	case []*VendorOrder:
@@ -1018,11 +1014,9 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 		err = errors.New("unknown type")
 		return
 	}
-
 	if err != nil {
 		return
 	}
-
 	okResponseMap := map[string]any{
 		"success": true,
 		"ids":     getStringIDs(ids),
