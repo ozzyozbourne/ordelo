@@ -94,7 +94,7 @@ function VendorDiscovery() {
       <div className="vendors-container">
         {allStores.length > 0 ? (
           allStores.map(store => (
-            <StoreCard key={store.id} store={store} />
+            <StoreCard key={store.id} store={store} vendorName={store.vendorName} />
           ))
         ) : (
           <div className="empty-state">
