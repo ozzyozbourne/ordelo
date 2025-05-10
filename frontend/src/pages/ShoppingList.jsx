@@ -130,12 +130,11 @@ const mergeIngredients = (ingredients) => {
 };
 
 const standardizeUnit = (amount, unit) => {
-  let unitQuantity = Math.round(amount || 1);
-  let standardizedUnit = (unit || '').toLowerCase().trim();
+  const normalizedAmount = typeof amount === "number" && amount > 0 ? amount : 1;
+  const normalizedUnit = (unit || "").toLowerCase().trim();
 
-  // Common unit mappings
   const unitMappings = {
-    // Weight conversions
+    // Weight
     'kg': { factor: 1000, unit: 'gm' },
     'kgs': { factor: 1000, unit: 'gm' },
     'g': { factor: 1, unit: 'gm' },
@@ -148,7 +147,7 @@ const standardizeUnit = (amount, unit) => {
     'pound': { factor: 453.592, unit: 'gm' },
     'pounds': { factor: 453.592, unit: 'gm' },
 
-    // Volume conversions
+    // Volume
     'l': { factor: 1000, unit: 'ml' },
     'liter': { factor: 1000, unit: 'ml' },
     'liters': { factor: 1000, unit: 'ml' },
@@ -164,7 +163,7 @@ const standardizeUnit = (amount, unit) => {
     'cup': { factor: 240, unit: 'ml' },
     'cups': { factor: 240, unit: 'ml' },
 
-    // Count units
+    // Count
     'piece': { factor: 50, unit: 'gm' },
     'pieces': { factor: 60, unit: 'gm' },
     'pcs': { factor: 30, unit: 'gm' },
@@ -173,14 +172,14 @@ const standardizeUnit = (amount, unit) => {
     'units': { factor: 10, unit: 'gm' }
   };
 
-  // Get the conversion mapping or default to count
-  const mapping = unitMappings[standardizedUnit] || { factor: 100, unit: 'gm' };
-  
+  const mapping = unitMappings[normalizedUnit] || { factor: 100, unit: 'gm' };
+
   return {
-    unit_quantity: Math.round(unitQuantity * mapping.factor),
+    unit_quantity: Math.round(normalizedAmount * mapping.factor),
     unit: mapping.unit
   };
 };
+
 
 function ShoppingList() {
   const { shoppingList, removeFromShoppingList, clearShoppingList, addToShoppingList } = useRecipes();
