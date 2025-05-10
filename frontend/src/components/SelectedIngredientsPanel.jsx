@@ -23,15 +23,6 @@ function SelectedIngredientsPanel() {
             className={`ingredient-item ${ingredient.selected ? 'selected' : ''}`}
             onClick={() => toggleIngredientSelection(ingredient.id || ingredient.uniqueId)}
           >
-            <div className="ingredient-checkbox">
-              <input 
-                type="checkbox" 
-                checked={ingredient.selected} 
-                onChange={() => {}}
-                readOnly
-              />
-              <span className="checkmark"></span>
-            </div>
             <div className="ingredient-info">
               <span className="ingredient-name">{ingredient.name}</span>
               {ingredient.amount && (

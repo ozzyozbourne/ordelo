@@ -171,9 +171,25 @@ function VendorStore() {
 
       if (!response.ok) throw new Error("Failed to update ingredient");
 
+<<<<<<< HEAD
       await fetchStores();
       setEditingIngredientId(null);
       setEditFormData({ unit_quantity: "", price: "" });
+=======
+      const data = await response.json();
+      const ingredientsArray = JSON.parse(data.message);
+
+      const processed = ingredientsArray.map((ingredient) => ({
+        _id: ingredient.ingredient_id,
+        name: ingredient.name,
+        unit_quantity: ingredient.unit_quantity,
+        unit: ingredient.unit,
+        price: ingredient.price || 0,
+        times: ingredient.times || 0,
+      }));
+
+      setIngredients(processed);
+>>>>>>> c7aace2a548e53649aa6ad77e005eb67e023c57a
     } catch (error) {
       console.error("Error updating ingredient:", error);
       alert("Failed to update ingredient. Please try again.");
@@ -188,6 +204,36 @@ function VendorStore() {
     });
   };
 
+<<<<<<< HEAD
+=======
+  const updateStatus = async (order, newStatus) => {
+    try {
+      const response = await fetch("http://localhost:8080/vendor/userorder/accept", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          user_id: order.user_id, // This is the correct user_id from the VendorOrder
+          order_id: order.order_id, // This is the ID from the embedded Order
+          order_status: newStatus
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update order status");
+      }
+
+      // Refresh orders after update
+      fetchOrders();
+    } catch (err) {
+      console.error("Error updating order status:", err);
+    }
+  };
+
+>>>>>>> c7aace2a548e53649aa6ad77e005eb67e023c57a
   if (loading) return <p>Loading...</p>;
 
   return (

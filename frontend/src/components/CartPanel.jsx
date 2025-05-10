@@ -15,7 +15,7 @@ function CartPanel() {
   const { user } = useAuth();
 
   const cartVendors = Object.keys(carts);
-  
+  const navigate = useNavigate();
   const cartCount = cartVendors.length;
 
   const handleCheckout = async (vendor_id) => {
@@ -81,10 +81,8 @@ function CartPanel() {
 
       const result = await response.json();
       console.log("Order success:", result);
-      navigate("/orders");
-
-      // Remove the cart after successful order
       removeCart(vendor_id);
+
     } catch (error) {
       console.error("Checkout error:", error);
       // You might want to show an error message to the user here
