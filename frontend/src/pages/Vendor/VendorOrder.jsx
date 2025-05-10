@@ -1,21 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from "../../context/AuthContext";
 
 const VendorOrder = () => {
-  const [orders, setOrders] = useState([
-    { id: 1, customer: 'John Doe', item: 'Cake', status: 'Pending' },
-    { id: 2, customer: 'Jane Smith', item: 'Flowers', status: 'Pending' },
-    { id: 3, customer: 'Shahrukh', item: 'Milk, cream, butter', status: 'Pending' },
-    { id: 4, customer: 'Javed', item: 'chips, chocolates', status: 'Pending' },
-    { id: 5, customer: 'Akif', item: 'icecream, hookah', status: 'Pending' },
-    { id: 6, customer: 'Osaid', item: 'paan leaves ', status: 'Pending' },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
-  const updateStatus = (id, newStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order
-      )
-    );
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/vendor/orders", {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch orders");
+      }
+
+      const data = await response.json();
+      setOrders(data.value || []);
+      console.log(data.value);
+
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (order, newStatus) => {
+    try {
+      const response = await fetch("http://localhost:8080/vendor/userorder/accept", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          order_id: order.order_id,
+          user_id: order.user_id,
+          order_status: newStatus
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update order status");
+      }
+
+      fetchOrders();
+    } catch (err) {
+      console.error("Error updating order status:", err);
+    }
   };
 
   const getStatusStyle = (status) => {
@@ -28,14 +71,13 @@ const VendorOrder = () => {
     return styles[status] || {};
   };
 
-  const buttonStyle = {
-    margin: '0 4px',
-    padding: '4px 8px',
-    border: 'none',
-    borderRadius: '4px',
-    color: 'white',
-    cursor: 'pointer',
-  };
+  if (loading) {
+    return <div>Loading orders...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div style={{ padding: '20px' }}>
@@ -52,37 +94,69 @@ const VendorOrder = () => {
         <thead>
           <tr style={{ borderBottom: '1px solid #ddd' }}>
             <th style={{ padding: '12px', textAlign: 'left' }}>Order ID</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Item</th>
+            <th style={{ padding: '12px', textAlign: 'left' }}>Customer ID</th>
+            <th style={{ padding: '12px', textAlign: 'left' }}>Store ID</th>
+            <th style={{ padding: '12px', textAlign: 'left' }}>Items</th>
+            <th style={{ padding: '12px', textAlign: 'left' }}>Total Price</th>
+            <th style={{ padding: '12px', textAlign: 'left' }}>Delivery Method</th>
             <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
             <th style={{ padding: '12px', textAlign: 'left' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.map((order) => (
-            <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px' }}>{order.id}</td>
-              <td style={{ padding: '10px' }}>{order.customer}</td>
-              <td style={{ padding: '10px' }}>{order.item}</td>
-              <td style={{ padding: '10px', ...getStatusStyle(order.status) }}>
-                {order.status}
+            <tr key={order.order_id} style={{ borderBottom: '1px solid #eee' }}>
+              <td style={{ padding: '10px' }}>{order.order_id}</td>
+              <td style={{ padding: '10px' }}>{order.user_id}</td>
+              <td style={{ padding: '10px' }}>{order.store_id}</td>
+              <td style={{ padding: '10px' }}>
+                {order.items.map(item => `${item.name} (${item.unit_quantity})`).join(', ')}
+              </td>
+              <td style={{ padding: '10px' }}>${order.total_price}</td>
+              <td style={{ padding: '10px' }}>{order.delivery_method}</td>
+              <td style={{ padding: '10px', ...getStatusStyle(order.order_status) }}>
+                {order.order_status}
               </td>
               <td style={{ padding: '10px' }}>
                 <button
-                  style={{ ...buttonStyle, backgroundColor: '#4caf50' }}
-                  onClick={() => updateStatus(order.id, 'Accepted')}
+                  style={{ 
+                    margin: '0 4px',
+                    padding: '4px 8px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    backgroundColor: '#4caf50'
+                  }}
+                  onClick={() => updateStatus(order, 'Accepted')}
                 >
                   Accept
                 </button>
                 <button
-                  style={{ ...buttonStyle, backgroundColor: '#f44336' }}
-                  onClick={() => updateStatus(order.id, 'Rejected')}
+                  style={{ 
+                    margin: '0 4px',
+                    padding: '4px 8px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    backgroundColor: '#f44336'
+                  }}
+                  onClick={() => updateStatus(order, 'Rejected')}
                 >
                   Reject
                 </button>
                 <button
-                  style={{ ...buttonStyle, backgroundColor: '#2196f3' }}
-                  onClick={() => updateStatus(order.id, 'Delivered')}
+                  style={{ 
+                    margin: '0 4px',
+                    padding: '4px 8px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    backgroundColor: '#2196f3'
+                  }}
+                  onClick={() => updateStatus(order.order_id, 'Delivered')}
                 >
                   Delivered
                 </button>

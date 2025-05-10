@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+
 function VendorStore() {
   const [stores, setStores] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
@@ -10,6 +11,7 @@ function VendorStore() {
   const [storeType, setStoreType] = useState("Delivery");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [ingredients, setIngredients] = useState([]);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -30,7 +32,6 @@ function VendorStore() {
 
       if (!response.ok) throw new Error("Failed to fetch stores");
       const data = await response.json();
-      console.log(data)
 
       const normalizedStores = (data.value || []).map((store) => ({
         ...store,
@@ -101,8 +102,8 @@ function VendorStore() {
         throw new Error("Unauthorized or failed to fetch ingredients");
       }
 
-   2
-      const ingredientsArray = JSON.parse(data.message); // ← fix here
+      const data = await response.json();
+      const ingredientsArray = JSON.parse(data.message);
 
       const processed = ingredientsArray.map((ingredient) => ({
         _id: ingredient.ingredient_id,
@@ -172,6 +173,34 @@ function VendorStore() {
     setActiveTab(updatedStores.find((s) => s.id === activeTab.id));
     handleCancelEdit();
   };
+
+  const updateStatus = async (order, newStatus) => {
+    try {
+      const response = await fetch("http://localhost:8080/vendor/userorder/accept", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          user_id: order.user_id, // This is the correct user_id from the VendorOrder
+          order_id: order.order_id, // This is the ID from the embedded Order
+          order_status: newStatus
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update order status");
+      }
+
+      // Refresh orders after update
+      fetchOrders();
+    } catch (err) {
+      console.error("Error updating order status:", err);
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
