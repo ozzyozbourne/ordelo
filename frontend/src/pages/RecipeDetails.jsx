@@ -111,7 +111,7 @@ function RecipeDetails() {
           <section className="ingredients-tab">
             <h2 className="section-title">Ingredients</h2>
             {recipe.extendedIngredients?.length > 0 ? (
-              <ul className="ingredients-list">
+              <ul className="selected-ingredients-list">
                 {recipe.extendedIngredients.map((ing, idx) => (
                   <li key={idx}>{ing.original}</li>
                 ))}
@@ -142,6 +142,10 @@ function RecipeDetails() {
             src={recipe.image || '/src/assets/placeholder-food.jpg'}
             alt={recipe.title}
             className="recipe-details-image"
+            onError={e => {
+              e.target.onerror = null;
+              e.target.src = '/src/assets/no-recipe-img.png';
+            }}
           />
         </div>
       </div>

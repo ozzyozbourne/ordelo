@@ -9,6 +9,7 @@ const AddInventory = () => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [ingredientPrices, setIngredientPrices] = useState({});
   const [ingredientQuantities, setIngredientQuantities] = useState({});
@@ -22,6 +23,7 @@ const AddInventory = () => {
 
   const fetchStores = async () => {
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:8080/vendor/stores", {
         headers: {
           Authorization: `Bearer ${user?.token}`,
@@ -31,14 +33,12 @@ const AddInventory = () => {
       if (!response.ok) throw new Error("Failed to fetch stores");
       
       const data = await response.json();
-      console.log("Raw store data:", data);
 
       const normalizedStores = (data.value || []).map((store) => ({
         ...store,
         id: store.store_id
       }));
 
-      console.log("Normalized stores:", normalizedStores);
       setStores(normalizedStores);
       if (normalizedStores.length) {
         setSelectedStore(normalizedStores[0]);
@@ -46,11 +46,14 @@ const AddInventory = () => {
     } catch (err) {
       setError("Failed to load stores. Please try again.");
       console.error("Error fetching stores:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchIngredients = async () => {
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:8080/vendor/ingredients", {
         headers: {
           Authorization: `Bearer ${user?.token}`,
@@ -123,9 +126,8 @@ const AddInventory = () => {
       ]
     };
 
-    console.log("Request Body:", requestBody); // Debug log
-
     try {
+      setLoading(true);
       const response = await fetch(
         "http://localhost:8080/vendor/stores",
         {
@@ -140,7 +142,6 @@ const AddInventory = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error response:", errorData);
         throw new Error(errorData.message || "Failed to add ingredient");
       }
       
@@ -154,112 +155,179 @@ const AddInventory = () => {
         [ingredient.ingredient_id]: ""
       }));
       
+      // Show success message
+      setSuccess(`Successfully added ${ingredient.name} to inventory!`);
+      setTimeout(() => setSuccess(null), 3000); // Clear after 3 seconds
+      
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to add ingredient. Please try again.");
       console.error("Error adding ingredient:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
+  if (loading && ingredients.length === 0 && stores.length === 0) {
+    return (
+      <div className="loading-spinner">
+        <div className="spinner"></div>
+        <p>Loading inventory data...</p>
+      </div>
+    );
   }
 
   return (
     <div className="add-inventory-container">
-      <div className="add-inventory-header">
-        <h1>Add Inventory</h1>
+      <div className="action-bar">
+        <h2 className="page-title">Add Inventory</h2>
         <button 
-          className="back-button"
-          onClick={() => navigate("/vendor/inventory")}
+          className="btn btn-secondary"
+          onClick={() => navigate("/vendor/store")}
         >
-          Back to Inventory
+          <i className="fas fa-arrow-left"></i>
+          <span>Back to Inventory</span>
         </button>
       </div>
 
       {/* Store Selection */}
-      <div className="store-selection">
-        <select 
-          value={selectedStore?.store_id || ""} 
-          onChange={(e) => {
-            const store = stores.find(s => s.store_id === e.target.value);
-            setSelectedStore(store);
-          }}
-          className="store-select"
-        >
-          <option key="default" value="">Select a store</option>
-          {stores.map(store => (
-            <option key={store.store_id} value={store.store_id}>
-              {store.name}
-            </option>
-          ))}
-        </select>
+      <div className="vendor-section">
+        <h3 className="vendor-section-title">Select Store</h3>
+        <div className="form-group">
+          <select 
+            value={selectedStore?.store_id || ""} 
+            onChange={(e) => {
+              const store = stores.find(s => s.store_id === e.target.value);
+              setSelectedStore(store);
+            }}
+            className="form-control store-select"
+          >
+            <option key="default" value="">Select a store</option>
+            {stores.map(store => (
+              <option key={store.store_id} value={store.store_id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Search Bar */}
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search ingredients..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
+      <div className="vendor-section">
+        <h3 className="vendor-section-title">Search Ingredients</h3>
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search ingredients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search" 
+              onClick={() => setSearchTerm("")}
+              aria-label="Clear search"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          )}
+        </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {/* Notifications */}
+      {error && (
+        <div className="error-message">
+          <i className="fas fa-exclamation-circle"></i>
+          <span>{error}</span>
+        </div>
+      )}
 
-      <div className="ingredients-table-container">
-        <table className="ingredients-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Unit Quantity</th>
-              <th>Unit</th>
-              <th>Price</th>
-              <th>Quantity</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredIngredients.map((ingredient) => (
-              <tr key={ingredient.ingredient_id}>
-                <td>{ingredient.name}</td>
-                <td>{ingredient.unit_quantity}</td>
-                <td>{ingredient.unit}</td>
-                <td>
-                  <input
-                    type="number"
-                    value={ingredientPrices[ingredient.ingredient_id] || ""}
-                    onChange={(e) => handlePriceChange(ingredient.ingredient_id, e.target.value)}
-                    placeholder="Enter price"
-                    min="0"
-                    step="0.01"
-                    className="price-input"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={ingredientQuantities[ingredient.ingredient_id] || ""}
-                    onChange={(e) => handleQuantityChange(ingredient.ingredient_id, e.target.value)}
-                    placeholder="Enter quantity"
-                    min="0"
-                    className="quantity-input"
-                  />
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleAdd(ingredient)}
-                    className="add-button"
-                  >
-                    Add
-                  </button>
-                </td>
+      {success && (
+        <div className="success-message">
+          <i className="fas fa-check-circle"></i>
+          <span>{success}</span>
+        </div>
+      )}
+
+      {/* Ingredients Table */}
+      <div className="vendor-section">
+        <h3 className="vendor-section-title">Available Ingredients</h3>
+        <div className="ingredients-table-container">
+          <table className="ingredients-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Unit Quantity</th>
+                <th>Unit</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredIngredients.length > 0 ? (
+                filteredIngredients.map((ingredient) => (
+                  <tr key={ingredient.ingredient_id}>
+                    <td>{ingredient.name}</td>
+                    <td>{ingredient.unit_quantity}</td>
+                    <td>{ingredient.unit}</td>
+                    <td>
+                      <div className="price-input-group">
+                        <span className="dollar-sign">$</span>
+                        <input
+                          type="number"
+                          value={ingredientPrices[ingredient.ingredient_id] || ""}
+                          onChange={(e) => handlePriceChange(ingredient.ingredient_id, e.target.value)}
+                          placeholder="Enter price"
+                          min="0"
+                          step="0.01"
+                          className="form-control price-input"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={ingredientQuantities[ingredient.ingredient_id] || ""}
+                        onChange={(e) => handleQuantityChange(ingredient.ingredient_id, e.target.value)}
+                        placeholder="Enter quantity"
+                        min="0"
+                        className="form-control quantity-input"
+                      />
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleAdd(ingredient)}
+                        className="btn btn-primary add-button"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <span className="spinner"></span>
+                        ) : (
+                          <>
+                            <i className="fas fa-plus"></i>
+                            <span>Add</span>
+                          </>
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    <div className="empty-state">
+                      <i className="fas fa-search"></i>
+                      <h3>No ingredients found</h3>
+                      <p>Try adjusting your search term or check back later for more ingredients.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

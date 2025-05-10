@@ -23,6 +23,8 @@
   transition: filter var(--transition-slow);
 }
 
+
+
 /* -------------------- */
 /* HEADER STYLES        */
 /* -------------------- */
@@ -820,6 +822,14 @@
   padding-top: var(--space-lg);
   border-top: 1px solid var(--surface-3);
   color: var(--text-2);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.copyright p {
+  margin: 0;
+  max-width: 800px;
 }
 
 /* -------------------- */
@@ -1561,6 +1571,7 @@ html.dark-theme .search-input::placeholder {
 .search-filter {
   flex: 1;
   max-width: 500px;
+  background-color: transparent;
 }
 
 /* Container for the entire search input */
@@ -1568,17 +1579,17 @@ html.dark-theme .search-input::placeholder {
   position: relative;
   display: flex;
   align-items: center;
-  background-color: #f2f2f2; /* Light gray background color as shown in your screenshot */
-  border-radius: 50px; /* Fully rounded corners */
+  background-color: transparent;
+  border-radius: 50px;
   padding: 8px 16px;
-  box-shadow: none; /* Remove the shadow */
+  box-shadow: none;
   width: 100%;
 }
 
 /* The search icon styling */
 .search-icon {
   position: absolute;
-  left: 16px; /* Fixed pixel value for precise positioning */
+  left: px; /* Fixed pixel value for precise positioning */
   color: #888; /* Gray color as shown in your design */
   font-size: 20px;
   pointer-events: none;
@@ -2170,6 +2181,33 @@ html.dark-theme .search-input::placeholder {
   }
 }
 
+.find-recipes-btn {
+  background-color: var(--primary-color); /* your standard green */
+  color: white;
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  padding: var(--space-sm) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  box-shadow: var(--shadow-2);
+  transition: all 0.2s ease-in-out;
+  font-family: var(--font-sans);
+}
+
+.find-recipes-btn:hover {
+  background-color: var(--primary-color-light); /* lighter green on hover */
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: var(--shadow-3);
+  cursor: pointer;
+}
+
+.find-recipes-btn i {
+  font-size: 1.1rem;
+}
+
 
 /* -------------------- */
 /* SHOPPING PAGE STYLES */
@@ -2202,13 +2240,6 @@ html.dark-theme .search-input::placeholder {
   grid-template-columns: 1.5fr 4fr 2fr;
 }
 
-.ingredients-panel-container,
-.cart-panel-container {
-  position: relative;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
 
 .ingredients-panel-container {
   background-color: var(--primary-color);
@@ -2238,15 +2269,11 @@ html.dark-theme .search-input::placeholder {
   overflow: visible;
 }
 
-.selected-ingredients-panel {
-  height: calc(100vh - 40px);
-  overflow-y: auto;
-  color: black; /* Changed from white to black */
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
 
+.scrollable-content {
+  flex: 1 1 auto;
+  min-height: 0; /* This is critical for flex containers with overflow */
+}
 .cart-panel {
   height: calc(100vh - 40px);
   overflow-y: auto;
@@ -2297,11 +2324,7 @@ html.dark-theme .search-input::placeholder {
   color: var(--accent-color);
 }
 
-.ingredients-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-md);
-}
+
 
 .ingredient-item {
   display: flex;
@@ -2315,13 +2338,12 @@ html.dark-theme .search-input::placeholder {
 }
 
 .ingredient-item:hover {
-  background-color: rgba(0, 0, 0, 0.1); /* Changed to a light black background */
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .ingredient-item.selected {
-  background-color: rgba(0, 0, 0, 0.2); /* Changed to a darker black background */
+  background-color: rgba(255, 255, 255, 0.3);
 }
-
 
 .ingredient-checkbox {
   position: relative;
@@ -2374,14 +2396,13 @@ html.dark-theme .search-input::placeholder {
 
 .ingredient-name {
   font-weight: var(--font-weight-5);
-  color: black; /* Added explicit black color */
 }
 
 .ingredient-amount {
   font-size: var(--font-size-0);
   opacity: 0.8;
-  color: black; /* Added explicit black color */
 }
+
 .vendor-discovery {
   width: 100%;
 }
@@ -2986,7 +3007,7 @@ margin-left: var(--space-md);
  }
  
  .hero h1 {
-   font-size: var(--font-size-5);
+   font-size: var(--font-size-8);
  }
  
  .hero p {
@@ -3088,14 +3109,7 @@ margin-left: var(--space-md);
     flex-direction: column;
   }
   
-  .ingredients-panel-container,
-  .cart-panel-container {
-    position: fixed;
-    height: 100%;
-    width: 80% !important; /* Override any inline widths */
-    max-width: 300px;
-    z-index: 200;
-  }
+  
   
   .ingredients-panel-container {
     left: 0;
@@ -3167,6 +3181,7 @@ margin-left: var(--space-md);
    gap: var(--space-xxs);
  }
  
+ 
  .quantity-btn {
    width: 24px;
    height: 24px;
@@ -3234,21 +3249,6 @@ margin-left: var(--space-md);
     flex-direction: column;
   }
   
-  .ingredients-panel-container,
-  .cart-panel-container {
-    position: fixed;
-    height: 100%;
-    width: 80% !important; /* Override any inline widths */
-    max-width: 300px;
-    z-index: 200;
-    transition: transform 0.3s ease;
-  }
-  
-  .ingredients-panel-container {
-    left: 0;
-    transform: translateX(-100%);
-    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  }
   
   .ingredients-panel-container.expanded {
     transform: translateX(0);
@@ -3453,7 +3453,7 @@ margin-left: var(--space-md);
   }
   
   .hero h1 {
-    font-size: var(--font-size-4);
+    font-size: var(--font-size-6);
     margin-top: 8rem; 
     margin-bottom: var(--space-sm);
   }
@@ -3522,6 +3522,7 @@ margin-left: var(--space-md);
 /* -------------------- */
 
 .page-header {
+  display: none;
   background-image: var(--gradient-primary);
   color: white;
   padding: var(--space-xxl) 0;
@@ -4018,14 +4019,6 @@ html {
   border-bottom: none;
 }
 
-.recipe-title {
-  font-size: var(--font-size-2);
-  font-weight: var(--font-weight-5);
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .servings-control {
   display: flex;
@@ -4058,4 +4051,90 @@ html {
   font-weight: 600;
   min-width: 30px;
   text-align: center;
+}
+
+/* First, ensure the container has proper height */
+.ingredients-panel-container {
+  position: relative;
+  height: 100vh;
+  overflow: hidden; /* Important - don't add overflow-y: auto here */
+}
+
+/* Make the panel take up full height with flex column */
+.selected-ingredients-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Critical - don't use overflow-y: auto here */
+  color: white;
+  flex: 1 1 auto; /* This makes it grow to fill space */
+
+}
+
+/* Ensure header doesn't flex grow */
+.panel-header {
+  padding: var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Make the ingredients list fill remaining space */
+.selected-ingredients-list {
+  flex: 1 1 auto; /* This makes it grow to fill space */
+  overflow-y: auto; /* This enables scrolling */
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Critical for flex containers with overflow */
+}
+
+.panel-toggles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.toggle-btn.left-toggle {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 18px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 0;
+  margin-right: 0;
+}
+.toggle-btn.left-toggle:hover {
+  background-color: var(--primary-color-light);
+  color: white;
+}
+
+.toggle-btn.right-toggle {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 18px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 0;
+  margin-right: 0;
+}
+.toggle-btn.right-toggle:hover {
+  background-color: var(--accent-color-light);
+  color: white;
+}
+
+
+
+
+.selected-ingredients-list,
+.scrollable-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }

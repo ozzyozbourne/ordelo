@@ -165,12 +165,12 @@ const standardizeUnit = (amount, unit) => {
     'cups': { factor: 240, unit: 'ml' },
 
     // Count units
-    'piece': { factor: 100, unit: 'gm' },
-    'pieces': { factor: 100, unit: 'gm' },
-    'pcs': { factor: 100, unit: 'gm' },
-    'count': { factor: 100, unit: 'gm' },
-    'unit': { factor: 100, unit: 'gm' },
-    'units': { factor: 100, unit: 'gm' }
+    'piece': { factor: 50, unit: 'gm' },
+    'pieces': { factor: 60, unit: 'gm' },
+    'pcs': { factor: 30, unit: 'gm' },
+    'count': { factor: 50, unit: 'gm' },
+    'unit': { factor: 50, unit: 'gm' },
+    'units': { factor: 10, unit: 'gm' }
   };
 
   // Get the conversion mapping or default to count
@@ -298,6 +298,11 @@ function ShoppingList() {
         },
         body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       console.log('Response data:', data);
 
@@ -310,6 +315,11 @@ function ShoppingList() {
       const stores = JSON.parse(data.ids);
       console.log('Parsed stores:', stores);
       
+      if (!stores || stores.length === 0) {
+        setError("No stores found for the selected items");
+        return;
+      }
+
       // Navigate to shopping page with the store data
       navigate('/shopping', { state: { stores } });
     } catch (err) {
@@ -373,8 +383,8 @@ function ShoppingList() {
             <p>
               Add ingredients to your shopping list by saving recipes.
             </p>
-            <Link to="/" className="btn btn-primary">
-              <i className="fas fa-search"></i> Find Recipes
+            <Link to="/" className="btn btn-primary find-recipes-btn">
+               Find Recipes
             </Link>
           </div>
         </div>
@@ -424,12 +434,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>
@@ -491,12 +501,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>

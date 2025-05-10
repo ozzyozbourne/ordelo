@@ -58,12 +58,6 @@ function Header() {
           >
             <i className="fas fa-store"></i> Shopping
           </Link>
-          <Link 
-            to="/orders" 
-            className={location.pathname === "/orders" ? "active" : ""}
-          >
-            <i className="fas fa-box"></i> Orders
-          </Link>
         </nav>
 
         {/* Login/Account Button */}
@@ -74,6 +68,9 @@ function Header() {
             </button>
             <div className="dropdown-content">
               <Link to="/profile">Profile</Link>
+              <Link to="/orders">
+               Orders
+              </Link>
               <Link to="/saved-recipes">Saved Recipes</Link>
               {user.role === 'vendor' && (
                 <Link to="/vendor/dashboard">Vendor Dashboard</Link>
@@ -111,13 +108,13 @@ function Header() {
           <Link to="/shopping">
             <i className="fas fa-store"></i> Shopping
           </Link>
-          <Link to="/orders">
-            <i className="fas fa-box"></i> Orders
-          </Link>
           {user ? (
             <>
               <Link to="/profile">
                 <i className="fas fa-user"></i> Profile
+              </Link>
+              <Link to="/orders">
+                <i className="fas fa-box"></i> Orders
               </Link>
               <Link to="/saved-recipes">
                 <i className="fas fa-heart"></i> Saved Recipes

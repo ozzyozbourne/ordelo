@@ -239,6 +239,14 @@
   background-color: var(--surface-1);
   border-top: 1px solid var(--surface-3);
   color: var(--text-2);
+  margin-left: 240px;
+  transition: margin-left var(--transition-normal);
+}
+
+@media (max-width: 768px) {
+  .vendor-footer {
+    margin-left: 0;
+  }
 }
 
 /* Store Container */
@@ -293,12 +301,8 @@
   background-color: transparent;
 }
 
-
-
 /* Store Details */
 .store-details {
-  background-color: var(--surface-2);
-  padding: var(--space-md);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
   box-shadow: var(--shadow-1);
@@ -479,4 +483,430 @@
 
 .back-button:hover {
   background-color: #5a6268;
+}
+
+/* Login Page Styles - adapting to existing class names */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, var(--surface-2) 60%, var(--surface-3) 100%);
+}
+
+.login-page h1 {
+  font-size: var(--font-size-6);
+  font-weight: var(--font-weight-7);
+  color: var(--text-1);
+  margin-bottom: var(--space-xxl);
+  padding-bottom: var(--space-xl);
+  letter-spacing: 0.01em;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  padding: var(--space-xl) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.login-form input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-1);
+  font-size: var(--font-size-1);
+  transition: all var(--transition-fast);
+}
+
+.login-form input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 204, 98, 0.12);
+}
+
+.login-form button {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  font-size: var(--font-size-2);
+  font-weight: var(--font-weight-6);
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(94, 204, 98, 0.08);
+  width: 100%;
+}
+
+.login-form button:hover,
+.login-form button:focus {
+  background: linear-gradient(90deg, var(--primary-color-dark) 0%, var(--primary-color) 100%);
+  box-shadow: 0 4px 16px rgba(94, 204, 98, 0.15);
+  transform: translateY(-2px) scale(1.03);
+  outline: none;
+}
+
+.error-message {
+  background-color: rgba(255, 107, 107, 0.1);
+  border-left: 3px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+  text-align: left;
+  width: 100%;
+}
+
+/* Ingredient Management Styles */
+.ingredient-management {
+  padding: var(--space-lg);
+}
+
+.ingredient-form {
+  background-color: var(--surface-1);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  margin-bottom: var(--space-xl);
+}
+
+.ingredient-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md);
+}
+
+.ingredient-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.ingredient-form-group label {
+  font-weight: var(--font-weight-6);
+  color: var(--text-2);
+  font-size: var(--font-size-0);
+}
+
+.ingredient-form-group input,
+.ingredient-form-group select,
+.ingredient-form-group textarea {
+  padding: var(--space-sm);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-1);
+  transition: all var(--transition-fast);
+}
+
+.ingredient-form-group input:focus,
+.ingredient-form-group select:focus,
+.ingredient-form-group textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 204, 98, 0.12);
+}
+
+.ingredient-table {
+  width: 100%;
+  background-color: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.ingredient-table th {
+  background-color: var(--surface-2);
+  padding: var(--space-md);
+  text-align: left;
+  font-weight: var(--font-weight-6);
+  color: var(--text-2);
+  border-bottom: 2px solid var(--surface-3);
+}
+
+.ingredient-table td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--surface-3);
+  vertical-align: middle;
+}
+
+.ingredient-table tr:hover {
+  background-color: var(--surface-2);
+}
+
+.ingredient-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.ingredient-btn {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.ingredient-btn-edit {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.ingredient-btn-delete {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.ingredient-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+.ingredient-status {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  text-align: center;
+  display: inline-block;
+}
+
+.ingredient-status-active {
+  background-color: rgba(94, 204, 98, 0.1);
+  color: var(--primary-color);
+}
+
+.ingredient-status-inactive {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: var(--accent-color);
+}
+
+.ingredient-search {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.ingredient-search input {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-1);
+}
+
+.ingredient-search button {
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ingredient-search button:hover {
+  background-color: var(--primary-color-dark);
+}
+
+.ingredient-pagination {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.ingredient-pagination button {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--surface-3);
+  background-color: var(--surface-1);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ingredient-pagination button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.ingredient-pagination button:hover:not(.active) {
+  background-color: var(--surface-2);
+}
+
+/* Responsive adjustments for ingredient management */
+@media (max-width: 768px) {
+  .ingredient-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ingredient-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .ingredient-search {
+    flex-direction: column;
+  }
+
+  .ingredient-actions {
+    flex-direction: column;
+  }
+}
+
+/* User Management Styles */
+.user-management {
+  padding: var(--space-lg);
+}
+
+.user-table-container {
+  background-color: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow-x: auto;
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--surface-3);
+  vertical-align: middle;
+}
+
+.user-table th {
+  font-weight: var(--font-weight-6);
+  color: var(--text-2);
+  font-size: var(--font-size-0);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--surface-2);
+}
+
+.user-table tr:hover {
+  background-color: rgba(94, 204, 98, 0.05);
+}
+
+.user-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.user-btn {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.user-btn-delete {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.user-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+/* Vendor Management Styles */
+.vendor-management {
+  padding: var(--space-lg);
+}
+
+.vendor-table-container {
+  background-color: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow-x: auto;
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.vendor-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vendor-table th,
+.vendor-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--surface-3);
+  vertical-align: middle;
+}
+
+.vendor-table th {
+  font-weight: var(--font-weight-6);
+  color: var(--text-2);
+  font-size: var(--font-size-0);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--surface-2);
+}
+
+.vendor-table tr:hover {
+  background-color: rgba(94, 204, 98, 0.05);
+}
+
+.vendor-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.vendor-btn {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.vendor-btn-delete {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.vendor-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+/* Responsive adjustments for management pages */
+@media (max-width: 768px) {
+  .user-table,
+  .vendor-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .user-actions,
+  .vendor-actions {
+    flex-direction: column;
+  }
 }

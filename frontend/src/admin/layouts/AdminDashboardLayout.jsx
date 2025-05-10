@@ -31,8 +31,6 @@ const AdminDashboardLayout = ({ children, isSidebarOpen, setIsSidebarOpen }) => 
         </main>
       </div>
 
-      {/* Reused Footer Component */}
-      <Footer />
     </div>
   );
 };

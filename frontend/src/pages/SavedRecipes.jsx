@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useRecipes } from "../context/RecipeContext";
+import "../styles/SavedRecipes.css";
 
 function SavedRecipes() {
   const { user } = useAuth();
-  const { addToShoppingList } = useRecipes();
+  const { addToShoppingList, selectedRecipes, addToSelectedRecipes, removeFromSelected } = useRecipes();
   const navigate = useNavigate();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedRecipes, setSelectedRecipes] = useState([]);
 
   useEffect(() => {
     fetchSavedRecipes();
@@ -50,118 +50,122 @@ function SavedRecipes() {
     }
   };
 
-  const toggleRecipeSelection = (recipeId) => {
-    setSelectedRecipes(prev => {
-      if (prev.includes(recipeId)) {
-        return prev.filter(id => id !== recipeId);
-      } else {
-        return [...prev, recipeId];
-      }
-    });
-  };
-
-  const handleGenerateShoppingList = () => {
-    if (selectedRecipes.length === 0) {
-      setError("Please select at least one recipe");
-      return;
+  const toggleRecipeSelection = (recipe) => {
+    if (selectedRecipes.some(r => r.recipe_id === recipe.recipe_id)) {
+      removeFromSelected(recipe.recipe_id);
+    } else {
+      addToSelectedRecipes(recipe);
     }
-
-    const selectedRecipeItems = recipes
-      .filter(recipe => selectedRecipes.includes(recipe.recipe_id))
-      .flatMap(recipe => recipe.items.map(item => ({
-        id: item.ingredient_id,
-        name: item.name,
-        amount: item.quantity,
-        unit: item.unit,
-        unit_quantity: item.unit_quantity,
-        price: item.price
-      })));
-
-    // Merge similar ingredients
-    const mergedIngredients = selectedRecipeItems.reduce((acc, item) => {
-      const key = `${item.name?.toLowerCase() || ''}-${item.unit || ''}`;
-      if (!acc[key]) {
-        acc[key] = { ...item };
-      } else {
-        acc[key].amount += item.amount;
-      }
-      return acc;
-    }, {});
-
-    addToShoppingList(Object.values(mergedIngredients));
-    navigate('/shopping-list');
   };
 
-  if (loading) return <p>Loading recipes...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) return (
+    <div className="saved-recipes-container">
+      <div className="loading-spinner">
+        <div className="spinner"></div>
+        <p>Loading your recipes...</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="saved-recipes-container">
+      <div className="error-message">
+        <i className="fas fa-exclamation-circle"></i> {error}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-4 flex justify-between items-center">
-        <Link
-          to="/add-recipe"
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-        >
-          Add New Recipe
-        </Link>
-        {recipes.length > 0 && (
-          <button
-            onClick={handleGenerateShoppingList}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            disabled={selectedRecipes.length === 0}
-          >
-            Generate Shopping List ({selectedRecipes.length} selected)
-          </button>
-        )}
+    <div className="saved-recipes-container">
+      <div className="saved-recipes-header">
+        <h1 className="saved-recipes-title">
+          <i className="fas fa-bookmark"></i> Your Saved Recipes
+        </h1>
+        <div className="saved-recipes-actions">
+          <Link to="/add-recipe" className="saved-recipe-btn primary">
+            <i className="fas fa-plus"></i> Add New Recipe
+          </Link>
+        </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-4">Saved Recipes</h1>
-
       {recipes.length === 0 ? (
-        <p>No recipes found.</p>
+        <div className="empty-saved-recipes">
+          <i className="fas fa-book empty-icon"></i>
+          <h3>No Saved Recipes Yet</h3>
+          <p>Start saving recipes to your collection or create your own recipes.</p>
+          <Link to="/" className="saved-recipe-btn primary">
+            <i className="fas fa-search"></i> Browse Recipes
+          </Link>
+        </div>
       ) : (
-        <ul className="space-y-4">
+        <div className="saved-recipes-grid">
           {recipes.map((recipe) => (
-            <li 
-              key={recipe.recipe_id} 
-              className={`border p-4 rounded bg-gray-50 cursor-pointer transition-colors ${
-                selectedRecipes.includes(recipe.recipe_id) ? 'border-blue-500 bg-blue-50' : ''
+            <div
+              key={recipe.recipe_id}
+              className={`saved-recipe-card ${
+                selectedRecipes.some(r => r.recipe_id === recipe.recipe_id) ? 'selected' : ''
               }`}
-              onClick={() => toggleRecipeSelection(recipe.recipe_id)}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-xl font-semibold">{recipe.title}</h2>
-                  <p>{recipe.description}</p>
-                  <p>
-                    <strong>Preparation Time:</strong> {recipe.preparation_time} minutes
-                  </p>
-                  <p>
-                    <strong>Serving Size:</strong> {recipe.serving_size}
-                  </p>
+              <div className="saved-recipe-content">
+                <h3 className="saved-recipe-title">{recipe.title}</h3>
+                
+                <div className="saved-recipe-meta">
+                  <span>
+                    <i className="far fa-clock"></i> {recipe.preparation_time} min
+                  </span>
+                  <span>
+                    <i className="fas fa-utensils"></i> {recipe.serving_size} servings
+                  </span>
                 </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedRecipes.includes(recipe.recipe_id)}
-                    onChange={() => toggleRecipeSelection(recipe.recipe_id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-5 w-5 text-blue-500"
-                  />
+                
+                <p className="saved-recipe-description">{recipe.description}</p>
+                
+                <div className="saved-recipe-ingredients">
+                  <h4>Ingredients:</h4>
+                  <ul className="saved-recipe-ingredients-list">
+                    {recipe.items.map((item, index) => (
+                      <li key={index} className="saved-recipe-ingredient-item">
+                        <span className="saved-recipe-ingredient-quantity">{item.quantity} {item.unit}</span>
+                        <span className="saved-recipe-ingredient-name">{item.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="saved-recipe-actions">
+                  <button
+                    className={`saved-recipe-btn ${
+                      selectedRecipes.some(r => r.recipe_id === recipe.recipe_id) ? 'primary' : 'secondary'
+                    }`}
+                    onClick={() => toggleRecipeSelection(recipe)}
+                  >
+                    {selectedRecipes.some(r => r.recipe_id === recipe.recipe_id) ? (
+                      <>
+                        <i className="fas fa-check-circle"></i> Selected
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-plus-circle"></i> Select
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    className="saved-recipe-btn danger"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this recipe?")) {
+                        // Delete recipe functionality here
+                        console.log("Delete recipe:", recipe.recipe_id);
+                      }
+                    }}
+                  >
+                    <i className="fas fa-trash"></i> Delete
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-2">
-                <h3 className="font-semibold">Items:</h3>
-                {recipe.items.map((item, index) => (
-                  <p key={index}>
-                    {item.quantity} x {item.unit_quantity} {item.unit} {item.name} 
-                  </p>
-                ))}
-              </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

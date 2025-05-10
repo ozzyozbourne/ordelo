@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/AddRecipe.css"; // Import the CSS file
 
 function AddRecipe() {
   const navigate = useNavigate();
@@ -13,14 +14,14 @@ function AddRecipe() {
     items: [],
   });
   const [ingredients, setIngredients] = useState([]);
-  const [ingredientQuantities, setIngredientQuantities] = useState({});
+  const [selectedIngredient, setSelectedIngredient] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      await fetchIngredients();
-    })();
+    fetchIngredients();
   }, []);
 
   const fetchIngredients = async () => {
@@ -46,46 +47,46 @@ function AddRecipe() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setRecipe((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleQuantityChange = (ingredient_id, value) => {
-    setIngredientQuantities((prev) => ({
-      ...prev,
-      [ingredient_id]: value,
-    }));
-  };
+  const handleAddItem = () => {
+    if (!selectedIngredient || !quantity) {
+      setError("Please select an ingredient and enter a quantity");
+      return;
+    }
 
-  const handleAddItem = (ingredient_id) => {
-    const selectedIngredient = ingredients.find(
-      (ing) => ing.ingredient_id === ingredient_id
+    const ingredientToAdd = ingredients.find(
+      (ing) => ing.ingredient_id === selectedIngredient
     );
 
-    if (!selectedIngredient || !ingredientQuantities[ingredient_id]) return;
+    if (!ingredientToAdd) return;
 
     setRecipe((prev) => ({
       ...prev,
       items: [
         ...prev.items,
         {
-          ingredient_id: selectedIngredient.ingredient_id,
-          name: selectedIngredient.name,
-          price: selectedIngredient.price,
-          unit_quantity: selectedIngredient.unit_quantity,
-          unit: selectedIngredient.unit,
-          quantity: parseInt(ingredientQuantities[ingredient_id]),
+          ingredient_id: ingredientToAdd.ingredient_id,
+          name: ingredientToAdd.name,
+          price: ingredientToAdd.price,
+          unit_quantity: ingredientToAdd.unit_quantity,
+          unit: ingredientToAdd.unit,
+          quantity: parseInt(quantity),
         },
       ],
     }));
 
-    setIngredientQuantities((prev) => ({
-      ...prev,
-      [ingredient_id]: "", // Reset quantity field after adding
-    }));
+    // Reset selection and quantity
+    setSelectedIngredient("");
+    setQuantity("");
+    setError(null);
+    // Show brief success message for ingredient add
+    setSuccess("Ingredient added!");
+    setTimeout(() => setSuccess(false), 2000);
   };
 
   const handleRemoveItem = (index) => {
@@ -152,106 +153,154 @@ function AddRecipe() {
   };
 
   return (
-    <div>
-      <h1>Add New Recipe</h1>
+    <div className="add-recipe-container">
+      <h1 className="add-recipe-title">Add New Recipe</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="title"
-          placeholder="Title"
-          value={recipe.title}
-          onChange={handleChange}
-          required
-        />
+      <form className="add-recipe-form" onSubmit={handleSubmit}>
+        <div className="input-group">
+          <label className="input-label">Recipe Title</label>
+          <input
+            type="text"
+            name="title"
+            placeholder="Title"
+            value={recipe.title}
+            onChange={handleChange}
+            required
+            className="add-recipe-input"
+          />
+        </div>
 
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={recipe.description}
-          onChange={handleChange}
-          required
-        />
+        <div className="input-group">
+          <label className="input-label">Description</label>
+          <textarea
+            name="description"
+            placeholder="Description"
+            value={recipe.description}
+            onChange={handleChange}
+            required
+            className="add-recipe-textarea"
+          />
+        </div>
 
-        <input
-          type="number"
-          name="preparation_time"
-          placeholder="Preparation Time (minutes)"
-          value={recipe.preparation_time}
-          onChange={handleChange}
-          min="0"
-        />
+        <div className="recipe-meta-inputs">
+          <div className="input-group">
+            <label className="input-label">Preparation Time (minutes)</label>
+            <input
+              type="number"
+              name="preparation_time"
+              placeholder="Preparation Time"
+              value={recipe.preparation_time}
+              onChange={handleChange}
+              min="0"
+              className="add-recipe-input"
+            />
+          </div>
 
-        <input
-          type="number"
-          name="serving_size"
-          placeholder="Serving Size"
-          value={recipe.serving_size}
-          onChange={handleChange}
-          min="0"
-        />
-
-        <div>
-          <h3>Ingredients / Items</h3>
-
-          {recipe.items.map((item, index) => (
-            <div key={index}>
-              <p>
-                {item.quantity} x {item.unit_quantity} {item.unit} {item.name}
-              </p>
-              <button type="button" onClick={() => handleRemoveItem(index)}>
-                Remove
-              </button>
-            </div>
-          ))}
-
-          <div>
-            <h4>Select Ingredient</h4>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Unit</th>
-                  <th>Add Quantity</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ingredients.map((ing) => (
-                  <tr key={ing.ingredient_id}>
-                    <td>{ing.name}</td>
-                    <td>{ing.unit_quantity} {ing.unit}</td>
-                    <td>
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={ingredientQuantities[ing.ingredient_id] || ""}
-                        onChange={(e) =>
-                          handleQuantityChange(ing.ingredient_id, e.target.value)
-                        }
-                        min="0"
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => handleAddItem(ing.ingredient_id)}
-                      >
-                        Add Item
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="input-group">
+            <label className="input-label">Serving Size</label>
+            <input
+              type="number"
+              name="serving_size"
+              placeholder="Serving Size"
+              value={recipe.serving_size}
+              onChange={handleChange}
+              min="0"
+              className="add-recipe-input"
+            />
           </div>
         </div>
 
-        {error && <p>{error}</p>}
+        <div className="addingredients-section">
+          <h3 className="ingredients-title">
+            <i className="fas fa-utensils"></i> Ingredients
+          </h3>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save Recipe"}
+          {recipe.items.length > 0 ? (
+            <div className="ingredient-list">
+              {recipe.items.map((item, index) => (
+                <div key={index} className="ingredient-item">
+                  <div className="ingredient-info">
+                    <span className="ingredient-name">{item.name}</span>
+                    <span className="ingredient-quantity">
+                      {item.quantity} × {item.unit_quantity} {item.unit}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    className="remove-item-button"
+                  >
+                    <i className="fas fa-times"></i> Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-ingredient-list">
+              <p>No ingredients added yet. Add ingredients below.</p>
+            </div>
+          )}
+
+          <div className="ingredient-controls">
+            <h4 className="ingredient-add-title">Add Ingredients</h4>
+            <div className="ingredient-selection">
+              <div className="input-group">
+                <label className="input-label">Select Ingredient</label>
+                <select
+                  value={selectedIngredient}
+                  onChange={(e) => setSelectedIngredient(e.target.value)}
+                  className="add-recipe-input"
+                >
+                  <option value="">-- Select an ingredient --</option>
+                  {ingredients.map((ing) => (
+                    <option key={ing.ingredient_id} value={ing.ingredient_id}>
+                      {ing.name} ({ing.unit_quantity} {ing.unit})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Quantity</label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="1"
+                  placeholder="Enter quantity"
+                  className="add-recipe-input"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="add-item-button"
+              >
+                <i className="fas fa-plus"></i> Add Ingredient
+              </button>
+            </div>
+          </div>
+          
+          {success && <p className="success-message"><i className="fas fa-check-circle"></i> {success}</p>}
+        </div>
+
+        {error && (
+          <p className="error-message">
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading} className="submit-button">
+          {loading ? (
+            <>
+              <span className="loading-indicator"></span> Saving...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-save"></i> Save Recipe
+            </>
+          )}
         </button>
       </form>
     </div>

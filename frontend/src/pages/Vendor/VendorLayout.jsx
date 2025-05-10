@@ -1,11 +1,11 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext"; // Add this
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 function VendorLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
-  const { logout } = useAuth(); // useAuth for logout
+  const location = useLocation();
+  const { logout } = useAuth();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user")); 
@@ -18,52 +18,77 @@ function VendorLayout() {
     }
   }, [navigate]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
-  const handleLogout = () => {
-    logout(); // logout from auth context
-    navigate("/"); // redirect to home
+  // Check which page is active
+  const isActive = (path) => {
+    return location.pathname.includes(path);
   };
 
   return (
     <div className="vendor-layout-wrapper">
-
-      {/* Header */}
-      <header className="vendor-header">
-        <h2>Vendor Panel</h2>
-        <button onClick={handleLogout}>Logout</button>
-      </header>
-
-      {/* Sidebar Toggle Button (for mobile) */}
-      <button className="mobile-menu-toggle" onClick={toggleSidebar}>
-        <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
-      </button>
-
-      {/* Body (Sidebar + Content) */}
       <div className="vendor-body">
         {/* Sidebar */}
-        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-          <nav>
+        <aside className="vendor-sidebar">
+          <div className="vendor-sidebar-logo">Ordelo Vendor</div>
+          <nav className="vendor-nav">
             <ul>
-              <li><Link to="/vendor/dashboard">Dashboard</Link></li>
-              <li><Link to="/vendor/orders">Orders</Link></li>
-              <li><Link to="/vendor/store">Store</Link></li>
-              <li><Link to="/vendor/add-inventory">Add Products</Link></li>
+              <li>
+                <Link 
+                  to="/vendor/dashboard" 
+                  className={isActive("/dashboard") ? "vendor-nav-link active" : "vendor-nav-link"}
+                >
+                  <i className="fas fa-tachometer-alt"></i>
+                  <span>Dashboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/vendor/orders" 
+                  className={isActive("/orders") ? "vendor-nav-link active" : "vendor-nav-link"}
+                >
+                  <i className="fas fa-shopping-cart"></i>
+                  <span>Orders</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/vendor/store" 
+                  className={isActive("/store") ? "vendor-nav-link active" : "vendor-nav-link"}
+                >
+                  <i className="fas fa-store"></i>
+                  <span>Store</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/vendor/add-inventory" 
+                  className={isActive("/add-inventory") ? "vendor-nav-link active" : "vendor-nav-link"}
+                >
+                  <i className="fas fa-plus-circle"></i>
+                  <span>Add Products</span>
+                </Link>
+              </li>
             </ul>
           </nav>
+          <div className="vendor-sidebar-logout">
+            <button onClick={handleLogout} className="btn vendor-logout-btn">
+              <i className="fas fa-sign-out-alt"></i>
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
-
         {/* Main Content */}
         <main className="vendor-main-content">
           <Outlet />
         </main>
       </div>
-
       {/* Footer */}
       <footer className="vendor-footer">
-        <p>© 2025 Ordelo Vendor Platform</p>
+        <p>© {new Date().getFullYear()} Ordelo Vendor Platform</p>
       </footer>
     </div>
   );
