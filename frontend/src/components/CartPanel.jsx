@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 function CartPanel() {
-  const navigate = useNavigate();
   const { 
     carts, 
     removeCart, 
@@ -15,7 +14,6 @@ function CartPanel() {
   const { user } = useAuth();
 
   const cartVendors = Object.keys(carts);
-  const navigate = useNavigate();
   const cartCount = cartVendors.length;
 
   const handleCheckout = async (vendor_id) => {
