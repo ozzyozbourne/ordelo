@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 function CartPanel() {
+  const navigate = useNavigate();
   const { 
     carts, 
     removeCart, 
@@ -109,7 +110,6 @@ function CartPanel() {
               <div key={vendor_id} className="cart-card">
                 <div className="cart-header">
                   <h3>{cart.vendorName}</h3>
-                  <p className="store-id">Store ID: {cart.store_id}</p>
                   <button 
                     className="remove-cart-btn"
                     onClick={() => removeCart(vendor_id)}

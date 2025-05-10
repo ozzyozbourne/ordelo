@@ -1,96 +1,153 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "/Users/zohaahmed/ordelo/ordelo/frontend/src/context/AuthContext.jsx";
 
 const VendorOrder = () => {
-  const [orders, setOrders] = useState([
-    { id: 1, customer: 'John Doe', item: 'Cake', status: 'Pending' },
-    { id: 2, customer: 'Jane Smith', item: 'Flowers', status: 'Pending' },
-    { id: 3, customer: 'Shahrukh', item: 'Milk, cream, butter', status: 'Pending' },
-    { id: 4, customer: 'Javed', item: 'chips, chocolates', status: 'Pending' },
-    { id: 5, customer: 'Akif', item: 'icecream, hookah', status: 'Pending' },
-    { id: 6, customer: 'Osaid', item: 'paan leaves ', status: 'Pending' },
-  ]);
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const updateStatus = (id, newStatus) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order
-      )
-    );
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8080/vendor/orders", {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch orders");
+      }
+      const data = await response.json();
+      setOrders(data.value || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchOrders();
+    }
+  }, [user?.token]);
+
+  const updateOrderStatus = async (order, newStatus) => {
+    try {
+      const requestBody = {
+        order_id: order.order_id,
+        user_id: order.user_id,
+        order_status: newStatus.toLowerCase()
+      };
+
+      // Convert the object to a JSON string using JSON.stringify
+      const response = await fetch("http://localhost:8080/vendor/userorder/accept", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify(requestBody) // Convert to JSON string
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || "Unknown error";
+        throw new Error(`Failed to update order: ${errorMessage}`);
+      }
+
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.order_id === order.order_id ? { ...o, order_status: newStatus } : o
+        )
+      );
+    } catch (err) {
+      alert("Error updating order: " + err.message);
+    }
   };
 
   const getStatusStyle = (status) => {
     const styles = {
-      Accepted: { color: 'green', fontWeight: 'bold' },
-      Rejected: { color: 'red', fontWeight: 'bold' },
-      Delivered: { color: 'blue', fontWeight: 'bold' },
-      Pending: { color: 'orange', fontWeight: 'bold' },
+      accepted: { color: "green", fontWeight: "bold" },
+      rejected: { color: "red", fontWeight: "bold" },
+      delivered: { color: "blue", fontWeight: "bold" },
+      pending: { color: "orange", fontWeight: "bold" },
     };
-    return styles[status] || {};
+    // Use lowercase for consistent comparison
+    return styles[status?.toLowerCase()] || {};
   };
 
   const buttonStyle = {
-    margin: '0 4px',
-    padding: '4px 8px',
-    border: 'none',
-    borderRadius: '4px',
-    color: 'white',
-    cursor: 'pointer',
+    margin: "0 4px",
+    padding: "4px 8px",
+    border: "none",
+    borderRadius: "4px",
+    color: "white",
+    cursor: "pointer",
   };
 
+  if (loading) return <div>Loading orders...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+    <div style={{ padding: "20px" }}>
+      <h3 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "16px" }}>
         Orders
       </h3>
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          backgroundColor: '#fff',
-        }}
-      >
-        <thead>
-          <tr style={{ borderBottom: '1px solid #ddd' }}>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Order ID</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Item</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px' }}>{order.id}</td>
-              <td style={{ padding: '10px' }}>{order.customer}</td>
-              <td style={{ padding: '10px' }}>{order.item}</td>
-              <td style={{ padding: '10px', ...getStatusStyle(order.status) }}>
-                {order.status}
-              </td>
-              <td style={{ padding: '10px' }}>
-                <button
-                  style={{ ...buttonStyle, backgroundColor: '#4caf50' }}
-                  onClick={() => updateStatus(order.id, 'Accepted')}
-                >
-                  Accept
-                </button>
-                <button
-                  style={{ ...buttonStyle, backgroundColor: '#f44336' }}
-                  onClick={() => updateStatus(order.id, 'Rejected')}
-                >
-                  Reject
-                </button>
-                <button
-                  style={{ ...buttonStyle, backgroundColor: '#2196f3' }}
-                  onClick={() => updateStatus(order.id, 'Delivered')}
-                >
-                  Delivered
-                </button>
-              </td>
+      {orders.length === 0 ? (
+        <div>No orders found</div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "#fff" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #ddd" }}>
+              <th style={{ padding: "12px", textAlign: "left" }}>Order ID</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Customer</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Items</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Status</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.order_id} style={{ borderBottom: "1px solid #eee" }}>
+                <td style={{ padding: "10px" }}>{order.order_id}</td>
+                <td style={{ padding: "10px" }}>{order.customer_name || "N/A"}</td>
+                <td style={{ padding: "10px" }}>
+                  {order.items && order.items.length > 0
+                    ? order.items.map((item) => item.name).join(", ")
+                    : "No items"}
+                </td>
+                <td style={{ padding: "10px", ...getStatusStyle(order.order_status) }}>
+                  {order.order_status}
+                </td>
+                <td style={{ padding: "10px" }}>
+                  <button
+                    style={{ ...buttonStyle, backgroundColor: "#4caf50" }}
+                    onClick={() => updateOrderStatus(order, "accepted")}
+                    disabled={order.order_status === "accepted"}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    style={{ ...buttonStyle, backgroundColor: "#f44336" }}
+                    onClick={() => updateOrderStatus(order, "rejected")}
+                    disabled={order.order_status === "rejected"}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    style={{ ...buttonStyle, backgroundColor: "#2196f3" }}
+                    onClick={() => updateOrderStatus(order, "delivered")}
+                    disabled={order.order_status === "delivered"}
+                  >
+                    Delivered
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

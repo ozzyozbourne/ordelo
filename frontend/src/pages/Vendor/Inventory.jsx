@@ -80,8 +80,6 @@ function Inventory() {
     }
   }, [user]);
 
-  
-  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditFormData((prev) => ({ ...prev, [name]: value }));
@@ -160,6 +158,7 @@ function Inventory() {
                   <th>Unit Quantity</th>
                   <th>Unit</th>
                   <th>Price</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,6 +168,7 @@ function Inventory() {
                     <td>{item.unit_quantity}</td>
                     <td>{item.unit}</td>
                     <td>{item.price}</td>
+               
                   </tr>
                 ))}
               </tbody>
