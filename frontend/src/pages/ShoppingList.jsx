@@ -1,7 +1,8 @@
 // src/components/ShoppingList.jsx
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const FOOD_CATEGORIES = {
   PRODUCE: "Produce",
@@ -128,10 +129,66 @@ const mergeIngredients = (ingredients) => {
   return Object.values(mergedMap);
 };
 
+const standardizeUnit = (amount, unit) => {
+  let unitQuantity = Math.round(amount || 1);
+  let standardizedUnit = (unit || '').toLowerCase().trim();
+
+  // Common unit mappings
+  const unitMappings = {
+    // Weight conversions
+    'kg': { factor: 1000, unit: 'gm' },
+    'kgs': { factor: 1000, unit: 'gm' },
+    'g': { factor: 1, unit: 'gm' },
+    'gram': { factor: 1, unit: 'gm' },
+    'grams': { factor: 1, unit: 'gm' },
+    'oz': { factor: 28.35, unit: 'gm' },
+    'ounce': { factor: 28.35, unit: 'gm' },
+    'ounces': { factor: 28.35, unit: 'gm' },
+    'lb': { factor: 453.592, unit: 'gm' },
+    'pound': { factor: 453.592, unit: 'gm' },
+    'pounds': { factor: 453.592, unit: 'gm' },
+
+    // Volume conversions
+    'l': { factor: 1000, unit: 'ml' },
+    'liter': { factor: 1000, unit: 'ml' },
+    'liters': { factor: 1000, unit: 'ml' },
+    'ml': { factor: 1, unit: 'ml' },
+    'milliliter': { factor: 1, unit: 'ml' },
+    'milliliters': { factor: 1, unit: 'ml' },
+    'tbsp': { factor: 15, unit: 'ml' },
+    'tablespoon': { factor: 15, unit: 'ml' },
+    'tablespoons': { factor: 15, unit: 'ml' },
+    'tsp': { factor: 5, unit: 'ml' },
+    'teaspoon': { factor: 5, unit: 'ml' },
+    'teaspoons': { factor: 5, unit: 'ml' },
+    'cup': { factor: 240, unit: 'ml' },
+    'cups': { factor: 240, unit: 'ml' },
+
+    // Count units
+    'piece': { factor: 50, unit: 'gm' },
+    'pieces': { factor: 60, unit: 'gm' },
+    'pcs': { factor: 30, unit: 'gm' },
+    'count': { factor: 50, unit: 'gm' },
+    'unit': { factor: 50, unit: 'gm' },
+    'units': { factor: 10, unit: 'gm' }
+  };
+
+  // Get the conversion mapping or default to count
+  const mapping = unitMappings[standardizedUnit] || { factor: 100, unit: 'gm' };
+  
+  return {
+    unit_quantity: Math.round(unitQuantity * mapping.factor),
+    unit: mapping.unit
+  };
+};
+
 function ShoppingList() {
   const { shoppingList, removeFromShoppingList, clearShoppingList, addToShoppingList } = useRecipes();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.title = "Shopping List | Ordelo";
@@ -183,6 +240,93 @@ function ShoppingList() {
     removeFromShoppingList(item.id);
     addToShoppingList([{ ...item, amount: newAmount }]);
   }, [removeFromShoppingList, addToShoppingList]);
+
+  const handleShopNow = async () => {
+    if (selectedItems.length === 0) {
+      setError("Please select at least one item to shop for");
+      return;
+    }
+
+    if (!user?.token) {
+      setError("Please log in to continue shopping");
+      return;
+    }
+
+    try {
+      // Get selected ingredients from the shopping list
+      const selectedIngredients = mergedItems
+        .filter(item => selectedItems.includes(item.uniqueId))
+        .map(item => {
+          // Ensure we have valid data
+          if (!item.name) {
+            console.warn('Skipping item with no name:', item);
+            return null;
+          }
+
+          // Use the standardizeUnit function to convert units
+          const { unit_quantity, unit } = standardizeUnit(item.amount, item.unit);
+
+          // Format the data exactly as required
+          return {
+            name: item.name.toLowerCase().trim(),
+            unit_quantity,
+            unit
+          };
+        })
+        .filter(Boolean); // Remove any null items
+
+      if (selectedIngredients.length === 0) {
+        setError("No valid ingredients selected");
+        return;
+      }
+
+      // Log the exact data we're sending
+      console.log('Selected ingredients:', selectedIngredients);
+
+      const requestBody = {
+        compare: selectedIngredients
+      };
+
+      // Log the exact request body
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch("http://localhost:8080/user/items/compare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!data.success) {
+        setError(data.error || "No stores found for the selected items");
+        return;
+      }
+
+      // Parse the stringified JSON from data.ids
+      const stores = JSON.parse(data.ids);
+      console.log('Parsed stores:', stores);
+      
+      if (!stores || stores.length === 0) {
+        setError("No stores found for the selected items");
+        return;
+      }
+
+      // Navigate to shopping page with the store data
+      navigate('/shopping', { state: { stores } });
+    } catch (err) {
+      console.error('Error in handleShopNow:', err);
+      setError(err.message || "An error occurred while searching for stores");
+    }
+  };
 
   return (
       <div className="shopping-list-page fade-in">
@@ -239,8 +383,8 @@ function ShoppingList() {
             <p>
               Add ingredients to your shopping list by saving recipes.
             </p>
-            <Link to="/" className="btn btn-primary">
-              <i className="fas fa-search"></i> Find Recipes
+            <Link to="/" className="btn btn-primary find-recipes-btn">
+               Find Recipes
             </Link>
           </div>
         </div>
@@ -290,12 +434,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>
@@ -357,12 +501,12 @@ function ShoppingList() {
                         <div className="item-image-col">
                           <div className="item-image-container">
                             <img 
-                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/placeholder.jpg'} 
+                              src={item.image ? `https://spoonacular.com/cdn/ingredients_100x100/${item.image}` : '/src/assets/no-recipe-img.png'} 
                               alt={item.name}
                               className="item-image"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.jpg';
+                                e.target.src = '/src/assets/no-recipe-img.png';
                               }}
                             />
                           </div>
@@ -405,9 +549,13 @@ function ShoppingList() {
       {shoppingList.length > 0 && (
         <div className="shop-now-container">
           <p>Ready to purchase these ingredients? Find the best stores near you!</p>
-          <Link to="/shopping" className="btn btn-primary shop-now-btn">
+          <button 
+            onClick={handleShopNow}
+            className="btn btn-primary shop-now-btn"
+            disabled={selectedItems.length === 0}
+          >
             <i className="fas fa-store"></i> Shop Now
-          </Link>
+          </button>
         </div>
       )}
     </div>

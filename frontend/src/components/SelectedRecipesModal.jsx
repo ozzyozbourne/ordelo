@@ -27,7 +27,8 @@ function SelectedRecipesModal() {
   useEffect(() => {
     const initialServings = {};
     selectedRecipes.forEach(recipe => {
-      initialServings[recipe.id] = recipe.servings || 1; // default serving is 1 if missing
+      const recipeId = recipe.id || recipe.recipe_id;
+      initialServings[recipeId] = recipe.servings || recipe.serving_size || 1;
     });
     setRecipeServings(initialServings);
   }, [selectedRecipes]);
@@ -64,18 +65,36 @@ function SelectedRecipesModal() {
 
   const handleGenerateShoppingList = () => {
     const adjustedIngredients = selectedRecipes.flatMap(recipe => {
-      const multiplier = recipeServings[recipe.id] || 1;
-      return (recipe.extendedIngredients || []).map(ing => ({
-        id: ing.id,
-        name: ing.name,
-        amount: (ing.measures?.metric?.amount || 1) * multiplier,
-        unit: ing.measures?.metric?.unitShort || ing.unit || '',
-        image: ing.image || ''
-      }));
+      const recipeId = recipe.id || recipe.recipe_id;
+      const multiplier = recipeServings[recipeId] || 1;
+      
+      // Handle Spoonacular format
+      if (recipe.extendedIngredients) {
+        return recipe.extendedIngredients.map(ing => ({
+          id: ing.id,
+          name: ing.name,
+          amount: (ing.measures?.metric?.amount || 1) * multiplier,
+          unit: ing.measures?.metric?.unitShort || ing.unit || '',
+          image: ing.image || ''
+        }));
+      }
+      
+      // Handle our custom format
+      if (recipe.items) {
+        return recipe.items.map(item => ({
+          id: item.ingredient_id,
+          name: item.name,
+          amount: item.quantity * multiplier,
+          unit: item.unit,
+          unit_quantity: item.unit_quantity,
+          price: item.price
+        }));
+      }
+      
+      return [];
     });
 
     const mergedIngredients = mergeIngredients(adjustedIngredients);
-
     addToShoppingList(mergedIngredients);
     setIsOpen(false);
     navigate('/shopping-list');
@@ -105,31 +124,40 @@ function SelectedRecipesModal() {
             </div>
 
             <div className="selected-recipes-list">
-              {selectedRecipes.map(recipe => (
-                <div key={recipe.id} className="selected-recipe-item">
-                  <img 
-                    src={recipe.image || '/src/assets/placeholder-food.jpg'}
-                    alt={recipe.title}
-                    className="selected-recipe-img"
-                  />
-                  <div className="selected-recipe-details">
-                    <h4>{recipe.title}</h4>
-                    <span>{recipe.readyInMinutes || '30'} min</span>
-                    <div className="servings-control">
-                      <button onClick={() => handleDecreaseServing(recipe.id)} className="serving-btn">-</button>
-                      <span className="serving-count">{recipeServings[recipe.id]}x</span>
-                      <button onClick={() => handleIncreaseServing(recipe.id)} className="serving-btn">+</button>
+              {selectedRecipes.map(recipe => {
+                const recipeId = recipe.id || recipe.recipe_id;
+                return (
+                  <div key={recipeId} className="selected-recipe-item">
+                    {recipe.extendedIngredients && (
+                      <img 
+                        src={recipe.image || '/src/assets/no-recipe-img.png'}
+                        alt={recipe.title}
+                        className="selected-recipe-img"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/src/assets/no-recipe-img.png';
+                        }}
+                      />
+                    )}
+                    <div className="selected-recipe-details">
+                      <h4>{recipe.title}</h4>
+                      <span>{recipe.readyInMinutes || recipe.preparation_time || '30'} min</span>
+                      <div className="servings-control">
+                        <button onClick={() => handleDecreaseServing(recipeId)} className="serving-btn">-</button>
+                        <span className="serving-count">{recipeServings[recipeId]}x</span>
+                        <button onClick={() => handleIncreaseServing(recipeId)} className="serving-btn">+</button>
+                      </div>
                     </div>
+                    <button 
+                      className="remove-selected-btn"
+                      onClick={() => removeFromSelected(recipeId)}
+                      aria-label={`Remove ${recipe.title}`}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
                   </div>
-                  <button 
-                    className="remove-selected-btn"
-                    onClick={() => removeFromSelected(recipe.id)}
-                    aria-label={`Remove ${recipe.title}`}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="modal-actions">

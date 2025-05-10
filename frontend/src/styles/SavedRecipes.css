@@ -1,0 +1,542 @@
+/* src/styles/SavedRecipes.css */
+
+/*
+ * ==============================================
+ * 1. Container & Layout
+ * ==============================================
+ */
+ .saved-recipes-container {
+    max-width: 1200px;
+    margin: var(--space-lg) auto;
+    padding: var(--space-lg);
+    background-color: var(--surface-1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+  }
+  
+  .saved-recipes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--surface-3);
+  }
+  
+  .saved-recipes-title {
+    font-size: var(--font-size-4);
+    font-weight: var(--font-weight-6);
+    color: var(--text-1);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  
+  .saved-recipes-title i {
+    color: var(--primary-color);
+  }
+  
+  .saved-recipes-actions {
+    display: flex;
+    gap: var(--space-sm);
+  }
+  
+  /*
+   * ==============================================
+   * 2. Recipe Cards Grid
+   * ==============================================
+   */
+  .saved-recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+  
+  .saved-recipe-card {
+    background-color: var(--surface-1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: var(--space-md);
+  }
+  
+  .saved-recipe-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-3);
+  }
+  
+  .saved-recipe-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .saved-recipe-title {
+    font-size: var(--font-size-2);
+    font-weight: var(--font-weight-6);
+    margin-bottom: var(--space-sm);
+    color: var(--text-1);
+  }
+  
+  .saved-recipe-meta {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    color: var(--text-2);
+    font-size: var(--font-size-0);
+  }
+  
+  .saved-recipe-meta span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xxs);
+  }
+  
+  .saved-recipe-meta i {
+    color: var(--primary-color);
+  }
+  
+  .saved-recipe-description {
+    margin-bottom: var(--space-md);
+    color: var(--text-2);
+    font-size: var(--font-size-1);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .saved-recipe-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+  
+  .saved-recipe-btn {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-0);
+    font-weight: var(--font-weight-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xxs);
+    transition: all var(--transition-fast);
+  }
+  
+  .saved-recipe-btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+  }
+  
+  .saved-recipe-btn.primary:hover {
+    background-color: var(--primary-color-light);
+    transform: translateY(-2px);
+  }
+  
+  .saved-recipe-btn.secondary {
+    background-color: var(--surface-2);
+    color: var(--text-1);
+    border: none;
+  }
+  
+  .saved-recipe-btn.secondary:hover {
+    background-color: var(--surface-3);
+    transform: translateY(-2px);
+  }
+  
+  .saved-recipe-btn.danger {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+  }
+  
+  .saved-recipe-btn.danger:hover {
+    background-color: var(--accent-color-light);
+    transform: translateY(-2px);
+  }
+  
+  /*
+   * ==============================================
+   * 3. Recipe Selection (Reduced Size)
+   * ==============================================
+   */
+  .recipe-selection {
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm);
+    background-color: var(--surface-2);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size--1);
+  }
+  
+  .recipe-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+  }
+  
+  .recipe-selection-title {
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-6);
+    color: var(--text-1);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  
+  .recipe-selection-actions {
+    display: flex;
+    gap: var(--space-xs);
+  }
+  
+  .selected-recipes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  
+  .selected-recipe-pill {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xxs) var(--space-xs);
+    background-color: var(--surface-1);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size--1);
+    transition: all var(--transition-fast);
+  }
+  
+  .selected-recipe-pill:hover {
+    background-color: var(--primary-color-light);
+    color: white;
+  }
+  
+  .selected-recipe-pill i {
+    font-size: var(--font-size--1);
+  }
+  
+  /*
+   * ==============================================
+   * 4. Shopping List Generation (Reduced)
+   * ==============================================
+   */
+  .shopping-list-generator {
+    padding: var(--space-md);
+    background-color: var(--surface-1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+    margin-bottom: var(--space-lg);
+    text-align: center;
+  }
+  
+  .shopping-list-generator-title {
+    font-size: var(--font-size-2);
+    font-weight: var(--font-weight-6);
+    color: var(--text-1);
+    margin-bottom: var(--space-sm);
+  }
+  
+  .shopping-list-generator-description {
+    color: var(--text-2);
+    margin-bottom: var(--space-md);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: var(--font-size-0);
+  }
+  
+  .generate-list-btn {
+    padding: var(--space-xs) var(--space-lg);
+    background-image: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-6);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    box-shadow: var(--shadow-2);
+  }
+  
+  .generate-list-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-3);
+  }
+  
+  .generate-list-btn:disabled {
+    background: linear-gradient(90deg, #cccccc, #dddddd);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /*
+   * ==============================================
+   * 5. Empty States
+   * ==============================================
+   */
+  .empty-saved-recipes {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    background-color: var(--surface-2);
+    border-radius: var(--radius-lg);
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--text-3);
+    margin-bottom: var(--space-md);
+  }
+  
+  .empty-saved-recipes h3 {
+    font-size: var(--font-size-3);
+    margin-bottom: var(--space-md);
+    color: var(--text-1);
+  }
+  
+  .empty-saved-recipes p {
+    color: var(--text-2);
+    margin-bottom: var(--space-lg);
+  }
+  
+  /*
+   * ==============================================
+   * 6. Responsive Styling
+   * ==============================================
+   */
+  @media (max-width: 768px) {
+    .saved-recipes-container {
+      padding: var(--space-md);
+      width: 95%;
+    }
+  
+    .saved-recipes-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-md);
+    }
+  
+    .saved-recipes-title {
+      font-size: var(--font-size-3);
+    }
+  
+    .saved-recipes-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  
+    .saved-recipes-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: var(--space-md);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-sm);
+    }
+  
+    .saved-recipe-title {
+      font-size: var(--font-size-1);
+    }
+  
+    .saved-recipe-meta {
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+  
+    .saved-recipe-description {
+      font-size: var(--font-size-0);
+      -webkit-line-clamp: 2;
+    }
+  
+    .recipe-selection-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-sm);
+    }
+  
+    .selected-recipes-list {
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+  
+    .selected-recipe-pill {
+      width: 100%;
+      justify-content: space-between;
+    }
+  
+    .shopping-list-generator {
+      padding: var(--space-sm);
+    }
+  
+    .shopping-list-generator-title {
+      font-size: var(--font-size-1);
+    }
+  
+    .generate-list-btn {
+      width: 100%;
+      padding: var(--space-sm);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .saved-recipes-container {
+      padding: var(--space-sm);
+      width: 100%;
+    }
+  
+    .saved-recipes-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-xs);
+    }
+  
+    .saved-recipe-actions {
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+  
+    .saved-recipe-btn {
+      width: 100%;
+      justify-content: center;
+      padding: var(--space-xs);
+      font-size: var(--font-size--1);
+    }
+  
+    .saved-recipe-ingredients {
+      padding: var(--space-xs);
+    }
+  
+    .selected-ingredients-list {
+      max-height: 100px;
+    }
+  
+    .ingredient-item {
+      font-size: var(--font-size--1);
+    }
+  
+    .ingredient-quantity {
+      min-width: 50px;
+    }
+  
+    .empty-saved-recipes {
+      padding: var(--space-md) var(--space-sm);
+    }
+  
+    .empty-icon {
+      font-size: 2rem;
+    }
+  
+    .empty-saved-recipes h3 {
+      font-size: var(--font-size-2);
+    }
+  }
+  
+  /* Add support for very small devices */
+  @media (max-width: 320px) {
+    .saved-recipes-container {
+      padding: var(--space-xs);
+    }
+  
+    .saved-recipes-title {
+      font-size: var(--font-size-2);
+    }
+  
+    .saved-recipe-card {
+      padding: var(--space-xs);
+    }
+  
+    .saved-recipe-meta {
+      font-size: var(--font-size--1);
+    }
+  
+    .selected-ingredients-list {
+      max-height: 80px;
+    }
+  }
+  
+  .saved-recipe-ingredients {
+    margin-bottom: var(--space-md);
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-2);
+  }
+  
+  .saved-recipe-ingredients h4 {
+    position: sticky;
+    top: 0;
+    background-color: var(--surface-2);
+    padding: var(--space-xs);
+    margin: 0;
+    border-bottom: 1px solid var(--surface-3);
+    font-size: var(--font-size-0);
+    color: var(--text-1);
+  }
+  
+  .saved-recipe-ingredients-list {
+    list-style: none;
+    padding: var(--space-xs);
+    margin: 0;
+  }
+  
+  .saved-recipe-ingredient-item {
+    display: flex;
+    gap: var(--space-xs);
+    padding: var(--space-xxs) 0;
+    border-bottom: 1px solid var(--surface-3);
+    font-size: 1rem;
+  }
+  
+  .saved-recipe-ingredient-item:last-child {
+    border-bottom: none;
+  }
+  
+  .saved-recipe-ingredient-quantity {
+    font-weight: var(--font-weight-5);
+    color: var(--primary-color);
+    min-width: 60px;
+    font-size: 0.8rem;
+  }
+  
+  .saved-recipe-ingredient-name {
+    color: var(--text-2);
+    font-size: 0.8rem;
+  }
+  
+  /* Custom scrollbar styles */
+  .saved-recipe-ingredients::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .saved-recipe-ingredients::-webkit-scrollbar-track {
+    background: var(--surface-3);
+    border-radius: var(--radius-full);
+  }
+  
+  .saved-recipe-ingredients::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--radius-full);
+  }
+  
+  .saved-recipe-ingredients::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-light);
+  }
+  

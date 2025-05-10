@@ -1,49 +1,88 @@
-// src/pages/LoginPage.jsx
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-function LoginPage() {
-  const { login } = useAuth();
+const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Get intended destination from route state or default to admin users
-  const from = location.state?.from || '/admin/users';
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (error) setError(null);
+  };
 
-  const handleLogin = (event) => {
-    event.preventDefault();
-    // Add actual form handling here later
-    const simulatedCredentials = { email: 'admin@ordelo.com', password: 'password' };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-    // Use the login function from context
-    const success = login(simulatedCredentials);
+    try {
+      const response = await fetch("http://localhost:8080/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          role: "admin", 
+        }),
+      });
 
-    if (success) {
-      // Navigate to the intended destination after successful login
-      navigate(from, { replace: true });
-    } else {
-      alert("Simulated login failed (only admin role works in this demo).");
+      if (!response.ok) {
+        throw new Error("Invalid email, password or not authorized as admin");
+      }
+
+      const data = await response.json();
+
+      localStorage.setItem("role", "admin");
+      localStorage.setItem("token", data.access_token); 
+
+      login(data); 
+      navigate("/admin/users"); 
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '3rem', maxWidth: '400px', margin: '5rem auto', textAlign: 'center', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff' }}>
+    <div className="login-page">
       <h1>Admin Login</h1>
-      <p>Enter credentials to access the admin panel.</p>
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
-         {/* Basic form elements - enhance later */}
-         <input type="email" placeholder="Email (e.g., admin@ordelo.com)" required style={{padding: '0.8rem'}}/>
-         <input type="password" placeholder="Password" required style={{padding: '0.8rem'}} />
-         <button type="submit" className="btn btn-primary">
-           Login
-         </button>
+      <form onSubmit={handleLogin} className="login-form">
+        {error && <div className="error-message">{error}</div>}
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleInputChange}
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleInputChange}
+          required
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </form>
-      <p style={{marginTop: '1rem', fontSize: '0.9rem', color: '#666'}}>
-          (Note: Authentication is mocked. Click Login to proceed as admin.)
-      </p>
     </div>
   );
-}
+};
 
-export default LoginPage;
+export default AdminLoginPage;

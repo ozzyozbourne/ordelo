@@ -1,5 +1,3 @@
-// src/pages/Home.jsx
-
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
@@ -11,20 +9,18 @@ function Home() {
     recipes, 
     isLoading, 
     error, 
-    savedRecipes,
     searchRecipes, 
     fetchRandomRecipes,
-    filterRecipesByCuisine,
-    toggleSaveRecipe
+    filterRecipesByCuisine
   } = useRecipes();
-  
+
   const [activeCuisine, setActiveCuisine] = useState("all");
   const [hasSearched, setHasSearched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const resultsRef = useRef(null);
 
-  const [visibleRecipes, setVisibleRecipes] = useState(12); // NEW state for Load More
-  
+  const [visibleRecipes, setVisibleRecipes] = useState(12);
+
   const [searchSuggestions] = useState([
     "Pasta", "Pizza", "Curry", "Salad", "Smoothie", 
     "Chicken", "Vegetarian", "Soup", "Dessert", "Breakfast"
@@ -35,7 +31,7 @@ function Home() {
     setHasSearched(true);
     setSearchQuery(query);
     setActiveCuisine("all");
-    setVisibleRecipes(12); // Reset visible count on new search
+    setVisibleRecipes(12);
     
     setTimeout(() => {
       if (resultsRef.current) {
@@ -47,7 +43,7 @@ function Home() {
   const handleCuisineClick = (cuisine) => {
     setActiveCuisine(cuisine);
     setHasSearched(false);
-    setVisibleRecipes(12); // Reset visible count
+    setVisibleRecipes(12);
     
     if (cuisine === "all") {
       fetchRandomRecipes();
@@ -60,10 +56,6 @@ function Home() {
     setHasSearched(false);
     setSearchQuery("");
     setVisibleRecipes(12);
-  };
-
-  const isRecipeSaved = (id) => {
-    return savedRecipes.some(recipe => recipe.id === id);
   };
 
   useEffect(() => {
@@ -93,7 +85,7 @@ function Home() {
         </div>
       </section>
 
-      {/* Search Results (conditionally rendered) */}
+      {/* Search Results */}
       {hasSearched && (
         <section className="section search-results-section" ref={resultsRef}>
           <div className="container">
@@ -105,13 +97,13 @@ function Home() {
                 <i className="fas fa-times"></i> Clear Search
               </button>
             </div>
-            
+
             {error && (
               <div className="error-message">
                 <i className="fas fa-exclamation-circle"></i> {error}
               </div>
             )}
-            
+
             {isLoading ? (
               <div className="loading-spinner">
                 <div className="spinner"></div>
@@ -124,8 +116,6 @@ function Home() {
                     <RecipeCard 
                       key={recipe.id} 
                       recipe={recipe} 
-                      onSave={toggleSaveRecipe}
-                      isSaved={isRecipeSaved(recipe.id)}
                     />
                   ))}
                 </div>
@@ -178,19 +168,19 @@ function Home() {
           </div>
         </section>
 
-        {/* Recipes for selected Cuisine */}
+        {/* Recipes by Cuisine */}
         <section className="section">
           <div className="container">
             <h2 className="section-title">
               {activeCuisine === "all" ? "Hot Picks For You" : `${activeCuisine.charAt(0).toUpperCase() + activeCuisine.slice(1)} Recipes`}
             </h2>
-            
+
             {error && !hasSearched && (
               <div className="error-message">
                 <i className="fas fa-exclamation-circle"></i> {error}
               </div>
             )}
-            
+
             {isLoading && !hasSearched ? (
               <div className="loading-spinner">
                 <div className="spinner"></div>
@@ -203,8 +193,6 @@ function Home() {
                     <RecipeCard 
                       key={recipe.id} 
                       recipe={recipe} 
-                      onSave={toggleSaveRecipe}
-                      isSaved={isRecipeSaved(recipe.id)}
                     />
                   ))}
                 </div>
@@ -239,7 +227,10 @@ function Home() {
               ].map(({ name, img }) => (
                 <div key={name} className="ingredient-card" onClick={() => handleSearch(name)}>
                   <div className="ingredient-img-container">
-                    <img src={img} alt={name} className="ingredient-img" />
+                    <img src={img} alt={name} className="ingredient-img" onError={e => {
+                      e.target.onerror = null;
+                      e.target.src = '/src/assets/no-recipe-img.png';
+                    }} />
                   </div>
                   <h3>{name.charAt(0).toUpperCase() + name.slice(1)}</h3>
                 </div>

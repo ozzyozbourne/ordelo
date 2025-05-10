@@ -23,6 +23,9 @@ function Footer() {
           </div>
 
           <div className="footer-section">
+          <Link to="/vendor/login" className="vlogin-btn">
+            <i className="fas fa-sign-in-alt"></i> Vendor Login
+          </Link>
             <h3>Quick Links</h3>
             <ul className="footer-links">
               <li><Link to="/">Home</Link></li>

@@ -1,303 +1,332 @@
-// src/pages/admin/IngredientManagementPage.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ErrorMessage from '../components/ErrorMessage';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-// Import density map and updated mock data
-import { mockIngredientDensities, mockIngredients } from '../../data/mockData';
-// Import updated converter and new findDensity helper
-import { convertToStandard, findDensity, unitsByType } from '../../utils/unitConverter';
-
 const IngredientManagementPage = () => {
-    const [ingredients, setIngredients] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+  const [ingredients, setIngredients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newIngredient, setNewIngredient] = useState({
+    name: '',
+    unit_quantity: '',
+    unit: '',
+  });
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
-    // State for editing
-    const [editingIngredientId, setEditingIngredientId] = useState(null);
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const token = storedUser?.token;
 
-    // Form State
-    const initialFormState = { name: '', amount: '', unit: '', type: 'solid' };
-    const [formState, setFormState] = useState(initialFormState);
-    const [formError, setFormError] = useState('');
-    const [formSuccess, setFormSuccess] = useState('');
+  const fetchIngredients = async () => {
+    setLoading(true);
+    setError(null);
 
-    // Ref for scrolling
-    const formRef = useRef(null);
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
 
-    // Fetch Initial Data
-    useEffect(() => {
-        setLoading(true);
-        setError(null);
-        const timer = setTimeout(() => {
-            try {
-                setIngredients(mockIngredients);
-            } catch (err) {
-                setError("Failed to load ingredients.");
-                setIngredients([]);
-            } finally {
-                setLoading(false);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
+      if (!response.ok) {
+        throw new Error("Unauthorized or failed to fetch ingredients");
+      }
 
-    // Form Input Change Handler
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormState(prevState => {
-            const newState = { ...prevState, [name]: value };
-            if (name === 'type') {
-                newState.unit = unitsByType[value]?.[0]?.value || '';
-            }
-            return newState;
-        });
-        setFormError('');
-        setFormSuccess('');
+      const data = await response.json();
+      const processed = (data.ingredients || []).map(ingredient => ({
+        _id: ingredient.ingredient_id,
+        name: ingredient.name,
+        unit_quantity: ingredient.unit_quantity,
+        unit: ingredient.unit
+      }));
+
+      setIngredients(processed);
+    } catch (error) {
+      setError("Failed to load ingredients.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchIngredients();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewIngredient(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddIngredient = async (e) => {
+    e.preventDefault();
+    setAdding(true);
+
+    const unitQuantity = parseFloat(newIngredient.unit_quantity);
+    const unit = newIngredient.unit.trim();
+
+    if (!unitQuantity || unitQuantity <= 0 || !unit) {
+      alert("Please enter valid unit quantity and unit (SI units only).");
+      setAdding(false);
+      return;
+    }
+
+    const payload = {
+      ingredients: [
+        {
+          name: newIngredient.name,
+          unit_quantity: unitQuantity,
+          unit: unit
+        }
+      ]
     };
 
-    // Form Submit Handler (Add/Update)
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setFormError('');
-        setFormSuccess('');
-        const { name, amount, unit, type } = formState;
-        const trimmedName = name.trim();
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-        // Validation
-        if (!trimmedName || !amount || !unit || !type) {
-            setFormError("All fields (Name, Amount, Unit, Type) are required.");
-            return;
-        }
-        const numericAmount = parseFloat(amount);
-        if (isNaN(numericAmount) || numericAmount <= 0) {
-            setFormError("Please enter a valid positive number for the amount.");
-            return;
-        }
+      if (!response.ok) {
+        throw new Error("Failed to add ingredient");
+      }
 
-        // Density Lookup
-        let density = null;
-        const requiresDensity = type === 'solid' && ['cup', 'tsp', 'tbsp'].includes(unit);
-        if (requiresDensity) {
-            density = findDensity(trimmedName, mockIngredientDensities);
-            if (density === null) {
-                setFormError(`Cannot convert '${unit}' to grams for "${trimmedName}". Density not found. Please use a weight unit (g, kg, lb, oz) or add density info.`);
-                return;
-            }
-             console.log(`Using density ${density} g/ml for ${trimmedName}`);
-        }
+      await response.json();
+      setNewIngredient({
+        name: '',
+        unit_quantity: '',
+        unit: ''
+      });
+      fetchIngredients();
+    } catch (error) {
+      alert("Failed to add ingredient.");
+    } finally {
+      setAdding(false);
+    }
+  };
 
-        // Conversion
-        const conversionResult = convertToStandard(numericAmount, unit, type, density);
-        if (conversionResult.error) {
-            setFormError(`Conversion Error: ${conversionResult.error}`);
-            return;
-        }
+  const handleDeleteIngredient = async (ingredientId) => {
+    if (!window.confirm(`Are you sure you want to delete this ingredient?`)) {
+      return;
+    }
 
-        // Add vs Update Logic
-        if (editingIngredientId) {
-            // UPDATE
-            const updatedIngredient = {
-                 _id: editingIngredientId, name: trimmedName, type: type,
-                 standardAmount: conversionResult.standardAmount, standardUnit: conversionResult.standardUnit,
-                 originalAmount: numericAmount, originalUnit: unit,
-                 createdAt: ingredients.find(ing => ing._id === editingIngredientId)?.createdAt || new Date().toISOString(),
-            };
-            console.log("Updating Ingredient (Simulated):", updatedIngredient);
-            setIngredients(prev => prev.map(ing => ing._id === editingIngredientId ? updatedIngredient : ing));
-            setFormSuccess(`Successfully updated "${updatedIngredient.name}".`);
-            setEditingIngredientId(null);
-            setFormState(initialFormState);
-        } else {
-            // ADD
-             if (ingredients.some(ing => ing.name.toLowerCase() === trimmedName.toLowerCase())) {
-                 setFormError(`An ingredient named "${trimmedName}" already exists.`);
-                 return;
-             }
-            const newIngredient = {
-                _id: `ing_${Date.now()}_${Math.random().toString(16).slice(2)}`, name: trimmedName, type: type,
-                standardAmount: conversionResult.standardAmount, standardUnit: conversionResult.standardUnit,
-                originalAmount: numericAmount, originalUnit: unit, createdAt: new Date().toISOString(),
-            };
-            console.log("Adding Ingredient (Simulated):", newIngredient);
-            setIngredients(prev => [...prev, newIngredient]);
-            setFormSuccess(`Successfully added "${newIngredient.name}" (${newIngredient.standardAmount} ${newIngredient.standardUnit}).`);
-            setFormState(initialFormState);
-        }
+    const payload = {
+      ingredient_ids: [ingredientId]
     };
 
-    // Edit Handler
-    const handleEdit = (ingredientId) => {
-        const ingredientToEdit = ingredients.find(ing => ing._id === ingredientId);
-        if (ingredientToEdit) {
-            setEditingIngredientId(ingredientId);
-            setFormState({
-                name: ingredientToEdit.name,
-                amount: ingredientToEdit.originalAmount?.toString() ?? ingredientToEdit.standardAmount?.toString() ?? '',
-                unit: ingredientToEdit.originalUnit ?? ingredientToEdit.standardUnit ?? '',
-                type: ingredientToEdit.type,
-            });
-            setFormError('');
-            setFormSuccess('');
-            formRef.current?.scrollIntoView({ behavior: 'smooth' });
-            console.log(`Editing ingredient: ${ingredientToEdit.name}`);
-        } else {
-             console.error(`Ingredient with ID ${ingredientId} not found for editing.`);
-             setError("Could not find the ingredient to edit.");
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete ingredient");
+      }
+
+      await response.json();
+      fetchIngredients();
+    } catch (error) {
+      alert("Failed to delete ingredient.");
+    }
+  };
+
+  const handleEditClick = (ingredient) => {
+    setEditingId(ingredient._id);
+    setEditFormData({
+      name: ingredient.name,
+      unit_quantity: ingredient.unit_quantity,
+      unit: ingredient.unit,
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveEdit = async () => {
+    const payload = {
+      ingredients: [
+        {
+          ingredient_id: editingId,
+          name: editFormData.name,
+          unit_quantity: parseFloat(editFormData.unit_quantity),
+          unit: editFormData.unit,
         }
+      ]
     };
 
-    // Cancel Edit Handler
-    const handleCancelEdit = () => {
-        setEditingIngredientId(null);
-        setFormState(initialFormState);
-        setFormError('');
-        setFormSuccess('');
-        console.log("Cancelled edit.");
-    };
+    try {
+      const response = await fetch("http://localhost:8080/admin/ingredients", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-    // Delete Handler
-    const handleDelete = (ingredientId, ingredientName) => {
-        console.log(`ACTION: Delete ingredient requested: ID=${ingredientId}, Name=${ingredientName}`);
-        if (window.confirm(`Are you sure you want to delete ingredient "${ingredientName}"? This cannot be undone.`)) {
-            setIngredients(current => current.filter(ing => ing._id !== ingredientId));
-            alert(`(Frontend Demo) Deleted ingredient "${ingredientName}" (ID: ${ingredientId}).`);
-            if (editingIngredientId === ingredientId) {
-                handleCancelEdit();
-            }
-        }
-    };
+      if (!response.ok) {
+        throw new Error("Failed to update ingredient");
+      }
 
-    // Filtering Logic
-    const filteredIngredients = ingredients.filter(ingredient =>
-        ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      await response.json();
+      fetchIngredients();
+      setEditingId(null);
+      setEditFormData({});
+    } catch (error) {
+      alert("Failed to update ingredient.");
+    }
+  };
 
-    return (
-        <div>
-            <div className="admin-page-header">
-                <h1>Ingredient Management</h1>
-            </div>
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
 
-            {/* --- Add/Edit Ingredient Form --- */}
-            <div ref={formRef} className="add-ingredient-form card-bg" style={{ padding: '1.5rem', marginBottom: '2rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)' }}>
-                 <h2>{editingIngredientId ? 'Edit Ingredient' : 'Add New Ingredient'}</h2>
-                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                     {formError && <ErrorMessage message={formError} />}
-                     {formSuccess && <div className="success-message">{formSuccess}</div>}
-                     <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', alignItems: 'flex-end' }}>
-                         <div className="form-group">
-                             <label htmlFor="name">Ingredient Name:</label>
-                             <input type="text" id="name" name="name" value={formState.name} onChange={handleInputChange} required className="admin-search-input" style={{width: '100%'}}/>
-                         </div>
-                         <div className="form-group">
-                             <label htmlFor="type">Type:</label>
-                             <select id="type" name="type" value={formState.type} onChange={handleInputChange} required className="admin-select-filter" style={{width: '100%'}}>
-                                 <option value="solid">Solid</option>
-                                 <option value="liquid">Liquid</option>
-                             </select>
-                         </div>
-                         <div className="form-group">
-                             <label htmlFor="amount">Amount:</label>
-                             <input type="number" id="amount" name="amount" value={formState.amount} onChange={handleInputChange} required className="admin-search-input" step="any" min="0.001" placeholder="e.g., 1.5" style={{width: '100%'}}/>
-                         </div>
-                         <div className="form-group">
-                             <label htmlFor="unit">Unit:</label>
-                             <select id="unit" name="unit" value={formState.unit} onChange={handleInputChange} required className="admin-select-filter" style={{width: '100%'}} disabled={!formState.type}>
-                                 <option value="" disabled>Select Unit</option>
-                                 {unitsByType[formState.type]?.map(u => (
-                                     <option key={`${formState.type}-${u.value}`} value={u.value}>{u.label}</option>
-                                 ))}
-                             </select>
-                              {formState.type === 'solid' && ['cup', 'tsp', 'tbsp'].includes(formState.unit) && (
-                                <small style={{marginTop: '4px', color: 'var(--dark-gray)'}}>Density lookup will be used for grams conversion.</small>
-                              )}
-                         </div>
-                     </div>
-                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                         <button type="submit" className="btn btn-primary">
-                            <i className={`fas ${editingIngredientId ? 'fa-save' : 'fa-plus'}`}></i> {editingIngredientId ? 'Update Ingredient' : 'Add Ingredient'}
-                         </button>
-                         {editingIngredientId && (
-                            <button type="button" onClick={handleCancelEdit} className="btn btn-secondary">
-                                <i className="fas fa-times"></i> Cancel Edit
-                            </button>
-                         )}
-                     </div>
-                 </form>
-            </div>
+  return (
+    <div className="ingredient-management">
+      <div className="admin-page-header">
+        <h1>Ingredient Management</h1>
+      </div>
 
-            {/* --- Ingredient List --- */}
-            <h2>Existing Ingredients</h2>
-            {loading && <LoadingSpinner message="Loading ingredients..." />}
-            {error && <ErrorMessage message={error} />}
+      <div className="ingredient-form">
+        <h2>Add New Ingredient</h2>
+        <form onSubmit={handleAddIngredient} className="ingredient-form-grid">
+          <div className="ingredient-form-group">
+            <label htmlFor="name">Ingredient Name</label>
+            <input 
+              id="name"
+              type="text"
+              name="name"
+              placeholder="Enter ingredient name"
+              value={newIngredient.name}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <label htmlFor="unit_quantity">Unit Quantity</label>
+            <input 
+              id="unit_quantity"
+              type="number"
+              name="unit_quantity"
+              placeholder="Enter quantity (SI Units Only)"
+              value={newIngredient.unit_quantity}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <label htmlFor="unit">Unit</label>
+            <input 
+              id="unit"
+              type="text"
+              name="unit"
+              placeholder="Enter unit (gm, ml)"
+              value={newIngredient.unit}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="ingredient-form-group">
+            <button type="submit" className="ingredient-btn ingredient-btn-edit" disabled={adding}>
+              {adding ? "Adding..." : "Add Ingredient"}
+            </button>
+          </div>
+        </form>
+      </div>
 
-            {!loading && !error && (
-              <>
-                <div className="admin-controls">
-                    <input
-                        type="text"
-                        placeholder="Search by name..."
-                        className="admin-search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="admin-table-container">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Input</th>
-                                <th>Standard Amount</th>
-                                <th>Std. Unit</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        {/* --- METICULOUSLY CLEANED TBODY --- */}
-                        <tbody>
-                            {filteredIngredients.length > 0
-                                ? filteredIngredients.map(ingredient => (
-                                    <tr key={ingredient._id}>
-                                        <td>{ingredient.name}</td>
-                                        <td>
-                                            <span className={`status-badge status-${ingredient.type}`}>
-                                                {ingredient.type}
-                                            </span>
-                                        </td>
-                                        <td>{`${ingredient.originalAmount ?? '?'} ${ingredient.originalUnit ?? '?'}`}</td>
-                                        <td>{ingredient.standardAmount}</td>
-                                        <td>{ingredient.standardUnit}</td>
-                                        <td className="admin-table-actions">
-                                            <button onClick={() => handleEdit(ingredient._id)} className="btn btn-light btn-sm" title="Edit Ingredient">
-                                                <i className="fas fa-edit"></i>
-                                            </button>
-                                            <button onClick={() => handleDelete(ingredient._id, ingredient.name)} className="btn btn-danger btn-sm" title="Delete Ingredient">
-                                                <i className="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                                : (
-                                    <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center' }}>
-                                            <div className="no-data-message">
-                                                <i className="fas fa-info-circle"></i> No ingredients found{searchTerm ? ' matching your criteria' : ''}.
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            }
-                        </tbody>
-                        {/* --- END OF CLEANED TBODY --- */}
-                    </table>
-                </div>
-              </>
-            )}
+      {loading && <LoadingSpinner message="Loading ingredients..." />}
+      {error && <ErrorMessage message={error} />}
+
+      {!loading && !error && (
+        <div className="ingredient-table-container">
+          <table className="ingredient-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Unit Quantity</th>
+                <th>Unit (SI)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ingredients.map((ingredient, index) => (
+                <tr key={index}>
+                  {editingId === ingredient._id ? (
+                    <>
+                      <td>
+                        <input
+                          type="text"
+                          name="name"
+                          value={editFormData.name}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          name="unit_quantity"
+                          value={editFormData.unit_quantity}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          name="unit"
+                          value={editFormData.unit}
+                          onChange={handleEditChange}
+                          className="ingredient-form-group input"
+                        />
+                      </td>
+                      <td className="ingredient-actions">
+                        <button onClick={handleSaveEdit} className="ingredient-btn ingredient-btn-edit">Save</button>
+                        <button onClick={handleCancelEdit} className="ingredient-btn ingredient-btn-delete">Cancel</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td>{ingredient.name}</td>
+                      <td>{ingredient.unit_quantity}</td>
+                      <td>{ingredient.unit}</td>
+                      <td className="ingredient-actions">
+                        <button onClick={() => handleEditClick(ingredient)} className="ingredient-btn ingredient-btn-edit">
+                          Edit
+                        </button>
+                        <button onClick={() => handleDeleteIngredient(ingredient._id)} className="ingredient-btn ingredient-btn-delete">
+                          Delete
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default IngredientManagementPage;

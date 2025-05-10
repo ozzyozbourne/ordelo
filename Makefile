@@ -52,4 +52,3 @@ run-win: build-windows
 
 run-linux: build-linux
 	./$(BACKEND)/$(BUILD)/./ordelo-linux
-

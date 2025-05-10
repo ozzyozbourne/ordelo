@@ -32,4 +32,3 @@ export LGTM_GRPC_ENDPOINT="localhost:4317"
 git update-index --assume-unchanged env_test.sh
 
 set +xe
-

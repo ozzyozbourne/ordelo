@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
@@ -8,41 +7,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for existing user session
     const checkAuth = () => {
       setLoading(true);
       const storedUser = localStorage.getItem('user');
-      
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          
-          // Check if token is expired
+
           const tokenData = parseJwt(parsedUser.token);
           const isExpired = tokenData?.exp && tokenData.exp * 1000 < Date.now();
-          
+
           if (isExpired) {
-            // Token expired, clear auth
             localStorage.removeItem('user');
             setUser(null);
           } else {
-            // Valid token, restore user
             setUser(parsedUser);
           }
         } catch (error) {
-          // Invalid stored data
           localStorage.removeItem('user');
           setUser(null);
         }
       }
-      
+
       setLoading(false);
     };
-    
+
     checkAuth();
   }, []);
 
-  // Helper to parse JWT token
   const parseJwt = (token) => {
     try {
       return JSON.parse(atob(token.split('.')[1]));
@@ -51,40 +43,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login function
+  // Unified Login function (for user, vendor, admin)
   const login = (userData) => {
-    // For admin login
-    if (userData.email === "admin@ordelo.com" && userData.password === "password") {
-      const adminUser = {
-        id: 'admin007',
-        name: 'Admin User',
-        email: userData.email,
-        role: 'admin',
-        token: 'mock-admin-token',
-      };
-      
-      setUser(adminUser);
-      localStorage.setItem('user', JSON.stringify(adminUser));
+
+    const normalizedUser = {
+      id: userData.id || userData._id || (userData.user && userData.user.id) || null,
+      name: userData.name || (userData.user && userData.user.name) || '',
+      email: userData.email || (userData.user && userData.user.email) || '',
+      role: userData.role || (userData.user && userData.user.role) || '',
+      token: userData.token || userData.access_token || '',
+      tokenType: userData.token_type || '',
+      expiresIn: userData.expires_in || '',
+    };
+
+    if (normalizedUser.token) {
+      setUser(normalizedUser);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
       return true;
     }
-    
-    // For regular login (with token from API)
-    if (userData.token) {
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return true;
-    }
-    
+
     return false;
   };
 
-  // Logout function
   const logout = () => {
+    // Read the role before clearing anything
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const role = storedUser?.role;
+  
+    // Clear state and localStorage
     setUser(null);
     localStorage.removeItem('user');
-    // Navigation will be handled in components, not here
+    localStorage.clear();
+    window.location.href = '/'; 
   };
-
+  
   const value = { 
     user, 
     loading, 
@@ -103,7 +95,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -41,14 +41,6 @@ const AdminSidebar = ({ isOpen, closeSidebar }) => {
           <i className="fas fa-store"></i>
           <span>Vendors</span>
         </NavLink>
-        <NavLink
-            to="/admin/recipes"
-            className={({ isActive }) => `admin-nav-link ${isActive ? "active" : ""}`}
-            onClick={handleLinkClick}
-        >
-          <i className="fas fa-utensils"></i>
-          <span>Recipes</span>
-        </NavLink>
           <NavLink
                 to="/admin/ingredients"
                 className={({ isActive }) => `admin-nav-link ${isActive ? "active" : ""}`}

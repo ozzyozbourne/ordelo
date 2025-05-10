@@ -25,16 +25,17 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ProfilePage from "./pages/ProfilePage";
 import UserDashboard from "./pages/UserDashboard";
-import VendorDashboard from "./pages/VendorDashboard";
+import VendorLogin from "./pages/VendorLogin";
+import VendorRegister from "./pages/VendorRegister";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RecipeDetails from "./pages/RecipeDetails";
-import HelpAndSupport from "./pages/HelpAndSupport"; // <-- New Import
+import HelpAndSupport from "./pages/HelpAndSupport";
+
 
 // Admin Pages
 import UserManagementPage from "./admin/pages/UserManagementPage";
 import VendorManagementPage from "./admin/pages/VendorManagementPage";
-import RecipeManagementPage from "./admin/pages/RecipeManagementPage";
 import IngredientManagementPage from "./admin/pages/IngredientManagementPage";
 
 // Admin Layout
@@ -44,11 +45,24 @@ import AdminDashboardLayout from "./admin/layouts/AdminDashboardLayout";
 import PrivateRoute from "./components/PrivateRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
+// Vendor Layout
+import VendorLayout from "./pages/Vendor/VendorLayout";
+// Vendor Pages
+import VendorStore from "./pages/Vendor/VendorStore";
+import Inventory from "./pages/Vendor/Inventory";
+import VendorDashboard from "./pages/Vendor/VendorDashboard";
+import AddInventory from "./pages/Vendor/AddInventory";
+import VendorOrder from "./pages/Vendor/VendorOrder";
+
+
 // Styles
 import "./App.css";
 import "./styles/auth.css";
 import "./styles/profile.css";
 import "./styles/admin-styles.css";
+import "./styles/open-props-core.css";
+import "./styles/vendor-styles.css";
+import "./styles/Addrecipe.css";
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -60,7 +74,6 @@ function AdminRoutes() {
           <Route index element={<Navigate to="users" replace />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="vendors" element={<VendorManagementPage />} />
-          <Route path="recipes" element={<RecipeManagementPage />} />
           <Route path="ingredients" element={<IngredientManagementPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
@@ -84,15 +97,9 @@ function App() {
           return;
         }
 
-        const dbOpenRequest = indexedDB.open("ordelo-recipe-cache", 1);
-
-        dbOpenRequest.onerror = (event) => {
-          console.error("IndexedDB error:", event.target.error);
-        };
-
-        dbOpenRequest.onsuccess = () => {
-          console.log("IndexedDB initialized");
-        };
+        // Just verify IndexedDB is available
+        // The actual database operations will be handled by db.js with version 2
+        console.log("IndexedDB is available");
       } catch (error) {
         console.error("IndexedDB check error:", error);
       }
@@ -118,14 +125,32 @@ function App() {
           <ShoppingProvider>
             <ScrollToTop />
             <Routes>
+
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin/*" element={<AdminRoutes />} />
 
-              {/* Auth Routes */}
+              {/* User Auth Routes */}
               <Route path="/login" element={<Login />} />
-              <Route path="/register/:type" element={<Register />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/add-recipe" element={
+                <><Header /> <main>  <AddRecipe/> </main> <Footer />   </>
+              } />
+
+              {/* Vendor Auth Routes */}
+              <Route path="/vendor/login" element={<VendorLogin />} />
+              <Route path="/vendor/register" element={<VendorRegister />} />
+
+              {/* Vendor Layout Routes */}
+              <Route path="/vendor/*" element={<VendorLayout />}>
+                <Route path="dashboard" element={<VendorDashboard />} />
+                <Route path="store" element={<VendorStore />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="add-inventory" element={<AddInventory />} />
+                <Route path="orders" element={<VendorOrder />} />
+
+              </Route>
 
               {/* Public Routes */}
               <Route path="/" element={
@@ -212,16 +237,6 @@ function App() {
                   </>
                 } />
 
-                <Route path="/vendordashboard" element={
-                  <>
-                    <Header />
-                    <main>
-                      <VendorDashboard />
-                    </main>
-                    <Footer />
-                  </>
-                } />
-
                 <Route path="/saved-recipes" element={
                   <>
                     <Header />
@@ -233,15 +248,8 @@ function App() {
                   </>
                 } />
 
-                <Route path="/add-recipe" element={
-                  <>
-                    <Header />
-                    <main>
-                      <AddRecipe />
-                    </main>
-                    <Footer />
-                  </>
-                } />
+
+
               </Route>
 
               {/* Catch-All */}

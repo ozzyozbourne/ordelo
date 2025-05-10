@@ -1,356 +1,308 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRecipes } from "../context/RecipeContext";
+import { useAuth } from "../context/AuthContext";
+import "../styles/AddRecipe.css"; // Import the CSS file
 
 function AddRecipe() {
   const navigate = useNavigate();
-  const { showToast } = useRecipes();
-  
+  const { user } = useAuth();
   const [recipe, setRecipe] = useState({
     title: "",
     description: "",
-    servings: 2,
-    prepTime: 15,
-    cookTime: 30,
-    ingredients: [{ name: "", amount: "", unit: "" }],
-    instructions: [""]
+    preparation_time: 0,
+    serving_size: 0,
+    items: [],
   });
-  
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  
-  const handleInputChange = (e) => {
+  const [ingredients, setIngredients] = useState([]);
+  const [selectedIngredient, setSelectedIngredient] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    fetchIngredients();
+  }, []);
+
+  const fetchIngredients = async () => {
+    try {
+      const token = user?.token;
+
+      const response = await fetch("http://localhost:8080/user/ingredients", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch ingredients");
+
+      const data = await response.json();
+      const parsedIngredients = JSON.parse(data.message);
+
+      setIngredients(parsedIngredients || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setRecipe({ ...recipe, [name]: value });
+    setRecipe((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
-  
-  const handleServingsChange = (value) => {
-    if (value >= 1 && value <= 20) {
-      setRecipe({ ...recipe, servings: value });
+
+  const handleAddItem = () => {
+    if (!selectedIngredient || !quantity) {
+      setError("Please select an ingredient and enter a quantity");
+      return;
     }
+
+    const ingredientToAdd = ingredients.find(
+      (ing) => ing.ingredient_id === selectedIngredient
+    );
+
+    if (!ingredientToAdd) return;
+
+    setRecipe((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          ingredient_id: ingredientToAdd.ingredient_id,
+          name: ingredientToAdd.name,
+          price: ingredientToAdd.price,
+          unit_quantity: ingredientToAdd.unit_quantity,
+          unit: ingredientToAdd.unit,
+          quantity: parseInt(quantity),
+        },
+      ],
+    }));
+
+    // Reset selection and quantity
+    setSelectedIngredient("");
+    setQuantity("");
+    setError(null);
+    // Show brief success message for ingredient add
+    setSuccess("Ingredient added!");
+    setTimeout(() => setSuccess(false), 2000);
   };
-  
-  const handleIngredientChange = (index, field, value) => {
-    const updatedIngredients = [...recipe.ingredients];
-    updatedIngredients[index] = { ...updatedIngredients[index], [field]: value };
-    setRecipe({ ...recipe, ingredients: updatedIngredients });
-  };
-  
-  const handleInstructionChange = (index, value) => {
-    const updatedInstructions = [...recipe.instructions];
-    updatedInstructions[index] = value;
-    setRecipe({ ...recipe, instructions: updatedInstructions });
-  };
-  
-  const addIngredient = () => {
-    setRecipe({
-      ...recipe,
-      ingredients: [...recipe.ingredients, { name: "", amount: "", unit: "" }]
-    });
-  };
-  
-  const removeIngredient = (index) => {
-    if (recipe.ingredients.length > 1) {
-      const updatedIngredients = [...recipe.ingredients];
-      updatedIngredients.splice(index, 1);
-      setRecipe({ ...recipe, ingredients: updatedIngredients });
-    }
-  };
-  
-  const addInstruction = () => {
-    setRecipe({
-      ...recipe,
-      instructions: [...recipe.instructions, ""]
-    });
-  };
-  
-  const removeInstruction = (index) => {
-    if (recipe.instructions.length > 1) {
-      const updatedInstructions = [...recipe.instructions];
-      updatedInstructions.splice(index, 1);
-      setRecipe({ ...recipe, instructions: updatedInstructions });
-    }
-  };
-  
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
+
+  const handleRemoveItem = (index) => {
+    setRecipe((prev) => {
+      const updatedItems = [...prev.items];
+      updatedItems.splice(index, 1);
+      return {
+        ...prev,
+        items: updatedItems,
       };
-      reader.readAsDataURL(file);
-    }
+    });
   };
-  
-  const submitRecipe = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
-    if (!recipe.title.trim()) {
-      showToast("Please add a recipe title", "error");
-      return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = user?.token;
+
+      if (recipe.items.length === 0) {
+        throw new Error("Please add at least one item to recipe");
+      }
+
+      const payload = {
+        recipes: [
+          {
+            title: recipe.title,
+            description: recipe.description,
+            preparation_time: parseInt(recipe.preparation_time) || 0,
+            serving_size: parseInt(recipe.serving_size) || 0,
+            items: recipe.items.map((item) => ({
+              ingredient_id: { $oid: item.ingredient_id },
+              name: item.name,
+              price: item.price,
+              unit_quantity: item.unit_quantity,
+              unit: item.unit,
+              quantity: item.quantity,
+            })),
+          },
+        ],
+      };
+
+      const response = await fetch("http://localhost:8080/user/recipes", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add recipe");
+      }
+
+      navigate("/saved-recipes");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    if (recipe.ingredients.some(ing => !ing.name.trim())) {
-      showToast("Please fill in all ingredient names", "error");
-      return;
-    }
-    
-    if (recipe.instructions.some(inst => !inst.trim())) {
-      showToast("Please fill in all instruction steps", "error");
-      return;
-    }
-    
-    // In a real app, submit to API/database
-    showToast("Recipe submitted successfully!", "success");
-    navigate("/");
   };
-  
-  const discardRecipe = () => {
-    if (window.confirm("Are you sure you want to discard this recipe? All your changes will be lost.")) {
-      navigate("/");
-    }
-  };
-  
+
   return (
-    <div className="add-recipe-page">
-      <div className="page-header">
-        <div className="container">
-          <h1 className="page-title">
-            Add Your Recipe
-          </h1>
-          <p className="page-description">
-            Share your culinary creation with the Ordelo community.
-          </p>
+    <div className="add-recipe-container">
+      <h1 className="add-recipe-title">Add New Recipe</h1>
+
+      <form className="add-recipe-form" onSubmit={handleSubmit}>
+        <div className="input-group">
+          <label className="input-label">Recipe Title</label>
+          <input
+            type="text"
+            name="title"
+            placeholder="Title"
+            value={recipe.title}
+            onChange={handleChange}
+            required
+            className="add-recipe-input"
+          />
         </div>
-      </div>
-      
-      <div className="container">
-        <form className="recipe-form" onSubmit={submitRecipe}>
-          <div className="form-grid">
-            <div className="form-left">
-              <div className="form-section">
-                <h2 className="form-section-title">Basic Information</h2>
-                
-                <div className="form-group">
-                  <label htmlFor="recipe-title">Recipe Title</label>
-                  <input
-                    type="text"
-                    id="recipe-title"
-                    name="title"
-                    value={recipe.title}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Homemade Margherita Pizza"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="recipe-description">Description</label>
-                  <textarea
-                    id="recipe-description"
-                    name="description"
-                    value={recipe.description}
-                    onChange={handleInputChange}
-                    placeholder="Describe your recipe in a few sentences..."
-                    rows="3"
-                  ></textarea>
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="recipe-servings">Servings</label>
-                    <div className="quantity-input">
-                      <button 
-                        type="button" 
-                        className="quantity-btn"
-                        onClick={() => handleServingsChange(recipe.servings - 1)}
-                        disabled={recipe.servings <= 1}
-                      >
-                        <i className="fas fa-minus"></i>
-                      </button>
-                      <input 
-                        type="number" 
-                        id="recipe-servings"
-                        value={recipe.servings}
-                        onChange={(e) => handleServingsChange(parseInt(e.target.value) || 1)}
-                        min="1"
-                        max="20"
-                      />
-                      <button 
-                        type="button" 
-                        className="quantity-btn"
-                        onClick={() => handleServingsChange(recipe.servings + 1)}
-                        disabled={recipe.servings >= 20}
-                      >
-                        <i className="fas fa-plus"></i>
-                      </button>
-                    </div>
+
+        <div className="input-group">
+          <label className="input-label">Description</label>
+          <textarea
+            name="description"
+            placeholder="Description"
+            value={recipe.description}
+            onChange={handleChange}
+            required
+            className="add-recipe-textarea"
+          />
+        </div>
+
+        <div className="recipe-meta-inputs">
+          <div className="input-group">
+            <label className="input-label">Preparation Time (minutes)</label>
+            <input
+              type="number"
+              name="preparation_time"
+              placeholder="Preparation Time"
+              value={recipe.preparation_time}
+              onChange={handleChange}
+              min="0"
+              className="add-recipe-input"
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">Serving Size</label>
+            <input
+              type="number"
+              name="serving_size"
+              placeholder="Serving Size"
+              value={recipe.serving_size}
+              onChange={handleChange}
+              min="0"
+              className="add-recipe-input"
+            />
+          </div>
+        </div>
+
+        <div className="addingredients-section">
+          <h3 className="ingredients-title">
+            <i className="fas fa-utensils"></i> Ingredients
+          </h3>
+
+          {recipe.items.length > 0 ? (
+            <div className="ingredient-list">
+              {recipe.items.map((item, index) => (
+                <div key={index} className="ingredient-item">
+                  <div className="ingredient-info">
+                    <span className="ingredient-name">{item.name}</span>
+                    <span className="ingredient-quantity">
+                      {item.quantity} × {item.unit_quantity} {item.unit}
+                    </span>
                   </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="recipe-prep-time">Prep Time (minutes)</label>
-                    <input
-                      type="number"
-                      id="recipe-prep-time"
-                      name="prepTime"
-                      value={recipe.prepTime}
-                      onChange={handleInputChange}
-                      min="0"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="recipe-cook-time">Cook Time (minutes)</label>
-                    <input
-                      type="number"
-                      id="recipe-cook-time"
-                      name="cookTime"
-                      value={recipe.cookTime}
-                      onChange={handleInputChange}
-                      min="0"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    className="remove-item-button"
+                  >
+                    <i className="fas fa-times"></i> Remove
+                  </button>
                 </div>
-              </div>
-              
-              <div className="form-section">
-                <h2 className="form-section-title">Recipe Image</h2>
-                
-                <div className="image-upload-container">
-                  {imagePreview ? (
-                    <div className="image-preview">
-                      <img src={imagePreview} alt="Recipe preview" />
-                      <button 
-                        type="button" 
-                        className="remove-image-btn"
-                        onClick={() => {
-                          setSelectedImage(null);
-                          setImagePreview(null);
-                        }}
-                      >
-                        <i className="fas fa-times"></i>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="upload-placeholder">
-                      <i className="fas fa-cloud-upload-alt"></i>
-                      <p>Click to upload an image</p>
-                      <span>or drag and drop</span>
-                    </div>
-                  )}
-                  <input 
-                    type="file" 
-                    id="recipe-image" 
-                    accept="image/*" 
-                    onChange={handleImageChange}
-                    className="image-input"
-                  />
-                </div>
-              </div>
-              
-              <div className="form-section">
-                <h2 className="form-section-title">Ingredients</h2>
-                
-                {recipe.ingredients.map((ingredient, index) => (
-                  <div key={index} className="ingredient-row">
-                    <div className="ingredient-inputs">
-                      <input
-                        type="text"
-                        placeholder="Ingredient name"
-                        value={ingredient.name}
-                        onChange={(e) => handleIngredientChange(index, "name", e.target.value)}
-                        required
-                      />
-                      <input
-                        type="text"
-                        placeholder="Amount"
-                        value={ingredient.amount}
-                        onChange={(e) => handleIngredientChange(index, "amount", e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Unit"
-                        value={ingredient.unit}
-                        onChange={(e) => handleIngredientChange(index, "unit", e.target.value)}
-                      />
-                    </div>
-                    <button 
-                      type="button" 
-                      className="remove-item-btn"
-                      onClick={() => removeIngredient(index)}
-                      disabled={recipe.ingredients.length === 1}
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                    </button>
-                  </div>
-                ))}
-                
-                <button 
-                  type="button" 
-                  className="add-item-btn"
-                  onClick={addIngredient}
-                >
-                  <i className="fas fa-plus"></i> Add Ingredient
-                </button>
-              </div>
+              ))}
             </div>
-            
-            <div className="form-right">
-              <div className="form-section">
-                <h2 className="form-section-title">Instructions</h2>
-                
-                {recipe.instructions.map((instruction, index) => (
-                  <div key={index} className="instruction-row">
-                    <div className="instruction-number">{index + 1}</div>
-                    <textarea
-                      placeholder={`Step ${index + 1}`}
-                      value={instruction}
-                      onChange={(e) => handleInstructionChange(index, e.target.value)}
-                      rows="2"
-                      required
-                    ></textarea>
-                    <button 
-                      type="button" 
-                      className="remove-item-btn"
-                      onClick={() => removeInstruction(index)}
-                      disabled={recipe.instructions.length === 1}
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                    </button>
-                  </div>
-                ))}
-                
-                <button 
-                  type="button" 
-                  className="add-item-btn"
-                  onClick={addInstruction}
+          ) : (
+            <div className="empty-ingredient-list">
+              <p>No ingredients added yet. Add ingredients below.</p>
+            </div>
+          )}
+
+          <div className="ingredient-controls">
+            <h4 className="ingredient-add-title">Add Ingredients</h4>
+            <div className="ingredient-selection">
+              <div className="input-group">
+                <label className="input-label">Select Ingredient</label>
+                <select
+                  value={selectedIngredient}
+                  onChange={(e) => setSelectedIngredient(e.target.value)}
+                  className="add-recipe-input"
                 >
-                  <i className="fas fa-plus"></i> Add Step
-                </button>
+                  <option value="">-- Select an ingredient --</option>
+                  {ingredients.map((ing) => (
+                    <option key={ing.ingredient_id} value={ing.ingredient_id}>
+                      {ing.name} ({ing.unit_quantity} {ing.unit})
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              <div className="input-group">
+                <label className="input-label">Quantity</label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="1"
+                  placeholder="Enter quantity"
+                  className="add-recipe-input"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="add-item-button"
+              >
+                <i className="fas fa-plus"></i> Add Ingredient
+              </button>
             </div>
           </div>
           
-          <div className="form-actions">
-            <button 
-              type="button" 
-              className="btn btn-secondary"
-              onClick={discardRecipe}
-            >
-              <i className="fas fa-times"></i> Discard
-            </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-            >
-              <i className="fas fa-check"></i> Submit Recipe
-            </button>
-          </div>
-        </form>
-      </div>
+          {success && <p className="success-message"><i className="fas fa-check-circle"></i> {success}</p>}
+        </div>
+
+        {error && (
+          <p className="error-message">
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading} className="submit-button">
+          {loading ? (
+            <>
+              <span className="loading-indicator"></span> Saving...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-save"></i> Save Recipe
+            </>
+          )}
+        </button>
+      </form>
     </div>
   );
 }
