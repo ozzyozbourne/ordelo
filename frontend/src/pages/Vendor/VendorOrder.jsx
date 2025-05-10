@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 const VendorOrder = () => {
@@ -15,7 +15,7 @@ const VendorOrder = () => {
     try {
       const response = await fetch("http://localhost:8080/vendor/orders", {
         headers: {
-          Authorization: Bearer ${user?.token},
+          Authorization: `Bearer ${user?.token}`,
         },
       });
 
@@ -41,7 +41,7 @@ const VendorOrder = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: Bearer ${user?.token},
+          Authorization: `Bearer ${user?.token}`,
         },
         body: JSON.stringify({
           order_id: order.order_id,
@@ -55,7 +55,15 @@ const VendorOrder = () => {
         throw new Error(errorData.message || "Failed to update order status");
       }
 
-      fetchOrders();
+      // ✅ Update the local state immediately
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.order_id === order.order_id
+            ? { ...o, order_status: newStatus }
+            : o
+        )
+      );
+
     } catch (err) {
       console.error("Error updating order status:", err);
     }
@@ -71,13 +79,8 @@ const VendorOrder = () => {
     return styles[status] || {};
   };
 
-  if (loading) {
-    return <div>Loading orders...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  if (loading) return <div>Loading orders...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -94,8 +97,6 @@ const VendorOrder = () => {
         <thead>
           <tr style={{ borderBottom: '1px solid #ddd' }}>
             <th style={{ padding: '12px', textAlign: 'left' }}>Order ID</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Customer ID</th>
-            <th style={{ padding: '12px', textAlign: 'left' }}>Store ID</th>
             <th style={{ padding: '12px', textAlign: 'left' }}>Items</th>
             <th style={{ padding: '12px', textAlign: 'left' }}>Total Price</th>
             <th style={{ padding: '12px', textAlign: 'left' }}>Delivery Method</th>
@@ -107,10 +108,8 @@ const VendorOrder = () => {
           {orders.map((order) => (
             <tr key={order.order_id} style={{ borderBottom: '1px solid #eee' }}>
               <td style={{ padding: '10px' }}>{order.order_id}</td>
-              <td style={{ padding: '10px' }}>{order.user_id}</td>
-              <td style={{ padding: '10px' }}>{order.store_id}</td>
               <td style={{ padding: '10px' }}>
-                {order.items.map(item => ${item.name} (${item.unit_quantity})).join(', ')}
+                {order.items.map(item => `${item.name} (${item.unit_quantity})`).join(', ')}
               </td>
               <td style={{ padding: '10px' }}>${order.total_price}</td>
               <td style={{ padding: '10px' }}>{order.delivery_method}</td>
@@ -119,7 +118,7 @@ const VendorOrder = () => {
               </td>
               <td style={{ padding: '10px' }}>
                 <button
-                  style={{ 
+                  style={{
                     margin: '0 4px',
                     padding: '4px 8px',
                     border: 'none',
@@ -133,7 +132,7 @@ const VendorOrder = () => {
                   Accept
                 </button>
                 <button
-                  style={{ 
+                  style={{
                     margin: '0 4px',
                     padding: '4px 8px',
                     border: 'none',
@@ -147,7 +146,7 @@ const VendorOrder = () => {
                   Reject
                 </button>
                 <button
-                  style={{ 
+                  style={{
                     margin: '0 4px',
                     padding: '4px 8px',
                     border: 'none',
@@ -156,7 +155,7 @@ const VendorOrder = () => {
                     cursor: 'pointer',
                     backgroundColor: '#2196f3'
                   }}
-                  onClick={() => updateStatus(order.order_id, 'Delivered')}
+                  onClick={() => updateStatus(order, 'Delivered')}
                 >
                   Delivered
                 </button>

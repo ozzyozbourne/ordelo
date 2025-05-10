@@ -1,6 +1,6 @@
 import { useShoppingContext } from "../context/ShoppingContext";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+
 
 function CartPanel() {
   const { 

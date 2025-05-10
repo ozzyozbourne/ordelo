@@ -2241,7 +2241,7 @@ html.dark-theme .search-input::placeholder {
 .selected-ingredients-panel {
   height: calc(100vh - 40px);
   overflow-y: auto;
-  color: black; /* Changed from white to black */
+  color: white;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -2315,13 +2315,12 @@ html.dark-theme .search-input::placeholder {
 }
 
 .ingredient-item:hover {
-  background-color: rgba(0, 0, 0, 0.1); /* Changed to a light black background */
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .ingredient-item.selected {
-  background-color: rgba(0, 0, 0, 0.2); /* Changed to a darker black background */
+  background-color: rgba(255, 255, 255, 0.3);
 }
-
 
 .ingredient-checkbox {
   position: relative;
@@ -2374,14 +2373,13 @@ html.dark-theme .search-input::placeholder {
 
 .ingredient-name {
   font-weight: var(--font-weight-5);
-  color: black; /* Added explicit black color */
 }
 
 .ingredient-amount {
   font-size: var(--font-size-0);
   opacity: 0.8;
-  color: black; /* Added explicit black color */
 }
+
 .vendor-discovery {
   width: 100%;
 }
@@ -2986,7 +2984,7 @@ margin-left: var(--space-md);
  }
  
  .hero h1 {
-   font-size: var(--font-size-5);
+   font-size: var(--font-size-8);
  }
  
  .hero p {
@@ -3166,6 +3164,7 @@ margin-left: var(--space-md);
  .quantity-control {
    gap: var(--space-xxs);
  }
+ 
  
  .quantity-btn {
    width: 24px;
@@ -3453,7 +3452,7 @@ margin-left: var(--space-md);
   }
   
   .hero h1 {
-    font-size: var(--font-size-4);
+    font-size: var(--font-size-6);
     margin-top: 8rem; 
     margin-bottom: var(--space-sm);
   }
@@ -4018,14 +4017,6 @@ html {
   border-bottom: none;
 }
 
-.recipe-title {
-  font-size: var(--font-size-2);
-  font-weight: var(--font-weight-5);
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .servings-control {
   display: flex;

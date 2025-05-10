@@ -165,12 +165,12 @@ const standardizeUnit = (amount, unit) => {
     'cups': { factor: 240, unit: 'ml' },
 
     // Count units
-    'piece': { factor: 100, unit: 'gm' },
-    'pieces': { factor: 100, unit: 'gm' },
-    'pcs': { factor: 100, unit: 'gm' },
-    'count': { factor: 100, unit: 'gm' },
-    'unit': { factor: 100, unit: 'gm' },
-    'units': { factor: 100, unit: 'gm' }
+    'piece': { factor: 50, unit: 'gm' },
+    'pieces': { factor: 60, unit: 'gm' },
+    'pcs': { factor: 30, unit: 'gm' },
+    'count': { factor: 50, unit: 'gm' },
+    'unit': { factor: 50, unit: 'gm' },
+    'units': { factor: 10, unit: 'gm' }
   };
 
   // Get the conversion mapping or default to count
