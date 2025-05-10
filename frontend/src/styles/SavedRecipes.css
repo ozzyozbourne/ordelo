@@ -471,61 +471,72 @@
   }
   
   .saved-recipe-ingredients {
-    margin: 10px 0;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    margin-bottom: var(--space-md);
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-2);
   }
   
   .saved-recipe-ingredients h4 {
-    margin: 0 0 8px 0;
-    color: #333;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-  
-  .selected-ingredients-list {
-    list-style: none;
-    padding: 0;
+    position: sticky;
+    top: 0;
+    background-color: var(--surface-2);
+    padding: var(--space-xs);
     margin: 0;
-    max-height: 120px;
-    overflow-y: auto;
+    border-bottom: 1px solid var(--surface-3);
+    font-size: var(--font-size-0);
+    color: var(--text-1);
   }
   
-  .ingredient-item {
+  .saved-recipe-ingredients-list {
+    list-style: none;
+    padding: var(--space-xs);
+    margin: 0;
+  }
+  
+  .saved-recipe-ingredient-item {
     display: flex;
-    align-items: center;
-    padding: 4px 0;
-    font-size: 0.85rem;
-    color: #555;
+    gap: var(--space-xs);
+    padding: var(--space-xxs) 0;
+    border-bottom: 1px solid var(--surface-3);
+    font-size: 1rem;
   }
   
-  .ingredient-quantity {
-    font-weight: 600;
-    margin-right: 8px;
+  .saved-recipe-ingredient-item:last-child {
+    border-bottom: none;
+  }
+  
+  .saved-recipe-ingredient-quantity {
+    font-weight: var(--font-weight-5);
+    color: var(--primary-color);
     min-width: 60px;
+    font-size: 0.8rem;
   }
   
-  .ingredient-name {
-    flex: 1;
+  .saved-recipe-ingredient-name {
+    color: var(--text-2);
+    font-size: 0.8rem;
   }
   
-  /* Add a subtle scrollbar for the ingredients list */
-  .selected-ingredients-list::-webkit-scrollbar {
+  /* Custom scrollbar styles */
+  .saved-recipe-ingredients::-webkit-scrollbar {
     width: 6px;
   }
   
-  .selected-ingredients-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
+  .saved-recipe-ingredients::-webkit-scrollbar-track {
+    background: var(--surface-3);
+    border-radius: var(--radius-full);
   }
   
-  .selected-ingredients-list::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
+  .saved-recipe-ingredients::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--radius-full);
   }
   
-  .selected-ingredients-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
+  .saved-recipe-ingredients::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-light);
   }
   

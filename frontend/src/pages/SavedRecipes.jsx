@@ -122,11 +122,11 @@ function SavedRecipes() {
                 
                 <div className="saved-recipe-ingredients">
                   <h4>Ingredients:</h4>
-                  <ul className="selected-selected-ingredients-list">
+                  <ul className="saved-recipe-ingredients-list">
                     {recipe.items.map((item, index) => (
-                      <li key={index} className="ingredient-item">
-                        <span className="ingredient-quantity">{item.quantity} {item.unit}</span>
-                        <span className="ingredient-name">{item.name}</span>
+                      <li key={index} className="saved-recipe-ingredient-item">
+                        <span className="saved-recipe-ingredient-quantity">{item.quantity} {item.unit}</span>
+                        <span className="saved-recipe-ingredient-name">{item.name}</span>
                       </li>
                     ))}
                   </ul>
