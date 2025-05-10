@@ -65,6 +65,7 @@ type VendorRepository interface {
 	UpdateVendor(context.Context, *Common) error
 	UpdateStores(context.Context, ID, []*Store) error
 	UpdateVendorOrders(context.Context, ID, []*VendorOrder) error
+	UpdateStoreInventory(context.Context, ID, ID, []int) error
 
 	DeleteVendor(context.Context, ID) error
 	DeleteStores(context.Context, ID, []*ID) error
@@ -364,10 +365,13 @@ func (m MongoVendorRepository) CreateVendorOrders(ctx context.Context, id ID, or
 	ctx, span := Tracer.Start(ctx, "CreateVendorOrders")
 	defer span.End()
 
-	ids := AssignIDs(orders)
-
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
 	filter, update := getFilterPush[[]*VendorOrder](id, "orders", orders)
+
+	ids := make([]*ID, len(orders))
+	for i, v := range orders {
+		ids[i] = &ID{v.ID}
+	}
 
 	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor orders", slog.Any("error", err), user_repo_source)
@@ -559,6 +563,13 @@ func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, or
 
 	Logger.InfoContext(ctx, "Updating orders for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
 	return processContainers[[]*VendorOrder](ctx, m.col, id, orders, vendor_repo_source)
+}
+
+func (m MongoVendorRepository) UpdateStoreInventory(ctx context.Context, id, sid ID, upd []int) error {
+	ctx, span := Tracer.Start(ctx, "UpdateStoreInventory")
+	defer span.End()
+
+	return nil
 }
 
 func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *AcceptUserOrderReq) error {
