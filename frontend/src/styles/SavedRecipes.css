@@ -422,7 +422,7 @@
       padding: var(--space-xs);
     }
   
-    .ingredients-list {
+    .selected-ingredients-list {
       max-height: 100px;
     }
   
@@ -465,7 +465,7 @@
       font-size: var(--font-size--1);
     }
   
-    .ingredients-list {
+    .selected-ingredients-list {
       max-height: 80px;
     }
   }
@@ -484,7 +484,7 @@
     font-weight: 600;
   }
   
-  .ingredients-list {
+  .selected-ingredients-list {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -511,21 +511,21 @@
   }
   
   /* Add a subtle scrollbar for the ingredients list */
-  .ingredients-list::-webkit-scrollbar {
+  .selected-ingredients-list::-webkit-scrollbar {
     width: 6px;
   }
   
-  .ingredients-list::-webkit-scrollbar-track {
+  .selected-ingredients-list::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
   }
   
-  .ingredients-list::-webkit-scrollbar-thumb {
+  .selected-ingredients-list::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 3px;
   }
   
-  .ingredients-list::-webkit-scrollbar-thumb:hover {
+  .selected-ingredients-list::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
   

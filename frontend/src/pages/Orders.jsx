@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/Orders.css";
 
 function Orders() {
   const { user } = useAuth();
@@ -78,18 +79,20 @@ function Orders() {
 
   return (
     <div className="orders-page">
-      <div className="page-header">
-        <div className="container">
-          <h1 className="page-title">
-            <i className="fas fa-box"></i> Your Orders
-          </h1>
-          <p className="page-description">
-            View and track all your orders in one place.
-          </p>
-        </div>
-      </div>
-
       <div className="container">
+        <div className="orders-hero">
+          <div className="orders-hero-content">
+            <div className="orders-hero-text">
+              <h1 className="orders-hero-title">
+                <i className="fas fa-box"></i> Your Orders
+              </h1>
+              <p className="orders-hero-description">
+                View and track all your orders in one place.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {orders.length === 0 ? (
           <div className="empty-orders">
             <div className="empty-state">
@@ -145,15 +148,6 @@ function Orders() {
                         </li>
                       ))}
                     </ul>
-                    
-                    <div className="order-actions">
-                      <button className="btn btn-secondary">
-                        <i className="fas fa-receipt"></i> View Receipt
-                      </button>
-                      <button className="btn btn-primary">
-                        <i className="fas fa-redo"></i> Reorder
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

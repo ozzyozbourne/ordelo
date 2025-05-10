@@ -122,7 +122,7 @@ function SavedRecipes() {
                 
                 <div className="saved-recipe-ingredients">
                   <h4>Ingredients:</h4>
-                  <ul className="ingredients-list">
+                  <ul className="selected-selected-ingredients-list">
                     {recipe.items.map((item, index) => (
                       <li key={index} className="ingredient-item">
                         <span className="ingredient-quantity">{item.quantity} {item.unit}</span>

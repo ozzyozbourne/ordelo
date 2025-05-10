@@ -265,8 +265,8 @@
  * ==============================================
  */
 .submit-button {
-  margin-top: var(--space-lg); /* Reduced from var(--space-xl) */
-  padding: var(--space-md) var(--space-xl);
+  margin-top: var(--space-sm); /* Reduced from var(--space-xl) */
+  padding: var(--space-sm) var(--space-sm);
   background-image: var(--gradient-primary);
   color: white;
   border: none;

@@ -303,8 +303,6 @@
 
 /* Store Details */
 .store-details {
-  background-color: var(--surface-2);
-  padding: var(--space-md);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
   box-shadow: var(--shadow-1);

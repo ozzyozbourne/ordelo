@@ -61,6 +61,8 @@ import "./styles/auth.css";
 import "./styles/profile.css";
 import "./styles/admin-styles.css";
 import "./styles/open-props-core.css";
+import "./styles/vendor-styles.css";
+import "./styles/Addrecipe.css";
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
