@@ -5,9 +5,8 @@ TEST_NAME:=TestReq
 
 $(shell mkdir -p $(BACKEND)/$(BUILD))
 
-.DEFAULT_GOAL := run-linux
-
-.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac
+.DEFAULT_GOAL := run-mac
+.PHONY: build build-mac build-windows build-linux build-all clean test test-race test-coverage lint run-mac run-linux
 
 build: build-all
 
@@ -53,4 +52,3 @@ run-win: build-windows
 
 run-linux: build-linux
 	./$(BACKEND)/$(BUILD)/./ordelo-linux
-
