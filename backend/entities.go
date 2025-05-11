@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -92,6 +94,7 @@ type Order struct {
 	OrderStatus    string        `bson:"order_status" json:"order_status"`
 	TotalPrice     float64       `bson:"total_price" json:"total_price"`
 	Items          []*Item       `bson:"items" json:"items"`
+	CreatedAt      time.Time     `bson:"created_at" json:"created_at"`
 }
 
 type Common struct {
