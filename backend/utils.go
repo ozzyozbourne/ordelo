@@ -491,7 +491,6 @@ func convertToID(ctx context.Context, result *mongo.InsertOneResult) (ID, error)
 		return ID{value: bson.NilObjectID}, fmt.Errorf("error unable to cast result.InsertedID to bson.ObjectID")
 	}
 	return ID{value: res}, nil
-
 }
 
 func findById[U UserType](ctx context.Context, col *mongo.Collection, id ID, source slog.Attr) (user U, err error) {

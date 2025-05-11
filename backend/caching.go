@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -302,7 +303,7 @@ func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID)
 	return r.userRepo.DeleteCarts(ctx, id, ids)
 }
 
-func (r CachedUserRepository) DeleteRecipeItems(ctx context.Context, docId, recipeId ID, items []*ID) error {
+func (r CachedUserRepository) DeleteRecipeItems(ctx context.Context, docId, recipeId ID, items []bson.ObjectID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteRecipeItemsRedis")
 	defer span.End()
 
@@ -313,7 +314,7 @@ func (r CachedUserRepository) DeleteRecipeItems(ctx context.Context, docId, reci
 	return r.userRepo.DeleteRecipeItems(ctx, docId, recipeId, items)
 }
 
-func (r CachedUserRepository) DeleteCartItems(ctx context.Context, docId, cartId ID, items []*ID) error {
+func (r CachedUserRepository) DeleteCartItems(ctx context.Context, docId, cartId ID, items []bson.ObjectID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteCartItemsRedis")
 	defer span.End()
 
