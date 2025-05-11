@@ -802,13 +802,57 @@ func DeleteCarts(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "DeleteCarts")
 
-	Logger.InfoContext(ctx, "Deleting Carts", source)
-	req, err := decodeStruct[RequestCarts](ctx, r.Body, source)
+	Logger.InfoContext(ctx, "Deleting carts ", source)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, "Error in parsing carts request body", source)
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
 		return
 	}
-	updateCon(ctx, w, r, source, req.Carts)
+
+	ids, err := decodeToIDS(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting ids from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.User.DeleteCarts(ctx, id, ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting carts", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "carts deleted successfully"}, source)
+}
+
+func DeleteCartItems(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteCartItems")
+	defer span.End()
+	source := slog.String("source", "DeleteCartItems")
+
+	Logger.InfoContext(ctx, "Deleting cart items ", source)
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	conId, Ids, err := getDeleteIds(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting con ids and items ids array from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.User.DeleteCartItems(ctx, id, conId, Ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting cart items", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "cart items deleted successfully"}, source)
 }
 
 func DeleteStores(w http.ResponseWriter, r *http.Request) {
@@ -817,12 +861,58 @@ func DeleteStores(w http.ResponseWriter, r *http.Request) {
 	source := slog.String("source", "DeleteStores")
 
 	Logger.InfoContext(ctx, "Deleting stores ", source)
-	req, err := decodeStruct[RequestStores](ctx, r.Body, source)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, "Error in parsing Stores request body", source)
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
 		return
 	}
-	updateCon(ctx, w, r, source, req.Stores)
+
+	ids, err := decodeToIDS(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting ids from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.Vendor.DeleteStores(ctx, id, ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in delete stores", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "stores deleted successfully"}, source)
+
+}
+
+func DeleteStoreItems(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteStoreItems")
+	defer span.End()
+	source := slog.String("source", "DeleteStoreItems")
+
+	Logger.InfoContext(ctx, "Deleting Store items ", source)
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	conId, Ids, err := getDeleteIds(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting con ids and items ids array from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.Vendor.DeleteStoreItems(ctx, id, conId, Ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting store items", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "store items deleted successfully"},
+		source)
 }
 
 func DeleteRecipes(w http.ResponseWriter, r *http.Request) {
@@ -830,13 +920,58 @@ func DeleteRecipes(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 	source := slog.String("source", "DeleteRecipes")
 
-	Logger.InfoContext(ctx, "Deleting recipes", source)
-	req, err := decodeStruct[RequestRecipes](ctx, r.Body, source)
+	Logger.InfoContext(ctx, "Deleting Recipes ", source)
+	id, err := getID(r.Context(), source)
 	if err != nil {
-		sendFailure(ctx, w, "Error in parsing recipes request body", source)
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
 		return
 	}
-	updateCon(ctx, w, r, source, req.Recipes)
+
+	ids, err := decodeToIDS(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting ids from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.User.DeleteRecipes(ctx, id, ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in delete recipes", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "recipes deleted successfully"}, source)
+}
+
+func DeleteRecipeItems(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "DeleteRecipeItems")
+	defer span.End()
+	source := slog.String("source", "DeleteRecipeItems")
+
+	Logger.InfoContext(ctx, "Deleting Recipe items ", source)
+	id, err := getID(r.Context(), source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	conId, Ids, err := getDeleteIds(ctx, r.Body, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in getting con ids and items ids array from body", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	if err := Repos.User.DeleteRecipeItems(ctx, id, conId, Ids); err != nil {
+		Logger.ErrorContext(ctx, "Error in deleting recipe items", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &map[string]any{"success": true, "message": "recipe items deleted successfully"},
+		source)
 }
 
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
@@ -1109,13 +1244,39 @@ func getCon[c containers](ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func decodeStruct[req ComConReq](ctx context.Context, r io.Reader, source slog.Attr) (v *req, err error) {
-	Logger.Info("Decode the body to struct", source)
+	Logger.InfoContext(ctx, "Decode the body to struct", source)
 	if err := json.NewDecoder(r).Decode(&v); err != nil {
 		Logger.ErrorContext(ctx, "Unable to parse request body", slog.Any("error", err), source)
 		return nil, err
 	}
-	Logger.Info("Decoded Successfully", source)
+	Logger.InfoContext(ctx, "Decoded Successfully", source)
 	return
+}
+
+func decodeToIDS(ctx context.Context, r io.Reader, source slog.Attr) (ids []*ID, err error) {
+	Logger.InfoContext(ctx, "Decode the body to arrays of *IDs", source)
+	if err = json.NewDecoder(r).Decode(&ids); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse request body", slog.Any("error", err), source)
+		return
+	}
+	Logger.InfoContext(ctx, "Decoded Successfully", source)
+	return
+}
+
+func getDeleteIds(ctx context.Context, r io.Reader, source slog.Attr) (ID, []bson.ObjectID, error) {
+	Logger.InfoContext(ctx, "Decode the body to arrays of items IDs and container id", source)
+	var req struct {
+		Id  ID              `json:"id"`
+		Ids []bson.ObjectID `json:"ids"`
+	}
+
+	if err := json.NewDecoder(r).Decode(&req); err != nil {
+		Logger.ErrorContext(ctx, "Unable to parse request body", slog.Any("error", err), source)
+		return req.Id, req.Ids, err
+	}
+
+	Logger.InfoContext(ctx, "Decoded Successfully", source)
+	return req.Id, req.Ids, nil
 }
 
 func getID(ctx context.Context, source slog.Attr) (ID, error) {
