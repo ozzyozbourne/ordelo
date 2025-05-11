@@ -963,7 +963,7 @@ func createCon[C containers](ctx context.Context, w http.ResponseWriter, r *http
 
 	if len(con) == 0 {
 		Logger.ErrorContext(ctx, "No items provided", source)
-		err = errors.New("No items provided")
+		err = errors.New("no items provided")
 		return
 	}
 

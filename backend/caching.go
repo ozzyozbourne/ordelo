@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -22,17 +23,16 @@ var cached_repo = slog.String("source", "cached_repo")
 func InitCachedMongoRepositories(ctx context.Context, redisClient *redis.Client, mongoClient *mongo.Client, cacheTTL time.Duration) error {
 	ctx, span := Tracer.Start(ctx, "InitCachedMongoRepositories")
 	defer span.End()
-
 	mongoRepos, err := initMongoRepositories(mongoClient)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Unable to init Repos", slog.Any("error", err), cached_repo)
 		return err
 	}
-	// mongoRepos.User = &CachedUserRepository{
-	// 	redis:      redisClient,
-	// 	userRepo:   mongoRepos.User,
-	// 	expiration: cacheTTL,
-	// }
+	mongoRepos.User = &CachedUserRepository{
+		redis:      redisClient,
+		userRepo:   mongoRepos.User,
+		expiration: cacheTTL,
+	}
 
 	Repos = mongoRepos
 	return nil
@@ -42,53 +42,46 @@ func (r CachedUserRepository) CreateUser(ctx context.Context, user *User) (userI
 	ctx, span := Tracer.Start(ctx, "CreateUserRedis")
 	defer span.End()
 
-	if userID, err = r.userRepo.CreateUser(ctx, user); err != nil {
-		return
-	}
-	user.ID = userID.value
-	userData, err := json.Marshal(user)
-	if err != nil {
-		Logger.ErrorContext(ctx, "Error in Marshalling user struct", slog.Any("error", err), cached_repo)
-		return
-	}
-	err = r.PersistInRedis(ctx, userID, userData)
-	return
+	return r.userRepo.CreateUser(ctx, user)
 }
 
-func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) ([]*ID, error) {
+func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) (ids []*ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateRecipesRedis")
 	defer span.End()
 
-	ids, err := r.userRepo.CreateRecipes(ctx, id, recipes)
-	if err != nil {
-		return nil, err
+	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
-	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:recipes", id.String()))
+
+	ids, err_mongo := r.userRepo.CreateRecipes(ctx, id, recipes)
+	err = errors.Join(err, err_mongo)
+	return
 }
 
-func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) ([]*ID, error) {
+func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Cart) (ids []*ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateCartsRedis")
 	defer span.End()
 
-	ids, err := r.userRepo.CreateCarts(ctx, id, carts)
-	if err != nil {
-		return nil, err
+	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
-	return ids, r.Invalidate(ctx, fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:carts", id.String()))
+
+	ids, err_mongo := r.userRepo.CreateCarts(ctx, id, carts)
+	err = errors.Join(err, err_mongo)
+	return
 }
 
-func (r CachedUserRepository) CreateUserOrders(ctx context.Context, id ID, orders []*UserOrder) ([]*ID, error) {
+func (r CachedUserRepository) CreateUserOrders(ctx context.Context, id ID, orders []*UserOrder) (ids []*ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateOrdersRedis")
 	defer span.End()
 
-	ids, err := r.userRepo.CreateUserOrders(ctx, id, orders)
-	if err != nil {
-		return nil, err
+	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
-	user, order := fmt.Sprintf("user:%s", id.String()), fmt.Sprintf("user:%s:orders", id.String())
-	recipe, cart := fmt.Sprintf("user:%s:recipes", id.String()), fmt.Sprintf("user:%s:carts", id.String())
-	keys := []string{user, recipe, cart, order}
-	return ids, r.Invalidate(ctx, keys...)
+
+	ids, err_mongo := r.userRepo.CreateUserOrders(ctx, id, orders)
+	err = errors.Join(err, err_mongo)
+	return
 }
 
 func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (*User, error) {
@@ -114,14 +107,15 @@ func (r CachedUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*Use
 	return nil, nil
 }
 
-func (r CachedUserRepository) UpdateUser(ctx context.Context, user *Common) error {
+func (r CachedUserRepository) UpdateUser(ctx context.Context, user *Common) (err error) {
 	ctx, span := Tracer.Start(ctx, "UpdateUserRedis")
 	defer span.End()
 
-	if err := r.userRepo.UpdateUser(ctx, user); err != nil {
-		return err
+	if err = r.Invalidate(ctx, getCacheKeys(ID{user.ID})[0]); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
-	return r.Invalidate(ctx, fmt.Sprintf("user:%s", user.ID.Hex()))
+	err = errors.Join(err, r.userRepo.UpdateUser(ctx, user))
+	return
 }
 
 func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
@@ -145,6 +139,10 @@ func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*I
 }
 
 func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) error {
+	return nil
+}
+
+func (r CachedUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []*ID) error {
 	return nil
 }
 
@@ -188,4 +186,13 @@ func (r CachedUserRepository) Invalidate(ctx context.Context, keys ...string) er
 	}
 
 	return nil
+}
+
+func getCacheKeys(id ID) []string {
+	user := fmt.Sprintf("user:%s", id.String())
+	recipes := fmt.Sprintf("user:%s:recipes", id.String())
+
+	orders := fmt.Sprintf("user:%s:orders", id.String())
+	carts := fmt.Sprintf("user:%s:carts", id.String())
+	return []string{user, recipes, orders, carts}
 }
