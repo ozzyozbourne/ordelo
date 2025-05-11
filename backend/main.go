@@ -121,10 +121,10 @@ func newHTTPHandler() http.Handler {
 	handleFunc("GET /admin/stores", mid(admin(http.HandlerFunc(AdminGetStores))))
 	handleFunc("GET /admin/ingredients", mid(admin(http.HandlerFunc(AdminGetIngredients))))
 
-	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser)))) /*Nahi daalna hai*/
+	handleFunc("PUT /admin", mid(admin(http.HandlerFunc(UpdateUser))))
 	handleFunc("PUT /admin/ingredients", mid(admin(http.HandlerFunc(AdminUpdateIngredients))))
 
-	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin)))) /*Nahi daalna hai*/
+	handleFunc("DELETE /admin", mid(admin(http.HandlerFunc(DeleteAdmin))))
 	handleFunc("DELETE /admin/user/{id}", mid(admin(http.HandlerFunc(AdminDeleteUser))))
 	handleFunc("DELETE /admin/vendor/{id}", mid(admin(http.HandlerFunc(AdminDeleteVendor))))
 	handleFunc("DELETE /admin/ingredients", mid(admin(http.HandlerFunc(AdminDeleteIngredients))))
@@ -145,6 +145,7 @@ func newHTTPHandler() http.Handler {
 	handleFunc("PUT /vendor", mid(vendor(http.HandlerFunc(UpdateUser))))
 
 	handleFunc("DELETE /vendor/stores", mid(vendor(http.HandlerFunc(DeleteStores))))
+	handleFunc("DELETE /vendor/store/items/", mid(vendor(http.HandlerFunc(DeleteStoreItems))))
 	handleFunc("DELETE /vendor", mid(vendor(http.HandlerFunc(DeleteVendor))))
 	//---------------------------------------------------------
 	//
@@ -166,7 +167,9 @@ func newHTTPHandler() http.Handler {
 	handleFunc("PUT /user/orders", mid(user(http.HandlerFunc(UpdateUserOrders))))
 
 	handleFunc("DELETE /user/recipes", mid(user(http.HandlerFunc(DeleteRecipes))))
+	handleFunc("DELETE /user/recipe/items", mid(user(http.HandlerFunc(DeleteRecipeItems))))
 	handleFunc("DELETE /user/carts", mid(user(http.HandlerFunc(DeleteCarts))))
+	handleFunc("DELETE /user/cart/items", mid(user(http.HandlerFunc(DeleteCartItems))))
 	handleFunc("DELETE /user", mid(user(http.HandlerFunc(DeleteUser))))
 
 	return CORSMiddleware(otelhttp.NewHandler(mux, "/"))
