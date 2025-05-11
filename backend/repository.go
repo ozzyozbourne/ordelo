@@ -49,6 +49,8 @@ type UserRepository interface {
 	DeleteRecipes(context.Context, ID, []*ID) error
 	DeleteCarts(context.Context, ID, []*ID) error
 	DeleteUserOrders(context.Context, ID, []*ID) error
+	DeleteRecipeItems(context.Context, ID, ID, []*ID) error
+	DeleteCartItems(context.Context, ID, ID, []*ID) error
 }
 
 type VendorRepository interface {
@@ -71,6 +73,7 @@ type VendorRepository interface {
 	DeleteVendor(context.Context, ID) error
 	DeleteStores(context.Context, ID, []*ID) error
 	DeleteVendorOrders(context.Context, ID, []*ID) error
+	DeleteStoreItems(context.Context, ID, ID, []*ID) error
 }
 
 type AdminRepository interface {
@@ -329,6 +332,14 @@ func (m MongoUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []
 	}
 
 	Logger.InfoContext(ctx, "Orders deleted successfully", slog.String("userID", id.String()), user_repo_source)
+	return nil
+}
+
+func (m MongoUserRepository) DeleteRecipeItems(ctx context.Context, docId, recipeId ID, items []*ID) error {
+	return nil
+}
+
+func (m MongoUserRepository) DeleteCartItems(ctx context.Context, docId, cartId ID, items []*ID) error {
 	return nil
 }
 
@@ -752,6 +763,10 @@ func (m MongoVendorRepository) DeleteVendorOrders(ctx context.Context, id ID, id
 		return err
 	}
 	Logger.InfoContext(ctx, "Vendor orders deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
+	return nil
+}
+
+func (m MongoVendorRepository) DeleteStoreItems(ctx context.Context, docId, storeId ID, items []*ID) error {
 	return nil
 }
 

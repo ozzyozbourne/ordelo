@@ -302,6 +302,28 @@ func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID)
 	return r.userRepo.DeleteCarts(ctx, id, ids)
 }
 
+func (r CachedUserRepository) DeleteRecipeItems(ctx context.Context, docId, recipeId ID, items []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteRecipeItemsRedis")
+	defer span.End()
+
+	ukey, rkey, _, _ := getCacheKeys(docId)
+	if err := r.Invalidate(ctx, ukey, rkey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	return r.userRepo.DeleteRecipeItems(ctx, docId, recipeId, items)
+}
+
+func (r CachedUserRepository) DeleteCartItems(ctx context.Context, docId, cartId ID, items []*ID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteCartItemsRedis")
+	defer span.End()
+
+	ukey, _, ckey, _ := getCacheKeys(docId)
+	if err := r.Invalidate(ctx, ukey, ckey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	return r.userRepo.DeleteCartItems(ctx, docId, cartId, items)
+}
+
 func (r CachedUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []*ID) error {
 	ctx, span := Tracer.Start(ctx, "DeleteUserOrdersRedis")
 	defer span.End()
