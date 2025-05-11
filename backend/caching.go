@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -92,7 +91,7 @@ func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (user *Us
 				slog.Any("error", err), cached_repo)
 		} else {
 			Logger.InfoContext(ctx, "unmarshalled successfully", cached_repo)
-			return user, err
+			return user, nil
 		}
 	}
 
@@ -111,23 +110,119 @@ func (r CachedUserRepository) FindUserByID(ctx context.Context, id ID) (user *Us
 		Logger.ErrorContext(ctx, "Error caching user in Redis", slog.Any("error", err), cached_repo)
 	}
 
-	return
+	return user, nil
 }
 
 func (r CachedUserRepository) FindUserByEmail(ctx context.Context, email string) (*User, error) {
 	return r.userRepo.FindUserByEmail(ctx, email)
 }
 
-func (r CachedUserRepository) FindRecipes(ctx context.Context, id ID) ([]*Recipe, error) {
-	return nil, nil
+func (r CachedUserRepository) FindRecipes(ctx context.Context, id ID) (recipes []*Recipe, err error) {
+	ctx, span := Tracer.Start(ctx, "FindRecipesRedis")
+	defer span.End()
+
+	_, rKey, _, _ := getCacheKeys(id)
+	recipesData, err := r.redis.Get(ctx, rKey).Bytes()
+	if err == nil {
+		Logger.InfoContext(ctx, "Recipes found in redis", slog.String("userId", id.String()), cached_repo)
+
+		if err := json.Unmarshal(recipesData, &recipes); err != nil {
+			Logger.ErrorContext(ctx, "Error unmarshaling cached recipes data, fetching from DB",
+				slog.Any("error", err), cached_repo)
+		} else {
+			Logger.InfoContext(ctx, "Recipes unmarshalled successfully", cached_repo)
+			return recipes, nil
+		}
+	}
+
+	Logger.InfoContext(ctx, "Fetching recipes from DB", slog.Any("error", err), cached_repo)
+	if recipes, err = r.userRepo.FindRecipes(ctx, id); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "Fetched recipes successfully from DB, persisting in redis", cached_repo)
+	if recipesData, err = json.Marshal(recipes); err != nil {
+		Logger.ErrorContext(ctx, "Error marshaling recipes for cache", slog.Any("error", err), cached_repo)
+		return recipes, nil
+	}
+
+	if err := r.PersistInRedis(ctx, rKey, recipesData); err != nil {
+		Logger.ErrorContext(ctx, "Error caching recipes in Redis", slog.Any("error", err), cached_repo)
+	}
+
+	return recipes, nil
 }
 
-func (r CachedUserRepository) FindCarts(ctx context.Context, id ID) ([]*Cart, error) {
-	return nil, nil
+func (r CachedUserRepository) FindCarts(ctx context.Context, id ID) (carts []*Cart, err error) {
+	ctx, span := Tracer.Start(ctx, "FindCartsRedis")
+	defer span.End()
+
+	_, _, cKey, _ := getCacheKeys(id)
+	cartsData, err := r.redis.Get(ctx, cKey).Bytes()
+	if err == nil {
+		Logger.InfoContext(ctx, "Carts found in redis", slog.String("userId", id.String()), cached_repo)
+
+		if err := json.Unmarshal(cartsData, &carts); err != nil {
+			Logger.ErrorContext(ctx, "Error unmarshaling cached carts data, fetching from DB",
+				slog.Any("error", err), cached_repo)
+		} else {
+			Logger.InfoContext(ctx, "Carts unmarshalled successfully", cached_repo)
+			return carts, nil
+		}
+	}
+
+	Logger.InfoContext(ctx, "Fetching carts from DB", slog.Any("error", err), cached_repo)
+	if carts, err = r.userRepo.FindCarts(ctx, id); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "Fetched carts successfully from DB, persisting in redis", cached_repo)
+	if cartsData, err = json.Marshal(carts); err != nil {
+		Logger.ErrorContext(ctx, "Error marshaling carts for cache", slog.Any("error", err), cached_repo)
+		return carts, nil
+	}
+
+	if err := r.PersistInRedis(ctx, cKey, cartsData); err != nil {
+		Logger.ErrorContext(ctx, "Error caching carts in Redis", slog.Any("error", err), cached_repo)
+	}
+
+	return carts, nil
 }
 
-func (r CachedUserRepository) FindUserOrders(ctx context.Context, id ID) ([]*UserOrder, error) {
-	return nil, nil
+func (r CachedUserRepository) FindUserOrders(ctx context.Context, id ID) (orders []*UserOrder, err error) {
+	ctx, span := Tracer.Start(ctx, "FindUserOrdersRedis")
+	defer span.End()
+
+	_, _, _, oKey := getCacheKeys(id)
+	ordersData, err := r.redis.Get(ctx, oKey).Bytes()
+	if err == nil {
+		Logger.InfoContext(ctx, "Orders found in redis", slog.String("userId", id.String()), cached_repo)
+
+		if err := json.Unmarshal(ordersData, &orders); err != nil {
+			Logger.ErrorContext(ctx, "Error unmarshaling cached orders data, fetching from DB",
+				slog.Any("error", err), cached_repo)
+		} else {
+			Logger.InfoContext(ctx, "Orders unmarshalled successfully", cached_repo)
+			return orders, nil
+		}
+	}
+
+	Logger.InfoContext(ctx, "Fetching orders from DB", slog.Any("error", err), cached_repo)
+	if orders, err = r.userRepo.FindUserOrders(ctx, id); err != nil {
+		return
+	}
+
+	Logger.InfoContext(ctx, "Fetched orders successfully from DB, persisting in redis", cached_repo)
+	if ordersData, err = json.Marshal(orders); err != nil {
+		Logger.ErrorContext(ctx, "Error marshaling orders for cache", slog.Any("error", err), cached_repo)
+		return orders, nil
+	}
+
+	if err := r.PersistInRedis(ctx, oKey, ordersData); err != nil {
+		Logger.ErrorContext(ctx, "Error caching orders in Redis", slog.Any("error", err), cached_repo)
+	}
+
+	return orders, nil
 }
 
 func (r CachedUserRepository) UpdateUser(ctx context.Context, user *Common) error {
