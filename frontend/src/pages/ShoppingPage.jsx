@@ -13,9 +13,7 @@ function ShoppingPage() {
   const { 
     showIngredientsPanel,
     showCartPanel,
-
     carts,
-    isMobile,
     ingredientsPanelRef,
     cartPanelRef,
     setVendors

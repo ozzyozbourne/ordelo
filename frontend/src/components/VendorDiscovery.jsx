@@ -14,10 +14,7 @@ function VendorDiscovery() {
   } = useShoppingContext();
   
   const [searchTerm, setSearchTerm] = useState("");
-
   const hasActiveCarts = Object.keys(carts).length > 0;
-
-  // Flatten all stores and attach vendor name to each
   const allStores = vendors.flatMap((vendor) =>
     vendor.stores
       .filter(store => 
@@ -28,13 +25,12 @@ function VendorDiscovery() {
       )
       .map((store) => ({
         ...store,
-        vendorName: vendor.name,
+        vendor_id: vendor.id,
       }))
   );
 
   return (
     <div className="vendor-discovery">
-      {/* Desktop-only toggle controls */}
       {!isMobile && (
         <div className="panel-toggles">
           <button 
@@ -51,8 +47,6 @@ function VendorDiscovery() {
           </button>
         </div>
       )}
-
-      {/* Mobile-only toggles */}
       {isMobile && (
         <div className="panel-toggles">
           <button 
@@ -75,26 +69,10 @@ function VendorDiscovery() {
       <h1 className="shopping-page-title">
         <i className="fas fa-store"></i> Shop Ingredients
       </h1>
-
-      <div className="search-location-container">
-        <div className="search-container">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search for items or stores..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button className="search-button">
-            <i className="fas fa-search"></i>
-          </button>
-        </div>
-      </div>
-
       <div className="vendors-container">
         {allStores.length > 0 ? (
           allStores.map(store => (
-            <StoreCard key={store.id} store={store} vendorName={store.vendorName} />
+        <StoreCard key={store.id} store={store} vendorId={store.vendor_id} />
           ))
         ) : (
           <div className="empty-state">
@@ -107,5 +85,4 @@ function VendorDiscovery() {
     </div>
   );
 }
-
 export default VendorDiscovery;

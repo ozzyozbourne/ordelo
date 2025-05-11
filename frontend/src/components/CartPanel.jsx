@@ -1,17 +1,18 @@
 import { useShoppingContext } from "../context/ShoppingContext";
 import { useAuth } from "../context/AuthContext";
-
+import { useRecipes } from "../context/RecipeContext";
 
 function CartPanel() {
-  const { 
-    carts, 
-    removeCart, 
-    showCartPanel, 
-    setShowCartPanel, 
-    vendors 
+  const {
+    carts,
+    removeCart,
+    showCartPanel,
+    setShowCartPanel,
+    vendors
   } = useShoppingContext();
-  
+
   const { user } = useAuth();
+  const { showToast } = useRecipes();
 
   const cartVendors = Object.keys(carts);
   const cartCount = cartVendors.length;
@@ -23,7 +24,6 @@ function CartPanel() {
       return;
     }
 
-    // Find the vendor and store information
     const vendor = vendors.find((v) =>
       v.stores.some((store) => store.id === vendor_id)
     );
@@ -34,15 +34,13 @@ function CartPanel() {
       return;
     }
 
-    // Calculate totalPrice directly from cart items
     const totalPrice = cart.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    // Create the order object with the correct structure
     const order = {
-      store_id: vendor_id, // This is the store ID
+      store_id: vendor_id,
       delivery_method: "Deliver",
       order_status: "pending",
       total_price: totalPrice,
@@ -52,14 +50,14 @@ function CartPanel() {
         unit_quantity: item.unitQuantity,
         unit: item.unit,
         price: item.price,
-        quantity: item.quantity || 1 // Added fallback for quantity
+        quantity: item.quantity || 1
       })),
-      vendor_id: vendor.id, // This is the vendor ID
-      payment_status: "success"
+      vendor_id: vendor.id,
+      payment_status: "success",
+      created_at: new Date().toISOString() // ✅ Comma fixed here
     };
 
     try {
-      // Log the request payload for debugging
       console.log('Sending order:', JSON.stringify({ orders: [order] }, null, 2));
 
       const response = await fetch("http://localhost:8080/user/orders", {
@@ -79,11 +77,12 @@ function CartPanel() {
 
       const result = await response.json();
       console.log("Order success:", result);
+      showToast(`Order Request Sent Successfully! Total: $${totalPrice.toFixed(2)}`, "success");
       removeCart(vendor_id);
 
     } catch (error) {
       console.error("Checkout error:", error);
-      // You might want to show an error message to the user here
+      showToast("Failed to place order. Please try again.", "error");
     }
   };
 
@@ -93,7 +92,7 @@ function CartPanel() {
         <h2>Your Carts</h2>
         <span className="cart-count">{cartCount}</span>
       </div>
-      
+
       <div className="carts-container">
         {cartCount > 0 ? (
           cartVendors.map(vendor_id => {
@@ -106,7 +105,7 @@ function CartPanel() {
               <div key={vendor_id} className="cart-card">
                 <div className="cart-header">
                   <h3>{cart.vendorName}</h3>
-                  <button 
+                  <button
                     className="remove-cart-btn"
                     onClick={() => removeCart(vendor_id)}
                   >
@@ -130,8 +129,8 @@ function CartPanel() {
                   <span className="cart-total">Total: ${totalPrice.toFixed(2)}</span>
                 </div>
 
-                <button 
-                  className="checkout-btn" 
+                <button
+                  className="checkout-btn"
                   onClick={() => handleCheckout(vendor_id)}
                 >
                   <i className="fas fa-shopping-bag"></i> Checkout
