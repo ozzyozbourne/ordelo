@@ -808,7 +808,7 @@ func DeleteCarts(w http.ResponseWriter, r *http.Request) {
 		sendFailure(ctx, w, "Error in parsing carts request body", source)
 		return
 	}
-	createCon(ctx, w, r, source, req.Carts)
+	updateCon(ctx, w, r, source, req.Carts)
 }
 
 func DeleteStores(w http.ResponseWriter, r *http.Request) {

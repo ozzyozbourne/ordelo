@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -49,6 +48,8 @@ type UserRepository interface {
 	DeleteRecipes(context.Context, ID, []*ID) error
 	DeleteCarts(context.Context, ID, []*ID) error
 	DeleteUserOrders(context.Context, ID, []*ID) error
+	DeleteRecipeItems(context.Context, ID, ID, []bson.ObjectID) error
+	DeleteCartItems(context.Context, ID, ID, []bson.ObjectID) error
 }
 
 type VendorRepository interface {
@@ -71,6 +72,7 @@ type VendorRepository interface {
 	DeleteVendor(context.Context, ID) error
 	DeleteStores(context.Context, ID, []*ID) error
 	DeleteVendorOrders(context.Context, ID, []*ID) error
+	DeleteStoreItems(context.Context, ID, ID, []bson.ObjectID) error
 }
 
 type AdminRepository interface {
@@ -332,6 +334,26 @@ func (m MongoUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []
 	return nil
 }
 
+func (m MongoUserRepository) DeleteRecipeItems(ctx context.Context, docId, recipeId ID, items []bson.ObjectID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteRecipeItems")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting items from recipe", slog.String("userID", docId.String()),
+		slog.String("recipeId", recipeId.String()), slog.Any("items", items), user_repo_source)
+
+	return processDeleteItems(ctx, m.col, docId, recipeId, "saved_recipes", items, user_repo_source)
+}
+
+func (m MongoUserRepository) DeleteCartItems(ctx context.Context, docId, cartId ID, items []bson.ObjectID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteCartItems")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting items from cart", slog.String("userID", docId.String()),
+		slog.String("cartId", cartId.String()), slog.Any("items", items), user_repo_source)
+
+	return processDeleteItems(ctx, m.col, docId, cartId, "carts", items, user_repo_source)
+}
+
 func (m MongoVendorRepository) CreateVendor(ctx context.Context, vendor *Vendor) (res ID, err error) {
 	ctx, span := Tracer.Start(ctx, "CreateVendor")
 	defer span.End()
@@ -411,7 +433,6 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Finding ingredients across all vendors", slog.Any("requirements", req), vendor_repo_source)
-
 	cursor, err := m.col.Find(ctx, bson.D{})
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error finding vendors", slog.Any("error", err), vendor_repo_source)
@@ -426,12 +447,10 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), vendor_repo_source)
 			continue
 		}
-
 		vendorResult := &ResIng{
 			ID:     vendor.ID,
 			Stores: []*Store{},
 		}
-
 		for _, store := range vendor.Stores {
 			storeMatch := &Store{
 				ID:        store.ID,
@@ -442,24 +461,44 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 			}
 			for _, reqIng := range req {
 				var bestMatch *Item
-				var minDiff int = math.MinInt32
+				exactMatchFound := false
+
 				for _, item := range store.Items {
+					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity == reqIng.UnitQuantity {
+						bestMatch = &Item{
+							Ingredient: Ingredient{
+								IngredientID: item.IngredientID,
+								Name:         item.Name,
+								UnitQuantity: item.UnitQuantity,
+								Unit:         item.Unit,
+								Price:        item.Price,
+							},
+							Quantity: item.Quantity,
+						}
+						exactMatchFound = true
+						break
+					}
+				}
 
-					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity >= reqIng.UnitQuantity {
-						diff := item.UnitQuantity - reqIng.UnitQuantity
+				if !exactMatchFound {
+					var minDiff int = -1
 
-						if minDiff == math.MinInt32 || diff < minDiff {
-							bestMatch = &Item{
-								Ingredient: Ingredient{
-									IngredientID: item.IngredientID,
-									Name:         item.Name,
-									UnitQuantity: item.UnitQuantity,
-									Unit:         item.Unit,
-									Price:        item.Price,
-								},
-								Quantity: item.Quantity,
+					for _, item := range store.Items {
+						if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity > reqIng.UnitQuantity {
+							diff := item.UnitQuantity - reqIng.UnitQuantity
+							if minDiff == -1 || diff < minDiff {
+								bestMatch = &Item{
+									Ingredient: Ingredient{
+										IngredientID: item.IngredientID,
+										Name:         item.Name,
+										UnitQuantity: item.UnitQuantity,
+										Unit:         item.Unit,
+										Price:        item.Price,
+									},
+									Quantity: item.Quantity,
+								}
+								minDiff = diff
 							}
-							minDiff = diff
 						}
 					}
 				}
@@ -468,27 +507,22 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 					storeMatch.Items = append(storeMatch.Items, bestMatch)
 				}
 			}
-
 			if len(storeMatch.Items) > 0 {
 				vendorResult.Stores = append(vendorResult.Stores, storeMatch)
 			}
 		}
-
 		if len(vendorResult.Stores) > 0 {
 			results = append(results, vendorResult)
 		}
 	}
-
 	if err := cursor.Err(); err != nil {
 		Logger.ErrorContext(ctx, "Error iterating vendors", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
-
 	if len(results) == 0 {
 		Logger.ErrorContext(ctx, "No match found", vendor_repo_source)
 		return nil, &NoItems{}
 	}
-
 	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
 }
@@ -753,6 +787,16 @@ func (m MongoVendorRepository) DeleteVendorOrders(ctx context.Context, id ID, id
 	}
 	Logger.InfoContext(ctx, "Vendor orders deleted successfully", slog.String("vendorID", id.String()), vendor_repo_source)
 	return nil
+}
+
+func (m MongoVendorRepository) DeleteStoreItems(ctx context.Context, docId, storeId ID, items []bson.ObjectID) error {
+	ctx, span := Tracer.Start(ctx, "DeleteStoreItems")
+	defer span.End()
+
+	Logger.InfoContext(ctx, "Deleting items from store", slog.String("vendorID", docId.String()),
+		slog.String("StoreId", storeId.String()), slog.Any("items", items), vendor_repo_source)
+
+	return processDeleteItems(ctx, m.col, docId, storeId, "stores", items, vendor_repo_source)
 }
 
 func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id ID, err error) {
