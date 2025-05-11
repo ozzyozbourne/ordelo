@@ -49,7 +49,8 @@ func (r CachedUserRepository) CreateRecipes(ctx context.Context, id ID, recipes 
 	ctx, span := Tracer.Start(ctx, "CreateRecipesRedis")
 	defer span.End()
 
-	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+	ukey, rkey, _, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, rkey); err != nil {
 		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
 
@@ -62,7 +63,8 @@ func (r CachedUserRepository) CreateCarts(ctx context.Context, id ID, carts []*C
 	ctx, span := Tracer.Start(ctx, "CreateCartsRedis")
 	defer span.End()
 
-	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+	ukey, _, ckey, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, ckey); err != nil {
 		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
 
@@ -75,7 +77,8 @@ func (r CachedUserRepository) CreateUserOrders(ctx context.Context, id ID, order
 	ctx, span := Tracer.Start(ctx, "CreateOrdersRedis")
 	defer span.End()
 
-	if err = r.Invalidate(ctx, getCacheKeys(id)...); err != nil {
+	ukey, _, _, okey := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, okey); err != nil {
 		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
 
@@ -111,39 +114,96 @@ func (r CachedUserRepository) UpdateUser(ctx context.Context, user *Common) (err
 	ctx, span := Tracer.Start(ctx, "UpdateUserRedis")
 	defer span.End()
 
-	if err = r.Invalidate(ctx, getCacheKeys(ID{user.ID})[0]); err != nil {
+	ukey, _, _, _ := getCacheKeys(ID{user.ID})
+	if err = r.Invalidate(ctx, ukey); err != nil {
 		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
 	}
 	err = errors.Join(err, r.userRepo.UpdateUser(ctx, user))
 	return
 }
 
-func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) error {
-	return nil
+func (r CachedUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes []*Recipe) (err error) {
+	ctx, span := Tracer.Start(ctx, "UpdateRecipesRedis")
+	defer span.End()
+
+	ukey, rkey, _, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, rkey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.UpdateRecipes(ctx, id, recipes))
+	return
 }
 
-func (r CachedUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
-	return nil
+func (r CachedUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) (err error) {
+	ctx, span := Tracer.Start(ctx, "UpdateCartRedis")
+	defer span.End()
+
+	ukey, _, ckey, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, ckey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.UpdateCarts(ctx, id, carts))
+	return
 }
 
-func (r CachedUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders []*UserOrder) error {
-	return nil
+func (r CachedUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders []*UserOrder) (err error) {
+	ctx, span := Tracer.Start(ctx, "UpdateUserOrdersRedis")
+	defer span.End()
+
+	ukey, _, _, okey := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, okey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.UpdateUserOrders(ctx, id, orders))
+	return
 }
 
-func (r CachedUserRepository) DeleteUser(ctx context.Context, id ID) error {
-	return nil
+func (r CachedUserRepository) DeleteUser(ctx context.Context, id ID) (err error) {
+	ctx, span := Tracer.Start(ctx, "DeleteUserRedis")
+	defer span.End()
+
+	ukey, rkey, ckey, okey := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, rkey, ckey, okey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.DeleteUser(ctx, id))
+	return
 }
 
-func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID) error {
-	return nil
+func (r CachedUserRepository) DeleteRecipes(ctx context.Context, id ID, ids []*ID) (err error) {
+	ctx, span := Tracer.Start(ctx, "DeleteRecipesRedis")
+	defer span.End()
+
+	ukey, rkey, _, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, rkey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.DeleteRecipes(ctx, id, ids))
+	return
 }
 
-func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) error {
-	return nil
+func (r CachedUserRepository) DeleteCarts(ctx context.Context, id ID, ids []*ID) (err error) {
+	ctx, span := Tracer.Start(ctx, "DeleteCartsRedis")
+	defer span.End()
+
+	ukey, _, ckey, _ := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, ckey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.DeleteCarts(ctx, id, ids))
+	return
 }
 
-func (r CachedUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []*ID) error {
-	return nil
+func (r CachedUserRepository) DeleteUserOrders(ctx context.Context, id ID, ids []*ID) (err error) {
+	ctx, span := Tracer.Start(ctx, "DeleteUserOrdersRedis")
+	defer span.End()
+
+	ukey, _, _, okey := getCacheKeys(id)
+	if err = r.Invalidate(ctx, ukey, okey); err != nil {
+		Logger.ErrorContext(ctx, "Error in Invalidating user cache", slog.Any("error", err), cached_repo)
+	}
+	err = errors.Join(err, r.userRepo.DeleteUserOrders(ctx, id, ids))
+	return
 }
 
 func (r CachedUserRepository) PersistInRedis(ctx context.Context, userID ID, userData []byte) error {
@@ -188,11 +248,11 @@ func (r CachedUserRepository) Invalidate(ctx context.Context, keys ...string) er
 	return nil
 }
 
-func getCacheKeys(id ID) []string {
-	user := fmt.Sprintf("user:%s", id.String())
-	recipes := fmt.Sprintf("user:%s:recipes", id.String())
+func getCacheKeys(id ID) (user, recipes, carts, orders string) {
+	user = fmt.Sprintf("user:%s", id.String())
+	recipes = fmt.Sprintf("user:%s:recipes", id.String())
 
-	orders := fmt.Sprintf("user:%s:orders", id.String())
-	carts := fmt.Sprintf("user:%s:carts", id.String())
-	return []string{user, recipes, orders, carts}
+	orders = fmt.Sprintf("user:%s:orders", id.String())
+	carts = fmt.Sprintf("user:%s:carts", id.String())
+	return
 }
