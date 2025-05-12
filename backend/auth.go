@@ -234,7 +234,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (st
 	ctx, span := Tracer.Start(ctx, "AuthService.RefreshToken")
 	defer span.End()
 
-	token, err := jwt.ParseWithClaims(refreshToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
