@@ -95,6 +95,7 @@ type Order struct {
 	TotalPrice     float64       `bson:"total_price" json:"total_price"`
 	Items          []*Item       `bson:"items" json:"items"`
 	CreatedAt      time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt      time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 type Common struct {
