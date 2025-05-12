@@ -57,12 +57,12 @@ import VendorStore from "./pages/Vendor/VendorStore";
 
 // Styles
 import "./App.css";
-import "./styles/Addrecipe.css";
-import "./styles/admin-styles.css";
 import "./styles/auth.css";
-import "./styles/open-props-core.css";
 import "./styles/profile.css";
+import "./styles/admin-styles.css";
+import "./styles/open-props-core.css";
 import "./styles/vendor-styles.css";
+
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

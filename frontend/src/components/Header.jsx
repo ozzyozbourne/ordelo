@@ -50,7 +50,7 @@ function Header() {
             to="/shopping-list" 
             className={location.pathname === "/shopping-list" ? "active" : ""}
           >
-            <i className="fas fa-shopping-basket"></i> Shopping List
+            <i className="fas fa-shopping-basket"></i> Grocery List
           </Link>
           <Link 
             to="/shopping" 

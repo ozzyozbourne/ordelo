@@ -125,7 +125,7 @@ function SavedRecipes() {
                   <ul className="saved-recipe-ingredients-list">
                     {recipe.items.map((item, index) => (
                       <li key={index} className="saved-recipe-ingredient-item">
-                        <span className="saved-recipe-ingredient-quantity">{item.quantity} {item.unit}</span>
+                        <span className="saved-recipe-ingredient-quantity">{item.unit_quantity} {item.unit}</span>
                         <span className="saved-recipe-ingredient-name">{item.name}</span>
                       </li>
                     ))}

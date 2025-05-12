@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { firebaseConfig } from "/Users/javidshaik/ordelo/frontend/src/firebase/firebase.js";
-import { getCurrentLocation } from "/Users/javidshaik/ordelo/frontend/src/components/getLocation.js";
+import { firebaseConfig } from "/Users/zohaahmed/ordelo/ordelo/frontend/src/firebase/firebase.js";
+import { getCurrentLocation } from "/Users/zohaahmed/ordelo/ordelo/frontend/src/components/getLocation.js";
 
 const GOOGLE_MAPS_API_KEY = firebaseConfig.apiKey;
 
@@ -21,7 +21,7 @@ function VendorStore() {
 
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    unit_quantity: "",
+    quantity: "",
     price: ""
   });
 
@@ -272,17 +272,21 @@ function VendorStore() {
     if (!itemToUpdate || !activeTab) return;
 
     const payload = {
-      stores: [{
-        store_id: activeTab.id,
-        items: [{
-          ingredient_id: itemToUpdate.ingredient_id,
-          name: itemToUpdate.name,
-          unit: itemToUpdate.unit,
-          unit_quantity: parseFloat(editFormData.unit_quantity),
-          price: parseFloat(editFormData.price),
-          quantity: itemToUpdate.quantity || 0 
-        }]
-      }]
+      stores: [
+        {
+          store_id: activeTab.store_id,
+          items: [
+            {
+              ingredient_id: itemToUpdate.ingredient_id,
+              name: itemToUpdate.name,
+              unit: itemToUpdate.unit,
+              unit_quantity: itemToUpdate.unit_quantity || 0,
+              price: parseFloat(editFormData.price),
+              quantity: parseFloat(editFormData.quantity)
+            }
+          ]
+        }
+      ]
     };
     console.log("Saving edited ingredient:", payload);
     try {
@@ -306,7 +310,10 @@ function VendorStore() {
 
   const handleCancelEdit = () => {
     setEditingIngredientId(null);
-    setEditFormData({ unit_quantity: "", price: "" });
+    setEditFormData({
+      quantity: "",
+      price: ""
+    });
   };
 
   const formatCurrency = (amount) => {
@@ -457,7 +464,7 @@ function VendorStore() {
                     <tr>
                       <th>Name</th>
                       <th>Unit Quantity</th>
-                      <th>Unit</th>
+                     <th>Quantity</th>
                       <th>Price</th>
                       <th>Actions</th>
                     </tr>
@@ -469,35 +476,48 @@ function VendorStore() {
                         {editingIngredientId === item.ingredient_id ? (
                           <>
                             <td>
-                              <input type="number" name="unit_quantity" value={editFormData.unit_quantity} onChange={handleEditChange} min="0" step="0.01" className="form-control"/>
-                            </td>
-                            <td>{item.unit}</td>
-                            <td>
-                              <div className="input-group">
-                                <span className="input-group-text">$</span>
-                                <input type="number" name="price" value={editFormData.price} onChange={handleEditChange} min="0" step="0.01" className="form-control"/>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="table-actions">
-                                <button onClick={handleSaveEdit} className="btn btn-sm btn-primary"><i className="fas fa-save"></i>
-                                <span>Save</span>
-                                </button>
-                                <button onClick={handleCancelEdit} className="btn btn-sm btn-secondary"><i className="fas fa-times"></i>
-                                <span>Cancel</span>
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{item.unit_quantity}</td>
-                            <td>{item.unit}</td>
-                            <td>
-                              <span className="price-inline">
-                                <span className="dollar-sign">$</span>{formatCurrency(item.price).replace('$', '')}
-                              </span>
-                            </td>
+                     <span className="unit-label">{item.unit_quantity}</span>
+                      <span className="unit-label">{item.unit}</span>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={editFormData.quantity}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        name="price"
+                        value={editFormData.price}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={handleSaveEdit} className="btn btn-sm btn-primary">
+                          <i className="fas fa-save"></i>
+                          <span>Save</span>
+                        </button>
+                        <button onClick={handleCancelEdit} className="btn btn-sm btn-secondary">
+                          <i className="fas fa-times"></i>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{item.unit_quantity} {item.unit}</td>
+                    <td>{item.quantity}</td>
+                    <td>
+                      <span className="price-inline">
+                        <span className="dollar-sign">$</span>
+                        {formatCurrency(item.price).replace('$', '')}
+                      </span>
+                    </td>
                             <td>
                               <button onClick={() => handleEditClick(item)} className="btn btn-sm btn-primary"><i className="fas fa-edit"></i>
                               <span>Edit</span>
