@@ -87,7 +87,22 @@ func TestReqCarts(t *testing.T) {
 }
 
 func TestReqCompare(t *testing.T) {
-	res := generateReqIngArray(3, 4)
+	res := generateReqIngArray(3)
+	var req struct {
+		Compare []*ReqIng `json:"compare"`
+	}
+
+	req.Compare = res
+
+	s, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ReqIng Comparison-> \n%s\n", string(s))
+}
+
+func TestReqAcceptOrder(t *testing.T) {
+	res := generateReqIngArray(3)
 	var req struct {
 		Compare []*ReqIng `json:"compare"`
 	}
