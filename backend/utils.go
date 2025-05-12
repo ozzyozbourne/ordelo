@@ -70,9 +70,6 @@ func AssignIDs[I ItemWithID, C ContainerWithItems[I]](containers []C) []*ID {
 		id := bson.NewObjectID()
 		container.SetID(id)
 		ids[i] = &ID{id}
-		for _, item := range container.GetItems() {
-			item.SetIngredientID(bson.NewObjectID())
-		}
 	}
 	return ids
 }
