@@ -431,8 +431,8 @@ func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store,
 func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*ReqIng) ([]*ResIng, error) {
 	ctx, span := Tracer.Start(ctx, "FindAllIngredients")
 	defer span.End()
-
 	Logger.InfoContext(ctx, "Finding ingredients across all vendors", slog.Any("requirements", req), vendor_repo_source)
+
 	cursor, err := m.col.Find(ctx, bson.D{})
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error finding vendors", slog.Any("error", err), vendor_repo_source)
@@ -447,10 +447,12 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), vendor_repo_source)
 			continue
 		}
+
 		vendorResult := &ResIng{
 			ID:     vendor.ID,
 			Stores: []*Store{},
 		}
+
 		for _, store := range vendor.Stores {
 			storeMatch := &Store{
 				ID:        store.ID,
@@ -459,46 +461,38 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 				Location:  store.Location,
 				Items:     []*Item{},
 			}
+
 			for _, reqIng := range req {
 				var bestMatch *Item
-				exactMatchFound := false
 
+				// Tier 1: Exact match (name, unit, and unit quantity match exactly)
 				for _, item := range store.Items {
 					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity == reqIng.UnitQuantity {
-						bestMatch = &Item{
-							Ingredient: Ingredient{
-								IngredientID: item.IngredientID,
-								Name:         item.Name,
-								UnitQuantity: item.UnitQuantity,
-								Unit:         item.Unit,
-								Price:        item.Price,
-							},
-							Quantity: item.Quantity,
-						}
-						exactMatchFound = true
+						bestMatch = createMatchItem(item)
 						break
 					}
 				}
 
-				if !exactMatchFound {
+				// Tier 2: Ceiling match (smallest unit quantity greater than required)
+				if bestMatch == nil {
 					var minDiff int = -1
-
 					for _, item := range store.Items {
 						if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity > reqIng.UnitQuantity {
 							diff := item.UnitQuantity - reqIng.UnitQuantity
 							if minDiff == -1 || diff < minDiff {
-								bestMatch = &Item{
-									Ingredient: Ingredient{
-										IngredientID: item.IngredientID,
-										Name:         item.Name,
-										UnitQuantity: item.UnitQuantity,
-										Unit:         item.Unit,
-										Price:        item.Price,
-									},
-									Quantity: item.Quantity,
-								}
+								bestMatch = createMatchItem(item)
 								minDiff = diff
 							}
+						}
+					}
+				}
+
+				// Tier 3: Any match (just name and unit match, regardless of quantity)
+				if bestMatch == nil {
+					for _, item := range store.Items {
+						if item.Name == reqIng.Name && item.Unit == reqIng.Unit {
+							bestMatch = createMatchItem(item)
+							break
 						}
 					}
 				}
@@ -507,24 +501,42 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 					storeMatch.Items = append(storeMatch.Items, bestMatch)
 				}
 			}
+
 			if len(storeMatch.Items) > 0 {
 				vendorResult.Stores = append(vendorResult.Stores, storeMatch)
 			}
 		}
+
 		if len(vendorResult.Stores) > 0 {
 			results = append(results, vendorResult)
 		}
 	}
+
 	if err := cursor.Err(); err != nil {
 		Logger.ErrorContext(ctx, "Error iterating vendors", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
+
 	if len(results) == 0 {
 		Logger.ErrorContext(ctx, "No match found", vendor_repo_source)
 		return nil, &NoItems{}
 	}
+
 	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
+}
+
+func createMatchItem(item *Item) *Item {
+	return &Item{
+		Ingredient: Ingredient{
+			IngredientID: item.IngredientID,
+			Name:         item.Name,
+			UnitQuantity: item.UnitQuantity,
+			Unit:         item.Unit,
+			Price:        item.Price,
+		},
+		Quantity: item.Quantity,
+	}
 }
 
 func (m MongoVendorRepository) FindVendorStore(ctx context.Context, vendorid ID, storeid ID) ([]*Item, error) {
