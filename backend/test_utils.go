@@ -26,19 +26,19 @@ func generateCommon(role string) Common {
 	}
 }
 
-func generateAdmin(n int) *Admin {
+func generateAdmin() *Admin {
 	return &Admin{
 		Common: generateCommon("admin"),
 	}
 }
 
-func generateUser(n, m int) *User {
+func generateUser() *User {
 	return &User{
 		Common: generateCommon("user"),
 	}
 }
 
-func generateVendor(n, m int) *Vendor {
+func generateVendor() *Vendor {
 	return &Vendor{
 		Common: generateCommon("vendor"),
 	}
@@ -611,7 +611,7 @@ func checkIngredients(in, out []*Ingredient) error {
 	return nil
 }
 
-func generateReqIng(n int) *ReqIng {
+func generateReqIng() *ReqIng {
 	item := generateItemsArray(1)[0]
 	return &ReqIng{
 		Name:         item.Name,
@@ -620,10 +620,10 @@ func generateReqIng(n int) *ReqIng {
 	}
 }
 
-func generateReqIngArray(n, m int) []*ReqIng {
+func generateReqIngArray(n int) []*ReqIng {
 	res := make([]*ReqIng, n)
 	for i := range n {
-		res[i] = generateReqIng(m)
+		res[i] = generateReqIng()
 	}
 	return res
 }
