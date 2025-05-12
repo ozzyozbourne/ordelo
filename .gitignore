@@ -20,7 +20,11 @@
 *.dylib
 *.test
 *.out
+<<<<<<< HEAD
 *.sh
+=======
+node_modules/
+>>>>>>> 88d0e18a5eeea1c4af3a0d5de10d8e4285021644
 
 ordelo
 container
