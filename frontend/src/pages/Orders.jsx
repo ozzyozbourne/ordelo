@@ -133,6 +133,13 @@ function Orders() {
                         timeStyle: "short",
                       })}
                     </p>
+                    <p className="order-updated-date">
+                      <i className="far fa-calendar-alt"></i>{" "}
+                      {new Date(order.updated_at).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
                   </div>
                   <div className="order-status-price">
                     <span
