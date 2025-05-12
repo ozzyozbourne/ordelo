@@ -427,8 +427,7 @@ func processDeleteItems(ctx context.Context, col *mongo.Collection, doc, con ID,
 	return nil
 }
 
-func createContainers(ctx context.Context, col *mongo.Collection, id ID,
-	ids []*ID, fil, up bson.D, source slog.Attr) error {
+func createContainers(ctx context.Context, col *mongo.Collection, id ID, fil, up bson.D, source slog.Attr) error {
 	result, err := col.UpdateOne(ctx, fil, up)
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error in adding containers", slog.Any("error", err), source)
