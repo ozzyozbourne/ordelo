@@ -672,6 +672,39 @@ func sendIngredients(ctx context.Context, w http.ResponseWriter, source slog.Att
 	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	ctx, span := Tracer.Start(r.Context(), "GetUser")
+	defer span.End()
+	source := slog.String("source", "GetUser")
+
+	Logger.InfoContext(ctx, "Getting the User", source)
+	id, err := getID(ctx, source)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Unable to get the id from the token", slog.Any("error", err), source)
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+	user, err := Repos.User.FindUserByID(ctx, id)
+	if err != nil {
+		sendFailure(ctx, w, err.Error(), source)
+		return
+	}
+
+	s, err := json.Marshal(user)
+	if err != nil {
+		Logger.ErrorContext(ctx, "Error in marshalling to string", slog.Any("error", err), source)
+		sendFailure(ctx, w, "Error in fetching user", source)
+		return
+	}
+
+	okResponseMap := map[string]any{
+		"success": true,
+		"ids":     string(s),
+	}
+
+	sendResponse(ctx, w, http.StatusOK, &okResponseMap, source)
+}
+
 func GetRecipes(w http.ResponseWriter, r *http.Request) {
 	ctx, span := Tracer.Start(r.Context(), "GetRecipes")
 	defer span.End()

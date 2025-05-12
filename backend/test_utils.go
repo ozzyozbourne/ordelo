@@ -317,18 +317,6 @@ func generateRandomUSLocation() *GeoJSON {
 	}
 }
 
-func generateVendorOrderArray(n, m int) []*VendorOrder {
-	orders := generateOrdersArray(n, m)
-	vendorOrder := make([]*VendorOrder, n)
-	for i := range n {
-		vendorOrder[i] = &VendorOrder{
-			Order: *orders[i],
-		}
-	}
-	return vendorOrder
-
-}
-
 func checkCommon(in, out Common) error {
 	if in.ID.Hex() != out.ID.Hex() {
 		return fmt.Errorf("userID Mismatch %v vs %v", in.ID, out.ID)
