@@ -611,7 +611,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 	}
 	defer session.EndSession(ctx)
 
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		dbName := os.Getenv("DB_NAME")
 		userCollection := MongoClient.Database(dbName).Collection("user")
 		vendorCollection := MongoClient.Database(dbName).Collection("vendor")
@@ -626,6 +626,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 		userUpdate := bson.D{
 			{Key: "$set", Value: bson.M{
 				"orders.$.order_status": ord.OrderStatus,
+				"orders.$.updated_at":   ord.UpdatedAt,
 			}},
 		}
 
@@ -656,6 +657,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 		vendorUpdate := bson.D{
 			{Key: "$set", Value: bson.M{
 				"orders.$.order_status": ord.OrderStatus,
+				"orders.$.updated_at":   ord.UpdatedAt,
 			}},
 		}
 
