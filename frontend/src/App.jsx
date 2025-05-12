@@ -1,11 +1,11 @@
 // src/App.jsx
-import { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-
+import { useEffect, useState } from "react";
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { analytics, app, appCheck, auth, db, firebaseConfig } from './firebase/firebase';
 // Layout & Components
-import ScrollToTop from "./components/ScrollToTop";
-import Header from "./components/Header";
 import Footer from "./components/Footer";
+import Header from "./components/Header";
+import ScrollToTop from "./components/ScrollToTop";
 import SelectedRecipesModal from "./components/SelectedRecipesModal";
 
 // Context Providers
@@ -14,29 +14,29 @@ import { RecipeProvider } from "./context/RecipeContext";
 import { ShoppingProvider } from "./context/ShoppingContext";
 
 // Pages
+import AddRecipe from "./pages/AddRecipe";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import HelpAndSupport from "./pages/HelpAndSupport";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
+import NotFoundPage from "./pages/NotFoundPage";
+import Orders from "./pages/Orders";
+import ProfilePage from "./pages/ProfilePage";
+import RecipeDetails from "./pages/RecipeDetails";
+import Register from "./pages/Register";
 import SavedRecipes from "./pages/SavedRecipes";
 import ShoppingList from "./pages/ShoppingList";
 import ShoppingPage from "./pages/ShoppingPage";
-import Orders from "./pages/Orders";
-import AddRecipe from "./pages/AddRecipe";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ProfilePage from "./pages/ProfilePage";
 import UserDashboard from "./pages/UserDashboard";
 import VendorLogin from "./pages/VendorLogin";
 import VendorRegister from "./pages/VendorRegister";
-import AdminLoginPage from "./pages/AdminLoginPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import RecipeDetails from "./pages/RecipeDetails";
-import HelpAndSupport from "./pages/HelpAndSupport";
 
 
 // Admin Pages
+import IngredientManagementPage from "./admin/pages/IngredientManagementPage";
 import UserManagementPage from "./admin/pages/UserManagementPage";
 import VendorManagementPage from "./admin/pages/VendorManagementPage";
-import IngredientManagementPage from "./admin/pages/IngredientManagementPage";
 
 // Admin Layout
 import AdminDashboardLayout from "./admin/layouts/AdminDashboardLayout";
@@ -48,21 +48,21 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 // Vendor Layout
 import VendorLayout from "./pages/Vendor/VendorLayout";
 // Vendor Pages
-import VendorStore from "./pages/Vendor/VendorStore";
+import AddInventory from "./pages/Vendor/AddInventory";
 import Inventory from "./pages/Vendor/Inventory";
 import VendorDashboard from "./pages/Vendor/VendorDashboard";
-import AddInventory from "./pages/Vendor/AddInventory";
 import VendorOrder from "./pages/Vendor/VendorOrder";
+import VendorStore from "./pages/Vendor/VendorStore";
 
 
 // Styles
 import "./App.css";
-import "./styles/auth.css";
-import "./styles/profile.css";
-import "./styles/admin-styles.css";
-import "./styles/open-props-core.css";
-import "./styles/vendor-styles.css";
 import "./styles/Addrecipe.css";
+import "./styles/admin-styles.css";
+import "./styles/auth.css";
+import "./styles/open-props-core.css";
+import "./styles/profile.css";
+import "./styles/vendor-styles.css";
 
 function AdminRoutes() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -83,7 +83,15 @@ function AdminRoutes() {
 }
 
 function App() {
+  
   const [loading, setLoading] = useState(true);
+  console.log("Firebase App Initialized:", app.name);
+  console.log("Analytics object:", analytics);
+  console.log("Auth object:", auth);
+  console.log("Firestore DB:", db);
+  console.log("App Check object:", appCheck);
+  console.log("Firebase Config:", firebaseConfig);
+
 
   useEffect(() => {
     setTimeout(() => {
