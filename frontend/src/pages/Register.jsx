@@ -46,7 +46,7 @@ function UserRegister() {
           address: formData.address,
           email: formData.email,
           password_hash: formData.password,
-          role: "user"
+          role: "user",
         }),
       });
 
@@ -54,12 +54,12 @@ function UserRegister() {
 
       if (response.ok) {
         login({
-          id: data._id || null,           
-          name: formData.name,             
-          email: formData.email,           
-          role: data.role || "user",       
-          token: data.access_token,        
-          expires_in: data.expires_in || "900" 
+          id: data._id || null,
+          name: formData.name,
+          email: formData.email,
+          role: data.role || "user",
+          token: data.access_token,
+          expires_in: data.expires_in || "900"
         });
         navigate('/', { replace: true });
       } else {
@@ -99,15 +99,18 @@ function UserRegister() {
 
               <div className="form-group">
                 <label htmlFor="address">Address</label>
-                <input
-                  type="text"
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your address"
-                />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter your address"
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -153,8 +156,8 @@ function UserRegister() {
             </div>
 
             <div className="form-actions">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary auth-submit-btn"
                 disabled={isLoading}
               >

@@ -40,6 +40,11 @@ function StoreCard({ store, vendorName }) {
       {/* Header: Store name and vendor name */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8 }}>
         <span className="store-name" style={{ fontWeight: 600, fontSize: '1.15rem', color: '#222', marginBottom: 2 }}>{store.name}</span>
+        {store.distance !== null && (
+          <span className="store-distance" style={{ fontSize: '0.85rem', color: '#777', marginLeft: '10px' }}>
+            ({store.distance} mi away)
+          </span>
+        )}
       </div>
       <div className="store-section" style={{ width: '100%' }}>
         <div className="store-meta" style={{ marginBottom: 8 }}>
