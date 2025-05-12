@@ -626,6 +626,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 		userUpdate := bson.D{
 			{Key: "$set", Value: bson.M{
 				"orders.$.order_status": ord.OrderStatus,
+				"orders.$.updated_at":   ord.UpdatedAt,
 			}},
 		}
 
@@ -656,6 +657,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 		vendorUpdate := bson.D{
 			{Key: "$set", Value: bson.M{
 				"orders.$.order_status": ord.OrderStatus,
+				"orders.$.updated_at":   ord.UpdatedAt,
 			}},
 		}
 
