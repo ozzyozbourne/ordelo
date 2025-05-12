@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useShoppingContext } from "../context/ShoppingContext";
 import { useAuth } from "../context/AuthContext";
 
-
 function StoreCard({ store, vendorId }) {
   const { addToCart } = useShoppingContext();
   const { user } = useAuth();
@@ -19,7 +18,7 @@ function StoreCard({ store, vendorId }) {
   const [error, setError] = useState(null);
   const [fetchedItems, setFetchedItems] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [addedItemIds, setAddedItemIds] = useState(new Set()); // ✅ Track added items
+  const [addedItemIds, setAddedItemIds] = useState(new Set());
 
   const handleQuantityChange = (itemId, change) => {
     setQuantities(prev => {
@@ -28,18 +27,18 @@ function StoreCard({ store, vendorId }) {
     });
   };
 
-const handleAddToCart = () => {
-  const itemsWithQuantities = availableItems
-    .filter(item => quantities[item.id || item.ingredient_id] > 0)
-    .map(item => ({
-      ...item,
-      quantity: quantities[item.id || item.ingredient_id],
-    }));
+  const handleAddToCart = () => {
+    const itemsWithQuantities = availableItems
+      .filter(item => quantities[item.id || item.ingredient_id] > 0)
+      .map(item => ({
+        ...item,
+        quantity: quantities[item.id || item.ingredient_id],
+      }));
 
-  if (itemsWithQuantities.length > 0) {
-    addToCart(store.id, itemsWithQuantities);
-  }
-};
+    if (itemsWithQuantities.length > 0) {
+      addToCart(store.id, itemsWithQuantities);
+    }
+  };
 
   const handleView = async () => {
     try {
@@ -56,10 +55,8 @@ const handleAddToCart = () => {
       );
 
       if (!response.ok) throw new Error("Failed to fetch store items");
-
       const data = await response.json();
       const parsedItems = JSON.parse(data.ids);
-
       const existingIds = new Set(availableItems.map(item => item.id || item.ingredient_id));
       const newItems = parsedItems.filter(item => !existingIds.has(item.ingredient_id));
 
@@ -96,7 +93,14 @@ const handleAddToCart = () => {
             <div className="store-inventory-grid" style={{ marginBottom: 8 }}>
               {itemsToShow.map(item => (
                 <div key={item.id || item.ingredient_id} className="inventory-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0' }}>
-                  <span style={{ flex: 1, fontSize: '1rem', color: '#222' }}>{item.name}</span>
+                  <span style={{ flex: 1, fontSize: '1rem', color: '#222' }}>
+                    {item.name} 
+              {(item.unit_quantity || item.unitQuantity) && item.unit && (
+  <span style={{ fontSize: '0.9rem', color: '#666' }}>
+    &nbsp;({item.unit_quantity || item.unitQuantity} {item.unit})
+  </span>
+)}
+                  </span>
                   <span style={{ minWidth: 60, textAlign: 'right', color: '#444', fontSize: '0.98rem' }}>${item.price.toFixed(2)}</span>
                   <div className="quantity-controls" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <button style={{ padding: '2px 7px', borderRadius: 4, border: '1px solid #eee', background: '#f8f8f8', color: '#444', fontWeight: 600, cursor: 'pointer' }} onClick={() => handleQuantityChange(item.id || item.ingredient_id, -1)}>-</button>
@@ -132,7 +136,6 @@ const handleAddToCart = () => {
         </div>
       </div>
 
-      {/* ✅ Modal */}
       {showModal && (
         <div className="modal-overlay" style={{
           position: 'fixed', top: 0, left: 0, width: '100%',
@@ -154,7 +157,9 @@ const handleAddToCart = () => {
                   marginBottom: 8, borderBottom: '1px solid #eee', paddingBottom: 6
                 }}>
                   <div>
-                    <div style={{ fontWeight: 500 }}>{item.name}</div>
+                    <div style={{ fontWeight: 500 }}>
+                      {item.name} {item.unit_quantity && item.unit ? `(${item.unit_quantity} ${item.unit})` : ''}
+                    </div>
                     <div style={{ fontSize: '0.85rem', color: '#555' }}>${item.price}</div>
                   </div>
                   {addedItemIds.has(item.ingredient_id) ? (

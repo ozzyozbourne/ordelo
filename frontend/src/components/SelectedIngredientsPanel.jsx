@@ -27,7 +27,7 @@ function SelectedIngredientsPanel() {
               <span className="ingredient-name">{ingredient.name}</span>
               {ingredient.amount && (
                 <span className="ingredient-amount">
-                  {ingredient.amount} {ingredient.unit || ''}
+                  {ingredient.unit_quantity || ingredient.amount} {ingredient.unit || ''}
                 </span>
               )}
             </div>
