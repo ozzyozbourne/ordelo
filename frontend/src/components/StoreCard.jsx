@@ -83,7 +83,11 @@ function StoreCard({ store, vendorId }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8 }}>
           <span className="store-name" style={{ fontWeight: 600, fontSize: '1.15rem', color: '#222', marginBottom: 2 }}>{store.name}</span>
         </div>
-
+        {store.distance !== null && (
+          <span className="store-distance" style={{ fontSize: '0.85rem', color: '#777', marginLeft: '10px' }}>
+            ({store.distance} mi away)
+          </span>
+        )}
         <div className="store-section" style={{ width: '100%' }}>
           <div className="store-meta" style={{ marginBottom: 8 }}>
             <span className="store-type" style={{ fontSize: '0.92rem', color: 'var(--primary-color, #5ecc62)' }}>{store.store_type}</span>

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRecipes } from "../context/RecipeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getCurrentLocation } from "/Users/zohaahmed/ordelo/ordelo/frontend/src/components/getLocation.js";
 
 const FOOD_CATEGORIES = {
   PRODUCE: "Produce",
@@ -182,6 +183,8 @@ function ShoppingList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState("");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isLoadingStores, setIsLoadingStores] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -246,6 +249,29 @@ function ShoppingList() {
       setError("Please log in to continue shopping");
       return;
     }
+
+    let userLocation = null;
+    setIsLoadingLocation(true);
+    try {
+      userLocation = await getCurrentLocation();
+    } catch (locError) {
+      let message = "Could not get your location. ";
+      if (typeof locError === 'string') message = locError;
+      else if (locError.message) message = locError.message;
+      setError(message + " Please enable location services or try again.");
+      setIsLoadingLocation(false);
+      return;
+    } finally {
+      setIsLoadingLocation(false);
+    }
+
+    // Proceed if location was obtained
+    if (!userLocation) {
+        setError("User location is required to find nearby stores.");
+        return;
+    }
+
+    setIsLoadingStores(true);
 
     try {
       // Get selected ingredients from the shopping list
@@ -316,12 +342,16 @@ function ShoppingList() {
       }
 
       // Navigate to shopping page with the store data
-      navigate('/shopping', { state: { stores } });
+      navigate('/shopping', { state: { stores, userLocation } });
     } catch (err) {
       console.error('Error in handleShopNow:', err);
       setError(err.message || "An error occurred while searching for stores");
+    }finally {
+      setIsLoadingStores(false); // Stop store fetching indicator
     }
   };
+
+  const isProcessingShopNow = isLoadingLocation || isLoadingStores;
 
   return (
       <div className="shopping-list-page fade-in">
