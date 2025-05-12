@@ -611,7 +611,7 @@ func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *
 	}
 	defer session.EndSession(ctx)
 
-	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(sessCtx context.Context) (any, error) {
 		dbName := os.Getenv("DB_NAME")
 		userCollection := MongoClient.Database(dbName).Collection("user")
 		vendorCollection := MongoClient.Database(dbName).Collection("vendor")
