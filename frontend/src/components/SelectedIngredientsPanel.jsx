@@ -56,9 +56,11 @@ function SelectedIngredientsPanel() {
     <div className="selected-ingredients-panel">
       <div className="panel-header sticky-header">
         <h2>Ingredients</h2>
-        <span className="ingredient-count">{selectedIngredients.filter(i => i.selected).length}</span>
       </div>
-      
+<div style={{ color: "black", fontWeight: "bold", padding: "8px" , }}>
+  <h5 style={{ margin: 0 }}>Please check before you checkout!</h5>
+</div>
+
       <div className="ingredients-list scrollable-content">
         {selectedIngredients.map((ingredient) => {
           const { unit_quantity, unit } = standardizeUnit(ingredient.amount, ingredient.unit);
