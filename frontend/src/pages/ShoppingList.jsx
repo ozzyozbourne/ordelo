@@ -132,7 +132,6 @@ const mergeIngredients = (ingredients) => {
 const standardizeUnit = (amount, unit) => {
   let unitQuantity = Math.round(amount || 1);
   let standardizedUnit = (unit || '').toLowerCase().trim();
-
   // Common unit mappings
   const unitMappings = {
     // Weight conversions
@@ -147,7 +146,6 @@ const standardizeUnit = (amount, unit) => {
     'lb': { factor: 453.592, unit: 'gm' },
     'pound': { factor: 453.592, unit: 'gm' },
     'pounds': { factor: 453.592, unit: 'gm' },
-
     // Volume conversions
     'l': { factor: 1000, unit: 'ml' },
     'liter': { factor: 1000, unit: 'ml' },
@@ -163,7 +161,6 @@ const standardizeUnit = (amount, unit) => {
     'teaspoons': { factor: 5, unit: 'ml' },
     'cup': { factor: 240, unit: 'ml' },
     'cups': { factor: 240, unit: 'ml' },
-
     // Count units
     'piece': { factor: 50, unit: 'gm' },
     'pieces': { factor: 60, unit: 'gm' },
@@ -172,10 +169,8 @@ const standardizeUnit = (amount, unit) => {
     'unit': { factor: 50, unit: 'gm' },
     'units': { factor: 10, unit: 'gm' }
   };
-
   // Get the conversion mapping or default to count
   const mapping = unitMappings[standardizedUnit] || { factor: 100, unit: 'gm' };
-  
   return {
     unit_quantity: Math.round(unitQuantity * mapping.factor),
     unit: mapping.unit

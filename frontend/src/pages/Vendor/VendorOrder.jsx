@@ -48,6 +48,9 @@ const VendorOrder = () => {
   };
 
   const updateStatus = async (order, newStatus) => {
+
+    const updatedAt = new Date().toISOString();
+
     try {
       setLoading(true);
       const response = await fetch("http://localhost:8080/vendor/userorder/accept", {
@@ -59,7 +62,8 @@ const VendorOrder = () => {
         body: JSON.stringify({
           order_id: order.order_id,
           user_id: order.user_id,
-          order_status: newStatus
+          order_status: newStatus,
+          updated_at: updatedAt
         })
       });
 
@@ -68,11 +72,11 @@ const VendorOrder = () => {
         throw new Error(errorData.message || "Failed to update order status");
       }
 
-      // Update the local state immediately
+      // ✅ Store updated_at in local state as well
       setOrders((prevOrders) =>
         prevOrders.map((o) =>
           o.order_id === order.order_id
-            ? { ...o, order_status: newStatus }
+            ? { ...o, order_status: newStatus, updated_at: updatedAt }
             : o
         )
       );
@@ -232,6 +236,7 @@ const VendorOrder = () => {
             <thead>
               <tr>
                 <th>Order ID</th>
+                <th>Order Date</th>
                 <th>Items</th>
                 <th>Total Price</th>
                 <th>Delivery Method</th>
@@ -245,6 +250,15 @@ const VendorOrder = () => {
                   <tr key={order.order_id}>
                     <td>
                       <span className="order-id">{order.order_id.substring(0, 12)}...</span>
+                    </td>
+                     <td>
+                        <p className="order-date">
+                        {
+                      new Date(order.created_at).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
                     </td>
                     <td>
                       {order.items && order.items.length > 0 ? (
@@ -369,68 +383,49 @@ const VendorOrder = () => {
                   <div className="order-details-label">Delivery Method:</div>
                   <div className="order-details-value">{selectedOrder.delivery_method || "Not specified"}</div>
                   
+                  
                   <div className="order-details-label">Customer ID:</div>
                   <div className="order-details-value">{selectedOrder.user_id || "Anonymous"}</div>
                 </div>
               </div>
               
-              <div className="order-details-section">
-                <h4>Order Items</h4>
-                <ul className="order-items-list">
-                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                    selectedOrder.items.map((item, index) => (
-                      <li key={index}>
-                        <div className="order-item-details">
-                          <div className="order-item-image"></div>
-                          <div>
-                            <div className="order-item-name">{item.name}</div>
-                            <div className="order-item-quantity">
-                              {item.unit_quantity} {item.unit}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="order-item-price">{formatCurrency(item.price || 0)}</div>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="empty-state text-center py-sm">No items found in this order</li>
-                  )}
-                </ul>
-                
-                <div className="order-total">
-                  <div>Total:</div>
-                  <div>{formatCurrency(selectedOrder.total_price || 0)}</div>
-                </div>
-              </div>
-              
-              <div className="order-details-actions">
-                {(selectedOrder.order_status === "Pending" || selectedOrder.order_status === "pending") && (
-                  <>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => updateStatus(selectedOrder, "Accepted")}
-                      disabled={loading}
-                    >
-                      {loading ? <div className="spinner"></div> : <><i className="fas fa-check"></i> Accept</>}
-                    </button>
-                    <button
-                      className="btn btn-accent"
-                      onClick={() => updateStatus(selectedOrder, "Rejected")}
-                      disabled={loading}
-                    >
-                      {loading ? <div className="spinner"></div> : <><i className="fas fa-times"></i> Reject</>}
-                    </button>
-                  </>
-                )}
-                {selectedOrder.order_status === "Accepted" && (
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => updateStatus(selectedOrder, "Delivered")}
-                    disabled={loading}
-                  >
-                    {loading ? <div className="spinner"></div> : <><i className="fas fa-truck"></i> Mark as Delivered</>}
-                  </button>
-                )}
+      <div className="order-details-actions">
+        {(selectedOrder.order_status === "Pending" || selectedOrder.order_status === "pending") && (
+          <>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                const now = new Date().toISOString();
+                updateStatus({ ...selectedOrder, updated_at: now }, "Accepted");
+              }}
+              disabled={loading}
+            >
+              {loading ? <div className="spinner"></div> : <><i className="fas fa-check"></i> Accept</>}
+            </button>
+            <button
+              className="btn btn-accent"
+              onClick={() => {
+                const now = new Date().toISOString();
+                updateStatus({ ...selectedOrder, updated_at: now }, "Rejected");
+              }}
+              disabled={loading}
+            >
+              {loading ? <div className="spinner"></div> : <><i className="fas fa-times"></i> Reject</>}
+            </button>
+          </>
+        )}
+        {selectedOrder.order_status === "Accepted" && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              const now = new Date().toISOString();
+              updateStatus({ ...selectedOrder, updated_at: now }, "Delivered");
+            }}
+            disabled={loading}
+          >
+            {loading ? <div className="spinner"></div> : <><i className="fas fa-truck"></i> Mark as Delivered</>}
+          </button>
+        )}
                 <button className="btn btn-secondary" onClick={handleCloseModal}>
                   <i className="fas fa-times"></i> Close
                 </button>

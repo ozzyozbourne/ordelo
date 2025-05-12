@@ -188,9 +188,9 @@ function VendorStore() {
               ingredient_id: itemToUpdate.ingredient_id,
               name: itemToUpdate.name,
               unit: itemToUpdate.unit,
-              unit_quantity: parseFloat(editFormData.unit_quantity),
+              unit_quantity: itemToUpdate.unit_quantity || 0,
               price: parseFloat(editFormData.price),
-              quantity: itemToUpdate.quantity || 0
+              quantity: parseFloat(editFormData.quantity)
             }
           ]
         }
@@ -226,7 +226,7 @@ function VendorStore() {
   const handleCancelEdit = () => {
     setEditingIngredientId(null);
     setEditFormData({
-      unit_quantity: "",
+      quantity: "",
       price: ""
     });
   };
@@ -333,101 +333,99 @@ function VendorStore() {
         </div>
       )}
 
-      {/* Inventory Table */}
       {activeTab && (
-        <div className="vendor-section">
-          <h3 className="vendor-section-title">Inventory for {activeTab.name}</h3>
-          {activeTab.items && activeTab.items.length > 0 ? (
-            <div className="ingredients-table-container">
-              <table className="ingredients-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Unit Quantity</th>
-                    <th>Unit</th>
-                    <th>Price</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeTab.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td>{item.name}</td>
-                      {editingIngredientId === item.ingredient_id ? (
-                        <>
-                          <td>
-                            <input
-                              type="number"
-                              name="unit_quantity"
-                              value={editFormData.unit_quantity}
-                              onChange={handleEditChange}
-                              min="0"
-                              step="0.01"
-                              className="form-control"
-                            />
-                          </td>
-                          <td>{item.unit}</td>
-                          <td>
-                            <div className="input-group">
-                              <span className="input-group-text">$</span>
-                              <input
-                                type="number"
-                                name="price"
-                                value={editFormData.price}
-                                onChange={handleEditChange}
-                                min="0"
-                                step="0.01"
-                                className="form-control"
-                              />
-                            </div>
-                          </td>
-                          <td>
-                            <div className="table-actions">
-                              <button onClick={handleSaveEdit} className="btn btn-sm btn-primary">
-                                <i className="fas fa-save"></i>
-                                <span>Save</span>
-                              </button>
-                              <button onClick={handleCancelEdit} className="btn btn-sm btn-secondary">
-                                <i className="fas fa-times"></i>
-                                <span>Cancel</span>
-                              </button>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td>{item.unit_quantity}</td>
-                          <td>{item.unit}</td>
-                          <td><span className="price-inline"><span className="dollar-sign">$</span>{formatCurrency(item.price).replace('$', '')}</span></td>
-                          <td>
-                            <button onClick={() => handleEditClick(item)} className="btn btn-sm btn-primary">
-                              <i className="fas fa-edit"></i>
-                              <span>Edit</span>
-                            </button>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <i className="fas fa-box-open"></i>
-              <h3>No ingredients assigned yet</h3>
-              <p>Add products to your inventory to get started.</p>
-              <button
-                onClick={() => navigate("/vendor/add-inventory")}
-                className="btn btn-primary mt-md"
-              >
-                <i className="fas fa-plus"></i>
-                <span>Add Products</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+  <div className="vendor-section">
+    <h3 className="vendor-section-title">Inventory for {activeTab.name}</h3>
+    {activeTab.items && activeTab.items.length > 0 ? (
+      <div className="ingredients-table-container">
+        <table className="ingredients-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Unit Quantity</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeTab.items.map((item, idx) => (
+              <tr key={idx}>
+                <td>{item.name}</td>
+                {editingIngredientId === item.ingredient_id ? (
+                  <>
+                    <td>
+                     <span className="unit-label">{item.unit_quantity}</span>
+                      <span className="unit-label">{item.unit}</span>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={editFormData.quantity}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        name="price"
+                        value={editFormData.price}
+                        onChange={handleEditChange}
+                      />
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button onClick={handleSaveEdit} className="btn btn-sm btn-primary">
+                          <i className="fas fa-save"></i>
+                          <span>Save</span>
+                        </button>
+                        <button onClick={handleCancelEdit} className="btn btn-sm btn-secondary">
+                          <i className="fas fa-times"></i>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{item.unit_quantity} {item.unit}</td>
+                    <td>{item.quantity}</td>
+                    <td>
+                      <span className="price-inline">
+                        <span className="dollar-sign">$</span>
+                        {formatCurrency(item.price).replace('$', '')}
+                      </span>
+                    </td>
+                    <td>
+                      <button onClick={() => handleEditClick(item)} className="btn btn-sm btn-primary">
+                        <i className="fas fa-edit"></i>
+                        <span>Edit</span>
+                      </button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="empty-state">
+        <i className="fas fa-box-open"></i>
+        <h3>No ingredients assigned yet</h3>
+        <p>Add products to your inventory to get started.</p>
+        <button
+          onClick={() => navigate("/vendor/add-inventory")}
+          className="btn btn-primary mt-md"
+        >
+          <i className="fas fa-plus"></i>
+          <span>Add Products</span>
+        </button>
+      </div>
+    )}
+  </div>
+)}
 
       {/* Create Store Form */}
       {showForm && (
