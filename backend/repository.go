@@ -161,7 +161,7 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
 	filter, update := getFilterPush(id, "saved_recipes", recipes)
 
-	if err := createContainers(ctx, m.col, id, ids, recipes, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error adding in user recipes", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
 	filter, update := getFilterPush(id, "carts", carts)
 
-	if err := createContainers(ctx, m.col, id, ids, carts, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding user cart", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (m MongoUserRepository) CreateUserOrders(ctx context.Context, id ID, orders
 	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
 	filter, update := getFilterPush(id, "orders", orders)
 
-	if err := createContainers(ctx, m.col, id, ids, orders, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding user orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
 	filter, update := getFilterPush(id, "stores", stores)
 
-	if err := createContainers(ctx, m.col, id, ids, stores, filter, update, vendor_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor stores", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (m MongoVendorRepository) CreateVendorOrders(ctx context.Context, id ID, or
 		ids[i] = &ID{v.ID}
 	}
 
-	if err := createContainers(ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
