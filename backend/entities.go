@@ -60,6 +60,7 @@ type AcceptUserOrderReq struct {
 	UserID      bson.ObjectID `bson:"_id" json:"user_id"`
 	OrderID     bson.ObjectID `bson:"_id" json:"order_id"`
 	OrderStatus string        `bson:"order_status" json:"order_status"`
+	UpdatedAt   time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 type Claims struct {
