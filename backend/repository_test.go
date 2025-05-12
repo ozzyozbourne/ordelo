@@ -70,7 +70,7 @@ func ATestMain(m *testing.M) {
 }
 
 func TestUserCreate(t *testing.T) {
-	in := generateUser(3, 5)
+	in := generateUser()
 	id, err := r.User.CreateUser(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)
@@ -87,7 +87,7 @@ func TestUserCreate(t *testing.T) {
 }
 
 func TestVendorCreate(t *testing.T) {
-	in := generateVendor(3, 5)
+	in := generateVendor()
 	id, err := r.Vendor.CreateVendor(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +104,7 @@ func TestVendorCreate(t *testing.T) {
 }
 
 func TestAdminCreate(t *testing.T) {
-	in := generateAdmin(3)
+	in := generateAdmin()
 	id, err := r.Admin.CreateAdmin(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +121,7 @@ func TestAdminCreate(t *testing.T) {
 }
 
 func TestUserDelete(t *testing.T) {
-	in := generateUser(3, 5)
+	in := generateUser()
 	id, err := r.User.CreateUser(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +138,7 @@ func TestUserDelete(t *testing.T) {
 }
 
 func TestVendorDelete(t *testing.T) {
-	in := generateVendor(3, 5)
+	in := generateVendor()
 	id, err := r.Vendor.CreateVendor(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +155,7 @@ func TestVendorDelete(t *testing.T) {
 }
 
 func TestAdminDelete(t *testing.T) {
-	in := generateAdmin(3)
+	in := generateAdmin()
 	id, err := r.Admin.CreateAdmin(context.TODO(), in)
 	if err != nil {
 		t.Fatal(err)

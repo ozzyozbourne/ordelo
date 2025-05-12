@@ -87,7 +87,7 @@ func TestReqCarts(t *testing.T) {
 }
 
 func TestReqCompare(t *testing.T) {
-	res := generateReqIngArray(3, 4)
+	res := generateReqIngArray(3)
 	var req struct {
 		Compare []*ReqIng `json:"compare"`
 	}
@@ -102,7 +102,7 @@ func TestReqCompare(t *testing.T) {
 }
 
 func TestReqAcceptOrder(t *testing.T) {
-	res := generateReqIngArray(3, 4)
+	res := generateReqIngArray(3)
 	var req struct {
 		Compare []*ReqIng `json:"compare"`
 	}

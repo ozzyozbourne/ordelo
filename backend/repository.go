@@ -150,7 +150,7 @@ func (m MongoUserRepository) CreateUser(ctx context.Context, user *User) (ID, er
 	if user.SavedRecipes == nil {
 		user.SavedRecipes = []*Recipe{}
 	}
-	return create[*User](ctx, user, m.col, user_repo_source)
+	return create(ctx, user, m.col, user_repo_source)
 }
 
 func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes []*Recipe) ([]*ID, error) {
@@ -159,9 +159,9 @@ func (m MongoUserRepository) CreateRecipes(ctx context.Context, id ID, recipes [
 	ids := AssignIDs(recipes)
 
 	Logger.InfoContext(ctx, "Adding Recipe/s to user", slog.Any("Recipe/s", recipes), user_repo_source)
-	filter, update := getFilterPush[[]*Recipe](id, "saved_recipes", recipes)
+	filter, update := getFilterPush(id, "saved_recipes", recipes)
 
-	if err := createContainers[[]*Recipe](ctx, m.col, id, ids, recipes, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, recipes, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error adding in user recipes", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -177,9 +177,9 @@ func (m MongoUserRepository) CreateCarts(ctx context.Context, id ID, carts []*Ca
 	ids := AssignIDs(carts)
 
 	Logger.InfoContext(ctx, "Adding Cart/s to user", slog.Any("ID", id.String()), user_repo_source)
-	filter, update := getFilterPush[[]*Cart](id, "carts", carts)
+	filter, update := getFilterPush(id, "carts", carts)
 
-	if err := createContainers[[]*Cart](ctx, m.col, id, ids, carts, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, carts, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding user cart", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -195,9 +195,9 @@ func (m MongoUserRepository) CreateUserOrders(ctx context.Context, id ID, orders
 	ids := AssignIDs(orders)
 
 	Logger.InfoContext(ctx, "Adding Order/s to user", slog.String("ID", id.String()), user_repo_source)
-	filter, update := getFilterPush[[]*UserOrder](id, "orders", orders)
+	filter, update := getFilterPush(id, "orders", orders)
 
-	if err := createContainers[[]*UserOrder](ctx, m.col, id, ids, orders, filter, update, user_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, orders, filter, update, user_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding user orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (m MongoUserRepository) UpdateRecipes(ctx context.Context, id ID, recipes [
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating recipes for user", slog.String("userID", id.String()), user_repo_source)
-	return processContainers[[]*Recipe](ctx, m.col, id, recipes, user_repo_source)
+	return processContainers(ctx, m.col, id, recipes, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Cart) error {
@@ -263,7 +263,7 @@ func (m MongoUserRepository) UpdateCarts(ctx context.Context, id ID, carts []*Ca
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating carts for user", slog.String("userID", id.String()), user_repo_source)
-	return processContainers[[]*Cart](ctx, m.col, id, carts, user_repo_source)
+	return processContainers(ctx, m.col, id, carts, user_repo_source)
 }
 
 func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders []*UserOrder) error {
@@ -271,7 +271,7 @@ func (m MongoUserRepository) UpdateUserOrders(ctx context.Context, id ID, orders
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating orders for user", slog.String("userID", id.String()), user_repo_source)
-	return processContainers[[]*UserOrder](ctx, m.col, id, orders, user_repo_source)
+	return processContainers(ctx, m.col, id, orders, user_repo_source)
 }
 
 func (m MongoUserRepository) DeleteUser(ctx context.Context, id ID) error {
@@ -363,7 +363,7 @@ func (m MongoVendorRepository) CreateVendor(ctx context.Context, vendor *Vendor)
 	if vendor.Stores == nil {
 		vendor.Stores = []*Store{}
 	}
-	return create[*Vendor](ctx, vendor, m.col, vendor_repo_source)
+	return create(ctx, vendor, m.col, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores []*Store) ([]*ID, error) {
@@ -373,9 +373,9 @@ func (m MongoVendorRepository) CreateStores(ctx context.Context, id ID, stores [
 	ids := AssignIDs(stores)
 
 	Logger.InfoContext(ctx, "Adding Store/s to vendor", slog.Any("Store/s", stores), vendor_repo_source)
-	filter, update := getFilterPush[[]*Store](id, "stores", stores)
+	filter, update := getFilterPush(id, "stores", stores)
 
-	if err := createContainers[[]*Store](ctx, m.col, id, ids, stores, filter, update, vendor_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, stores, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor stores", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
@@ -389,14 +389,14 @@ func (m MongoVendorRepository) CreateVendorOrders(ctx context.Context, id ID, or
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Adding Order/s to vendor", slog.String("ID", id.String()), vendor_repo_source)
-	filter, update := getFilterPush[[]*VendorOrder](id, "orders", orders)
+	filter, update := getFilterPush(id, "orders", orders)
 
 	ids := make([]*ID, len(orders))
 	for i, v := range orders {
 		ids[i] = &ID{v.ID}
 	}
 
-	if err := createContainers[[]*VendorOrder](ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
+	if err := createContainers(ctx, m.col, id, ids, orders, filter, update, vendor_repo_source); err != nil {
 		Logger.ErrorContext(ctx, "Error in adding vendor orders", slog.Any("error", err), user_repo_source)
 		return nil, err
 	}
@@ -431,8 +431,8 @@ func (m MongoVendorRepository) FindStores(ctx context.Context, id ID) ([]*Store,
 func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*ReqIng) ([]*ResIng, error) {
 	ctx, span := Tracer.Start(ctx, "FindAllIngredients")
 	defer span.End()
-
 	Logger.InfoContext(ctx, "Finding ingredients across all vendors", slog.Any("requirements", req), vendor_repo_source)
+
 	cursor, err := m.col.Find(ctx, bson.D{})
 	if err != nil {
 		Logger.ErrorContext(ctx, "Error finding vendors", slog.Any("error", err), vendor_repo_source)
@@ -447,10 +447,12 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 			Logger.ErrorContext(ctx, "Error decoding vendor", slog.Any("error", err), vendor_repo_source)
 			continue
 		}
+
 		vendorResult := &ResIng{
 			ID:     vendor.ID,
 			Stores: []*Store{},
 		}
+
 		for _, store := range vendor.Stores {
 			storeMatch := &Store{
 				ID:        store.ID,
@@ -459,46 +461,38 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 				Location:  store.Location,
 				Items:     []*Item{},
 			}
+
 			for _, reqIng := range req {
 				var bestMatch *Item
-				exactMatchFound := false
 
+				// Tier 1: Exact match (name, unit, and unit quantity match exactly)
 				for _, item := range store.Items {
 					if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity == reqIng.UnitQuantity {
-						bestMatch = &Item{
-							Ingredient: Ingredient{
-								IngredientID: item.IngredientID,
-								Name:         item.Name,
-								UnitQuantity: item.UnitQuantity,
-								Unit:         item.Unit,
-								Price:        item.Price,
-							},
-							Quantity: item.Quantity,
-						}
-						exactMatchFound = true
+						bestMatch = createMatchItem(item)
 						break
 					}
 				}
 
-				if !exactMatchFound {
+				// Tier 2: Ceiling match (smallest unit quantity greater than required)
+				if bestMatch == nil {
 					var minDiff int = -1
-
 					for _, item := range store.Items {
 						if item.Name == reqIng.Name && item.Unit == reqIng.Unit && item.UnitQuantity > reqIng.UnitQuantity {
 							diff := item.UnitQuantity - reqIng.UnitQuantity
 							if minDiff == -1 || diff < minDiff {
-								bestMatch = &Item{
-									Ingredient: Ingredient{
-										IngredientID: item.IngredientID,
-										Name:         item.Name,
-										UnitQuantity: item.UnitQuantity,
-										Unit:         item.Unit,
-										Price:        item.Price,
-									},
-									Quantity: item.Quantity,
-								}
+								bestMatch = createMatchItem(item)
 								minDiff = diff
 							}
+						}
+					}
+				}
+
+				// Tier 3: Any match (just name and unit match, regardless of quantity)
+				if bestMatch == nil {
+					for _, item := range store.Items {
+						if item.Name == reqIng.Name && item.Unit == reqIng.Unit {
+							bestMatch = createMatchItem(item)
+							break
 						}
 					}
 				}
@@ -507,24 +501,42 @@ func (m MongoVendorRepository) FindAllIngredients(ctx context.Context, req []*Re
 					storeMatch.Items = append(storeMatch.Items, bestMatch)
 				}
 			}
+
 			if len(storeMatch.Items) > 0 {
 				vendorResult.Stores = append(vendorResult.Stores, storeMatch)
 			}
 		}
+
 		if len(vendorResult.Stores) > 0 {
 			results = append(results, vendorResult)
 		}
 	}
+
 	if err := cursor.Err(); err != nil {
 		Logger.ErrorContext(ctx, "Error iterating vendors", slog.Any("error", err), vendor_repo_source)
 		return nil, err
 	}
+
 	if len(results) == 0 {
 		Logger.ErrorContext(ctx, "No match found", vendor_repo_source)
 		return nil, &NoItems{}
 	}
+
 	Logger.InfoContext(ctx, "Found matching ingredients", slog.Int("vendorCount", len(results)), vendor_repo_source)
 	return results, nil
+}
+
+func createMatchItem(item *Item) *Item {
+	return &Item{
+		Ingredient: Ingredient{
+			IngredientID: item.IngredientID,
+			Name:         item.Name,
+			UnitQuantity: item.UnitQuantity,
+			Unit:         item.Unit,
+			Price:        item.Price,
+		},
+		Quantity: item.Quantity,
+	}
 }
 
 func (m MongoVendorRepository) FindVendorStore(ctx context.Context, vendorid ID, storeid ID) ([]*Item, error) {
@@ -589,7 +601,7 @@ func (m MongoVendorRepository) UpdateStores(ctx context.Context, id ID, stores [
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating stores for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
-	return processContainers[[]*Store](ctx, m.col, id, stores, vendor_repo_source)
+	return processContainers(ctx, m.col, id, stores, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, orders []*VendorOrder) error {
@@ -597,7 +609,7 @@ func (m MongoVendorRepository) UpdateVendorOrders(ctx context.Context, id ID, or
 	defer span.End()
 
 	Logger.InfoContext(ctx, "Updating orders for vendor", slog.String("vendorID", id.String()), vendor_repo_source)
-	return processContainers[[]*VendorOrder](ctx, m.col, id, orders, vendor_repo_source)
+	return processContainers(ctx, m.col, id, orders, vendor_repo_source)
 }
 
 func (m MongoVendorRepository) UpdateUserOrder(ctx context.Context, id ID, ord *AcceptUserOrderReq) error {
@@ -808,7 +820,7 @@ func (v MongoAdminRepository) CreateAdmin(ctx context.Context, admin *Admin) (id
 		admin.Ingredients = []*Ingredient{}
 	}
 	Logger.InfoContext(ctx, "Inserting in Admin collection", slog.Any("user", admin), admin_repo_source)
-	return create[*Admin](ctx, admin, v.col, admin_repo_source)
+	return create(ctx, admin, v.col, admin_repo_source)
 }
 
 func (v MongoAdminRepository) CreateIngredients(ctx context.Context, id ID, ingredients []*Ingredient) ([]*ID, error) {
