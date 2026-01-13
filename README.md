@@ -7,7 +7,7 @@
 
 ### Team Members:
 
-1. Sharukh Saiyed
+1. Sharukh Saiyad
 2. Zoha Ahmed
 3. Akif Qureshi
 4. Javid Shaik
